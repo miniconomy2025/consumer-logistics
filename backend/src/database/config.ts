@@ -1,6 +1,10 @@
 import { DataSource } from 'typeorm';
 import { TruckEntity } from './models/TruckEntity';
 import { TruckTypeEntity } from './models/TruckTypeEntity';
+import { PickupEntity } from './models/PickupEntity';
+import { PickupStatusEntity } from './models/PickupStatusEntity';
+import { ServiceTypeEntity } from './models/ServiceTypeEntity';
+import { LogisticsDetailsEntity } from './models/LogisticsDetailsEntity';
 import dotenv from 'dotenv';
 import path from 'path';
 
@@ -16,7 +20,14 @@ export const AppDataSource = new DataSource({
   // IMPORTANT CHANGE HERE:
   synchronize: process.env.NODE_ENV === 'development', // Keep true for dev, false for production
   logging: process.env.NODE_ENV === 'development' ? ['query', 'error'] : ['error'],
-  entities: [TruckEntity, TruckTypeEntity],
+  entities: [
+    TruckEntity,
+    TruckTypeEntity,
+    PickupEntity,
+    PickupStatusEntity,
+    ServiceTypeEntity,
+    LogisticsDetailsEntity
+  ],
   // Add your migrations path here:
   migrations: [path.join(__dirname, 'migrations', '*.ts')], // Path to your migration files
   subscribers: [],

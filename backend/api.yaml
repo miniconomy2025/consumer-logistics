@@ -1,0 +1,136 @@
+openapi: 3.0.0
+info:
+  title: Consumer Logistics API
+  version: 1.0.0
+tags:
+  - name: Pickup Management
+    description: Endpoints related to managing pickups.
+  - name: Company Management
+    description: Endpoints related to managing companies.
+
+paths:
+  /pickup:
+    post:
+      tags:
+        - Pickup Management
+      summary: Create a new pickup
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                quantity:
+                  type: integer
+                  example: 10
+                company_name:
+                  type: string
+                  example: "TechCorp"
+      responses:
+        202:
+          description: Pickup received successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  refernceno:
+                    type: integer
+                    example: 123
+                  amount:
+                    type: number
+                    example: 100.0
+
+    get:
+      tags:
+        - Pickup Management
+      summary: List all pickups for a company
+      description: Retrieve all pickups for a specific company, optionally filtered by status.
+      parameters:
+        - name: company_name
+          in: query
+          required: true
+          schema:
+            type: string
+          example: "TechCorp"
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+          example: "Ready"
+      responses:
+        200:
+          description: List of pickups retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                      example: 123
+                    quantity:
+                      type: integer
+                      example: 10
+                    company_name:
+                      type: string
+                      example: "TechCorp"
+                    status:
+                      type: string
+                      example: "Delivered"
+
+  /companies:
+    post:
+      tags:
+        - Company Management
+      summary: Register a new company
+      description: Register a new company with the logistics service.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                company_name:
+                  type: string
+                  example: "TechCorp"
+      responses:
+        201:
+          description: Company registered successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    example: 1
+                  company_name:
+                    type: string
+                    example: "TechCorp"
+
+    get:
+      tags:
+        - Company Management
+      summary: List all companies registered with us
+      responses:
+        200:
+          description: List of companies retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                      example: 1
+                    company_name:
+                      type: string
+                      example: "TechCorp"
