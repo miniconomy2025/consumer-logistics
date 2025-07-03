@@ -26,7 +26,7 @@ export class PickupService {
       company = await companyRepository.save(company);
     }
 
-    // 2. Find the status_id for "Awaiting Payment"
+    // 2. Find the status_id for "Order Received"
     const pickupStatusRepository = AppDataSource.getRepository(PickupStatusEntity);
     const status = await pickupStatusRepository.findOneBy({ status_name: PickupStatus.OrderReceived });
     if (!status) {
