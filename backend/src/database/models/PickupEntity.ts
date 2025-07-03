@@ -1,6 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
 import { InvoiceEntity } from './InvoiceEntity';
 import { PickupStatusEntity } from './PickupStatusEntity';
+import { CompanyEntity } from './CompanyEntity';
 
 @Entity('pickup') 
 export class PickupEntity {
@@ -20,6 +21,13 @@ export class PickupEntity {
   @ManyToOne(() => PickupStatusEntity)
   @JoinColumn({ name: 'pickup_status_id' })
   pickupStatus: PickupStatusEntity;
+
+  @Column({ name: 'company_id', type: 'int' })
+  company_id: number;
+
+  @ManyToOne(() => CompanyEntity)
+  @JoinColumn({ name: 'company_id' })
+  company: CompanyEntity;
 
   @Column({ name: 'pickup_date', type: 'date', nullable: true })
   pickup_date: Date | null;

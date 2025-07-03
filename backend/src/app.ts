@@ -16,7 +16,7 @@ app.use(bodyParser.json());
 
 app.use('/api/trucks', truckRoutes); 
 
-app.use('/pickups', pickupRoutes);
+app.use('/api/pickups', pickupRoutes);
 
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok', message: 'Service is healthy' });
@@ -24,4 +24,4 @@ app.get('/health', (req, res) => {
 
 app.use(errorMiddleware);
 
-export default app; 
+export default app;

@@ -4,6 +4,7 @@ import { TruckTypeEntity } from './models/TruckTypeEntity';
 import { PickupEntity } from './models/PickupEntity';
 import { InvoiceEntity } from './models/InvoiceEntity';
 import { PickupStatusEntity } from './models/PickupStatusEntity';
+import { CompanyEntity } from './models/CompanyEntity';
 import dotenv from 'dotenv';
 import path from 'path';
 
@@ -24,7 +25,8 @@ export const AppDataSource = new DataSource({
     TruckTypeEntity,
     PickupEntity,
     InvoiceEntity,
-    PickupStatusEntity
+    PickupStatusEntity,
+    CompanyEntity
   ],
   // Add your migrations path here:
   migrations: [path.join(__dirname, 'migrations', '*.ts')], // Path to your migration files

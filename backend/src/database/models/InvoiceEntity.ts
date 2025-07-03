@@ -5,6 +5,9 @@ export class InvoiceEntity {
   @PrimaryGeneratedColumn({ name: 'invoice_id' })
   invoice_id: number;
 
+  @Column({ name: 'reference_number', type: 'uuid', unique: true, default: () => 'uuid_generate_v4()' })
+  reference_number: string;
+
   @Column({ name: 'total_amount', type: 'decimal', precision: 10, scale: 2 })
   total_amount: number;
 

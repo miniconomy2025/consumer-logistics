@@ -3,9 +3,11 @@ import { CreatePickupRequest, PickupResponse } from '../types/dtos/pickupDtos';
 import { PickupEntity } from '../database/models/PickupEntity';
 import { InvoiceEntity } from '../database/models/InvoiceEntity';
 import { PickupStatusEntity } from '../database/models/PickupStatusEntity';
+import { CompanyEntity } from '../database/models/CompanyEntity';
 import { AppError } from '../shared/errors/ApplicationError';
 import { logger } from '../utils/logger';
 import { AppDataSource } from '../database/config'; 
+import { PickupStatus } from '../types/enums/pickupStatus';
 
 export class PickupService {
   constructor(private pickupRepository: IPickupRepository) {}
@@ -16,15 +18,23 @@ export class PickupService {
     const unit_price = 10;
     const amount = data.quantity * unit_price;
 
-    // 1. Find the status_id for "Awaiting Payment"
-    const pickupStatusRepository = AppDataSource.getRepository(PickupStatusEntity);
-    const status = await pickupStatusRepository.findOneBy({ status_name: 'Awaiting Payment' });
-    if (!status) {
-      logger.error('Pickup status "Awaiting Payment" not found.');
-      throw new AppError('Pickup status "Awaiting Payment" not found.', 500);
+    // 1. Find or create the company
+    const companyRepository = AppDataSource.getRepository(CompanyEntity);
+    let company = await companyRepository.findOneBy({ company_name: data.pickupFrom });
+    if (!company) {
+      company = companyRepository.create({ company_name: data.pickupFrom });
+      company = await companyRepository.save(company);
     }
 
-    // 2. Create and save the invoice
+    // 2. Find the status_id for "Awaiting Payment"
+    const pickupStatusRepository = AppDataSource.getRepository(PickupStatusEntity);
+    const status = await pickupStatusRepository.findOneBy({ status_name: PickupStatus.OrderReceived });
+    if (!status) {
+      logger.error('Pickup status "Order Received" not found.');
+      throw new AppError('Pickup status "Order Received" not found.', 500);
+    }
+
+    // 3. Create and save the invoice
     const invoiceRepository = AppDataSource.getRepository(InvoiceEntity);
     const invoice = invoiceRepository.create({
       total_amount: amount,
@@ -39,21 +49,23 @@ export class PickupService {
       throw new AppError('Failed to create invoice due to a database error.', 500);
     }
 
-    // 3. Use the found pickup_status_id
+    // 4. Create the pickup with company association
     const pickup: Partial<PickupEntity> = {
       invoice_id: savedInvoice.invoice_id,
       pickup_status_id: status.pickup_status_id,
       unit_price,
-      customer: data.customer,
+      customer: data.deliveryTo,
       pickup_date: null,
+      company_id: company.company_id,
     };
 
     try {
       await this.pickupRepository.create(pickup);
 
       return {
-        referenceNo: savedInvoice.invoice_id.toString(),
+        referenceNo: savedInvoice.reference_number,
         amount: amount.toFixed(2),
+        accountNumber: process.env.ACCOUNT_NUMBER || '01001123456789', 
       };
     } catch (error: any) {
       logger.error('Error creating pickup request:', error);
