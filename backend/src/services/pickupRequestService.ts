@@ -6,8 +6,9 @@ import { PickupStatusEntity } from '../database/models/PickupStatusEntity';
 import { CompanyEntity } from '../database/models/CompanyEntity';
 import { AppError } from '../shared/errors/ApplicationError';
 import { logger } from '../utils/logger';
-import { AppDataSource } from '../database/config'; 
+import { AppDataSource } from '../database/config';
 import { PickupStatus } from '../types/enums/pickupStatus';
+import { v4 as uuidv4 } from 'uuid';
 
 export class PickupService {
   constructor(private pickupRepository: IPickupRepository) {}
@@ -37,6 +38,7 @@ export class PickupService {
     // 3. Create and save the invoice
     const invoiceRepository = AppDataSource.getRepository(InvoiceEntity);
     const invoice = invoiceRepository.create({
+      reference_number: uuidv4(),
       total_amount: amount,
       paid: false,
     });
