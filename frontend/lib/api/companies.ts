@@ -141,24 +141,8 @@ export async function checkCompanyNameAvailability(name: string): Promise<boolea
     return !companies.companies.some(
       company => company.companyName.toLowerCase() === name.toLowerCase()
     );
-  } catch (error) {
-    console.error('Error checking company name availability:', error);
+  } catch {
     return false;
-  }
-}
-
-/**
- * Search companies by name
- */
-export async function searchCompaniesByName(query: string): Promise<CompanyResponse[]> {
-  try {
-    const companies = await getCompanies();
-    return companies.companies.filter(company =>
-      company.companyName.toLowerCase().includes(query.toLowerCase())
-    );
-  } catch (error) {
-    console.error('Error searching companies:', error);
-    return [];
   }
 }
 
@@ -172,52 +156,8 @@ export async function getCompaniesForSelect(): Promise<Array<{ value: number; la
       value: company.companyId,
       label: company.companyName,
     }));
-  } catch (error) {
-    console.error('Error getting companies for select:', error);
+  } catch {
     return [];
   }
 }
 
-// ============================================================================
-// BATCH OPERATIONS
-// ============================================================================
-
-/**
- * Create multiple companies
- */
-export async function createMultipleCompanies(
-  companies: CreateCompanyRequest[]
-): Promise<CompanyResponse[]> {
-  const results: CompanyResponse[] = [];
-  
-  for (const company of companies) {
-    try {
-      const result = await createCompany(company);
-      results.push(result);
-    } catch (error) {
-      console.error(`Error creating company ${company.companyName}:`, error);
-      // Continue with other companies
-    }
-  }
-  
-  return results;
-}
-
-/**
- * Get multiple companies by IDs
- */
-export async function getCompaniesByIds(ids: number[]): Promise<CompanyResponse[]> {
-  const results: CompanyResponse[] = [];
-  
-  for (const id of ids) {
-    try {
-      const company = await getCompanyById(id);
-      results.push(company);
-    } catch (error) {
-      console.error(`Error getting company ${id}:`, error);
-      // Continue with other companies
-    }
-  }
-  
-  return results;
-}

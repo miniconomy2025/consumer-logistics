@@ -1,6 +1,6 @@
-// Enhanced Analytics Hooks with Caching and State Management
+// Analytics Hooks without Caching
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useApi, UseMutationState, useMutation } from './useApi';
 import {
   getDashboardAnalytics,
@@ -14,217 +14,71 @@ import {
 } from '../api/analytics';
 import {
   AnalyticsQueryParams,
-  DashboardAnalyticsResponse,
-  KPIAnalyticsResponse,
-  TrendAnalyticsResponse,
-  OperationalAnalyticsResponse,
-  ForecastAnalyticsResponse,
-  CombinedAnalyticsResponse,
-  AnalyticsHealthResponse,
   ExportAnalyticsResponse,
 } from '../types/api';
 
 // ============================================================================
-// ANALYTICS CACHE MANAGEMENT
-// ============================================================================
-
-interface CacheEntry<T> {
-  data: T;
-  timestamp: number;
-  params: string;
-}
-
-class AnalyticsCache {
-  private cache = new Map<string, CacheEntry<any>>();
-  private readonly TTL = 5 * 60 * 1000; // 5 minutes
-
-  set<T>(key: string, data: T, params?: AnalyticsQueryParams): void {
-    this.cache.set(key, {
-      data,
-      timestamp: Date.now(),
-      params: JSON.stringify(params || {}),
-    });
-  }
-
-  get<T>(key: string, params?: AnalyticsQueryParams): T | null {
-    const entry = this.cache.get(key);
-    if (!entry) return null;
-
-    const isExpired = Date.now() - entry.timestamp > this.TTL;
-    const paramsChanged = entry.params !== JSON.stringify(params || {});
-
-    if (isExpired || paramsChanged) {
-      this.cache.delete(key);
-      return null;
-    }
-
-    return entry.data;
-  }
-
-  clear(): void {
-    this.cache.clear();
-  }
-
-  clearExpired(): void {
-    const now = Date.now();
-    for (const [key, entry] of this.cache.entries()) {
-      if (now - entry.timestamp > this.TTL) {
-        this.cache.delete(key);
-      }
-    }
-  }
-}
-
-const analyticsCache = new AnalyticsCache();
-
-// ============================================================================
-// ENHANCED ANALYTICS HOOKS
+// ANALYTICS HOOKS
 // ============================================================================
 
 /**
- * Enhanced hook for dashboard analytics with caching
+ * Hook for dashboard analytics
  */
 export function useDashboardAnalytics(params?: AnalyticsQueryParams) {
-  const cacheKey = 'dashboard-analytics';
-  const cachedData = analyticsCache.get<DashboardAnalyticsResponse>(cacheKey, params);
-
-  const apiHook = useApi(
+  return useApi(
     () => getDashboardAnalytics(params),
     [params?.dateFrom, params?.dateTo, params?.companyId, params?.truckTypeId]
   );
-
-  // Cache successful responses
-  useEffect(() => {
-    if (apiHook.data && !apiHook.loading && !apiHook.error) {
-      analyticsCache.set(cacheKey, apiHook.data, params);
-    }
-  }, [apiHook.data, apiHook.loading, apiHook.error, params]);
-
-  // Return cached data if available and not loading
-  return {
-    ...apiHook,
-    data: cachedData && apiHook.loading ? cachedData : apiHook.data,
-  };
 }
 
 /**
- * Enhanced hook for KPI analytics with caching
+ * Hook for KPI analytics
  */
 export function useKPIAnalytics(params?: AnalyticsQueryParams) {
-  const cacheKey = 'kpi-analytics';
-  const cachedData = analyticsCache.get<KPIAnalyticsResponse>(cacheKey, params);
-
-  const apiHook = useApi(
+  return useApi(
     () => getKPIAnalytics(params),
     [params?.dateFrom, params?.dateTo, params?.companyId, params?.truckTypeId]
   );
-
-  useEffect(() => {
-    if (apiHook.data && !apiHook.loading && !apiHook.error) {
-      analyticsCache.set(cacheKey, apiHook.data, params);
-    }
-  }, [apiHook.data, apiHook.loading, apiHook.error, params]);
-
-  return {
-    ...apiHook,
-    data: cachedData && apiHook.loading ? cachedData : apiHook.data,
-  };
 }
 
 /**
- * Enhanced hook for trend analytics with caching
+ * Hook for trend analytics
  */
 export function useTrendAnalytics(params?: AnalyticsQueryParams) {
-  const cacheKey = 'trend-analytics';
-  const cachedData = analyticsCache.get<TrendAnalyticsResponse>(cacheKey, params);
-
-  const apiHook = useApi(
+  return useApi(
     () => getTrendAnalytics(params),
     [params?.dateFrom, params?.dateTo, params?.companyId, params?.truckTypeId]
   );
-
-  useEffect(() => {
-    if (apiHook.data && !apiHook.loading && !apiHook.error) {
-      analyticsCache.set(cacheKey, apiHook.data, params);
-    }
-  }, [apiHook.data, apiHook.loading, apiHook.error, params]);
-
-  return {
-    ...apiHook,
-    data: cachedData && apiHook.loading ? cachedData : apiHook.data,
-  };
 }
 
 /**
- * Enhanced hook for operational analytics with caching
+ * Hook for operational analytics
  */
 export function useOperationalAnalytics(params?: AnalyticsQueryParams) {
-  const cacheKey = 'operational-analytics';
-  const cachedData = analyticsCache.get<OperationalAnalyticsResponse>(cacheKey, params);
-
-  const apiHook = useApi(
+  return useApi(
     () => getOperationalAnalytics(params),
     [params?.dateFrom, params?.dateTo, params?.companyId, params?.truckTypeId]
   );
-
-  useEffect(() => {
-    if (apiHook.data && !apiHook.loading && !apiHook.error) {
-      analyticsCache.set(cacheKey, apiHook.data, params);
-    }
-  }, [apiHook.data, apiHook.loading, apiHook.error, params]);
-
-  return {
-    ...apiHook,
-    data: cachedData && apiHook.loading ? cachedData : apiHook.data,
-  };
 }
 
 /**
- * Enhanced hook for forecast analytics with caching
+ * Hook for forecast analytics
  */
 export function useForecastAnalytics(params?: AnalyticsQueryParams) {
-  const cacheKey = 'forecast-analytics';
-  const cachedData = analyticsCache.get<ForecastAnalyticsResponse>(cacheKey, params);
-
-  const apiHook = useApi(
+  return useApi(
     () => getForecastAnalytics(params),
     [params?.dateFrom, params?.dateTo, params?.companyId, params?.truckTypeId]
   );
-
-  useEffect(() => {
-    if (apiHook.data && !apiHook.loading && !apiHook.error) {
-      analyticsCache.set(cacheKey, apiHook.data, params);
-    }
-  }, [apiHook.data, apiHook.loading, apiHook.error, params]);
-
-  return {
-    ...apiHook,
-    data: cachedData && apiHook.loading ? cachedData : apiHook.data,
-  };
 }
 
 /**
- * Enhanced hook for combined analytics with caching
+ * Hook for combined analytics
  */
 export function useCombinedAnalytics(params?: AnalyticsQueryParams) {
-  const cacheKey = 'combined-analytics';
-  const cachedData = analyticsCache.get<CombinedAnalyticsResponse>(cacheKey, params);
-
-  const apiHook = useApi(
+  return useApi(
     () => getCombinedAnalytics(params),
     [params?.dateFrom, params?.dateTo, params?.companyId, params?.truckTypeId]
   );
-
-  useEffect(() => {
-    if (apiHook.data && !apiHook.loading && !apiHook.error) {
-      analyticsCache.set(cacheKey, apiHook.data, params);
-    }
-  }, [apiHook.data, apiHook.loading, apiHook.error, params]);
-
-  return {
-    ...apiHook,
-    data: cachedData && apiHook.loading ? cachedData : apiHook.data,
-  };
 }
 
 /**
@@ -246,30 +100,53 @@ export function useAnalyticsExport(): UseMutationState<ExportAnalyticsResponse, 
 // ============================================================================
 
 /**
- * Hook for managing analytics date range with persistence
+ * Hook for managing analytics date range
  */
 export function useAnalyticsDateRange(initialRange?: AnalyticsQueryParams) {
-  const [dateRange, setDateRange] = useState<AnalyticsQueryParams>(
-    initialRange || {
-      dateFrom: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      dateTo: new Date().toISOString().split('T')[0],
+  const [dateRange, setDateRange] = useState<AnalyticsQueryParams>(() => {
+    // Use a static default for SSR to prevent hydration mismatches
+    if (initialRange) {
+      return initialRange;
     }
-  );
+
+    // Static default dates for SSR consistency
+    return {
+      dateFrom: '2025-06-04', // 30 days ago from a fixed date
+      dateTo: '2025-07-04',   // fixed current date
+    };
+  });
+
+  const [isClient, setIsClient] = useState(false);
+
+  // Set client-side dates after hydration
+  useEffect(() => {
+    setIsClient(true);
+
+    // Only update to dynamic dates if no initial range was provided
+    if (!initialRange) {
+      const now = new Date();
+      const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+      setDateRange({
+        dateFrom: thirtyDaysAgo.toISOString().split('T')[0],
+        dateTo: now.toISOString().split('T')[0],
+      });
+    }
+  }, [initialRange]);
 
   const updateDateRange = useCallback((newRange: Partial<AnalyticsQueryParams>) => {
     setDateRange(prev => ({ ...prev, ...newRange }));
-    // Clear cache when date range changes
-    analyticsCache.clear();
   }, []);
 
   return {
     dateRange,
     setDateRange: updateDateRange,
+    isClient, // Expose this so components can handle loading states
   };
 }
 
 /**
- * Hook for analytics refresh functionality with cache management
+ * Hook for analytics refresh functionality
  */
 export function useAnalyticsRefresh() {
   const [lastRefresh, setLastRefresh] = useState(new Date());
@@ -277,7 +154,6 @@ export function useAnalyticsRefresh() {
 
   const refresh = useCallback(async () => {
     setIsRefreshing(true);
-    analyticsCache.clear();
     // Add a small delay to show loading state
     await new Promise(resolve => setTimeout(resolve, 500));
     setLastRefresh(new Date());
@@ -299,7 +175,7 @@ export function useAnalyticsErrorHandler() {
 
   const addError = useCallback((message: string) => {
     const error = {
-      id: Math.random().toString(36).substr(2, 9),
+      id: Math.random().toString(36).substring(2, 11),
       message,
       timestamp: new Date(),
     };
@@ -328,7 +204,6 @@ export function useAnalyticsErrorHandler() {
 export function useAnalyticsPerformance() {
   const [metrics, setMetrics] = useState({
     loadTime: 0,
-    cacheHitRate: 0,
     errorRate: 0,
   });
 
@@ -336,43 +211,18 @@ export function useAnalyticsPerformance() {
     setMetrics(prev => ({ ...prev, loadTime: time }));
   }, []);
 
-  const recordCacheHit = useCallback(() => {
-    setMetrics(prev => ({ 
-      ...prev, 
-      cacheHitRate: Math.min(prev.cacheHitRate + 0.1, 1) 
-    }));
-  }, []);
-
   const recordError = useCallback(() => {
-    setMetrics(prev => ({ 
-      ...prev, 
-      errorRate: Math.min(prev.errorRate + 0.1, 1) 
+    setMetrics(prev => ({
+      ...prev,
+      errorRate: Math.min(prev.errorRate + 0.1, 1)
     }));
   }, []);
 
   return {
     metrics,
     recordLoadTime,
-    recordCacheHit,
     recordError,
   };
-}
-
-// ============================================================================
-// UTILITY HOOKS
-// ============================================================================
-
-/**
- * Hook for cleaning up expired cache entries
- */
-export function useAnalyticsCacheCleanup() {
-  useEffect(() => {
-    const interval = setInterval(() => {
-      analyticsCache.clearExpired();
-    }, 60000); // Clean up every minute
-
-    return () => clearInterval(interval);
-  }, []);
 }
 
 /**

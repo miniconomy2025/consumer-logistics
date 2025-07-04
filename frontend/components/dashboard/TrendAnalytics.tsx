@@ -1,5 +1,3 @@
-// Trend Analytics Component - Historical trends and patterns with charts
-
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

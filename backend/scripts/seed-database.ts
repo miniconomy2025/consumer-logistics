@@ -27,7 +27,6 @@ import { TransactionEntity } from '../src/database/models/TransactionEntity';
 import { logger } from '../src/utils/logger';
 import { v4 as uuidv4 } from 'uuid';
 
-// Sample data arrays
 const COMPANY_NAMES = [
   'Acme Corporation',
   'Global Logistics Ltd',

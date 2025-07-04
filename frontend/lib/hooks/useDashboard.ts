@@ -48,49 +48,49 @@ import {
 // ============================================================================
 
 /**
- * Hook for dashboard analytics - Main dashboard data (enhanced with caching)
+ * Hook for dashboard analytics - Main dashboard data
  */
 export function useDashboardAnalytics(params?: AnalyticsQueryParams) {
   return useEnhancedDashboardAnalytics(params);
 }
 
 /**
- * Hook for KPI analytics - Key Performance Indicators (enhanced with caching)
+ * Hook for KPI analytics - Key Performance Indicators
  */
 export function useKPIAnalytics(params?: AnalyticsQueryParams) {
   return useEnhancedKPIAnalytics(params);
 }
 
 /**
- * Hook for trend analytics - Historical trends and patterns (enhanced with caching)
+ * Hook for trend analytics - Historical trends and patterns
  */
 export function useTrendAnalytics(params?: AnalyticsQueryParams) {
   return useEnhancedTrendAnalytics(params);
 }
 
 /**
- * Hook for operational analytics - Operational efficiency metrics (enhanced with caching)
+ * Hook for operational analytics - Operational efficiency metrics
  */
 export function useOperationalAnalytics(params?: AnalyticsQueryParams) {
   return useEnhancedOperationalAnalytics(params);
 }
 
 /**
- * Hook for forecast analytics - Predictive analytics (enhanced with caching)
+ * Hook for forecast analytics - Predictive analytics
  */
 export function useForecastAnalytics(params?: AnalyticsQueryParams) {
   return useEnhancedForecastAnalytics(params);
 }
 
 /**
- * Hook for combined analytics - All analytics in one call (enhanced with caching)
+ * Hook for combined analytics - All analytics in one call
  */
 export function useCombinedAnalytics(params?: AnalyticsQueryParams) {
   return useEnhancedCombinedAnalytics(params);
 }
 
 /**
- * Hook for analytics health check (enhanced)
+ * Hook for analytics health check
  */
 export function useAnalyticsHealth() {
   return useEnhancedAnalyticsHealth();

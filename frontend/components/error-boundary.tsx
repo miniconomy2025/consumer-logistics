@@ -27,13 +27,11 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     return {
       hasError: true,
       error,
-      errorId: `error-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`
+      errorId: `error`
     }
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo): void {
-    console.error("Error caught by ErrorBoundary:", error, errorInfo)
-
     // Call custom error handler if provided
     if (this.props.onError) {
       this.props.onError(error, errorInfo)
@@ -41,9 +39,6 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
     // Log error details for debugging
     console.group(`🚨 Error Boundary Caught Error [${this.state.errorId}]`)
-    console.error('Error:', error.message)
-    console.error('Stack:', error.stack)
-    console.error('Component Stack:', errorInfo.componentStack)
     console.groupEnd()
   }
 

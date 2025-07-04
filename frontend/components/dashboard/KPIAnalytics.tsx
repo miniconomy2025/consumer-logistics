@@ -3,12 +3,10 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   DollarSign,
   Package,
-  Users,
   TrendingUp,
   TrendingDown,
   Activity,
@@ -55,14 +53,8 @@ export function KPIAnalytics({ dateRange }: KPIAnalyticsProps) {
       {/* Pickup KPIs */}
       <PickupKPIs kpis={kpis} />
       
-      {/* Company KPIs */}
-      <CompanyKPIs kpis={kpis} />
-      
       {/* Performance KPIs */}
       <PerformanceKPIs kpis={kpis} />
-      
-      {/* Period Information */}
-      <PeriodInformation kpis={kpis} />
     </div>
   );
 }
@@ -157,58 +149,6 @@ function PickupKPIs({ kpis }: { kpis: any }) {
   );
 }
 
-// Company KPIs Component
-function CompanyKPIs({ kpis }: { kpis: any }) {
-  const companyMetrics = [
-    {
-      title: "Total Companies",
-      value: formatNumber(kpis.totalCompanies),
-      growth: 0, // Not provided
-      icon: Users,
-      color: "purple",
-    },
-    {
-      title: "Active Companies",
-      value: formatNumber(kpis.activeCompanies),
-      growth: 0, // Not provided
-      icon: Activity,
-      color: "green",
-    },
-    {
-      title: "New Companies",
-      value: formatNumber(kpis.newCompanies),
-      growth: 0, // Not provided
-      icon: TrendingUp,
-      color: "blue",
-    },
-    {
-      title: "Retention Rate",
-      value: formatPercentage(kpis.companyRetentionRate),
-      growth: 0, // Not provided
-      icon: Target,
-      color: "orange",
-    },
-  ];
-
-  return (
-    <Card className="border-slate-200 shadow-sm">
-      <CardHeader>
-        <CardTitle className="text-lg font-semibold flex items-center gap-2">
-          <Users className="h-5 w-5 text-purple-600" />
-          Company Metrics
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {companyMetrics.map((metric, index) => (
-            <KPICard key={index} metric={metric} />
-          ))}
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
 // Performance KPIs Component
 function PerformanceKPIs({ kpis }: { kpis: any }) {
   const performanceMetrics = [
@@ -254,44 +194,7 @@ function PerformanceKPIs({ kpis }: { kpis: any }) {
   );
 }
 
-// Period Information Component
-function PeriodInformation({ kpis }: { kpis: any }) {
-  return (
-    <Card className="border-slate-200 shadow-sm">
-      <CardHeader>
-        <CardTitle className="text-lg font-semibold">Period Information</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-          <div>
-            <h4 className="font-medium text-slate-900 mb-2">Current Period</h4>
-            <div className="space-y-1">
-              <p className="text-sm text-slate-600">
-                <span className="font-medium">Start:</span> {kpis.periodStart || 'Not specified'}
-              </p>
-              <p className="text-sm text-slate-600">
-                <span className="font-medium">End:</span> {kpis.periodEnd || 'Not specified'}
-              </p>
-            </div>
-          </div>
-          <div>
-            <h4 className="font-medium text-slate-900 mb-2">Comparison Period</h4>
-            <div className="space-y-1">
-              <p className="text-sm text-slate-600">
-                <span className="font-medium">Start:</span> {kpis.comparisonPeriodStart || 'Not specified'}
-              </p>
-              <p className="text-sm text-slate-600">
-                <span className="font-medium">End:</span> {kpis.comparisonPeriodEnd || 'Not specified'}
-              </p>
-            </div>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-// Reusable KPI Card Component
+// KPI Card Component
 function KPICard({ metric }: { metric: any }) {
   const Icon = metric.icon;
   const growthColor = getGrowthColor(metric.growth);

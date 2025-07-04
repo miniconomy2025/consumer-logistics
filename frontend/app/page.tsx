@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ErrorBoundary } from "@/components/common/ErrorBoundary";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -24,7 +24,8 @@ import { useAnalyticsDateRange, useAnalyticsRefresh, useAnalyticsHealth, useAnal
 
 export default function AnalyticsPage() {
   const [activeTab, setActiveTab] = useState("dashboard");
-  
+  const [currentTime, setCurrentTime] = useState<string>('');
+
   // Date range management
   const { dateRange, setDateRange } = useAnalyticsDateRange();
   
@@ -37,10 +38,15 @@ export default function AnalyticsPage() {
   // Export functionality
   const { mutate: exportData, loading: isExporting } = useAnalyticsExport();
 
+  // Set current time on client side to prevent hydration mismatch
+  useEffect(() => {
+    setCurrentTime(new Date().toLocaleString());
+  }, []);
+
   const handleDateRangeChange = (range: string) => {
     const now = new Date();
     let dateFrom: string;
-    let dateTo = now.toISOString().split('T')[0];
+    const dateTo = now.toISOString().split('T')[0];
 
     switch (range) {
       case 'last7Days':
@@ -60,14 +66,6 @@ export default function AnalyticsPage() {
     }
 
     setDateRange({ dateFrom, dateTo });
-  };
-
-  const handleExport = async (format: string) => {
-    try {
-      await exportData({ reportType: activeTab, format });
-    } catch (error) {
-      console.error('Export failed:', error);
-    }
   };
 
   return (
@@ -112,19 +110,7 @@ export default function AnalyticsPage() {
                 </SelectContent>
               </Select>
             </ClientOnly>
-            
-            {/* Export Button */}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handleExport('json')}
-              disabled={isExporting}
-              className="flex items-center gap-2"
-            >
-              <Download className="h-4 w-4" />
-              {isExporting ? 'Exporting...' : 'Export'}
-            </Button>
-            
+                  
             {/* Refresh Button */}
             <Button
               variant="outline"
@@ -156,7 +142,6 @@ export default function AnalyticsPage() {
           <TabsContent value="dashboard" className="space-y-6">
             <ErrorBoundary
               resetKeys={[dateRange.dateFrom, dateRange.dateTo]}
-              onError={(error) => console.error('Dashboard Analytics Error:', error)}
             >
               <AnalyticsDashboard dateRange={dateRange} />
             </ErrorBoundary>
@@ -166,33 +151,11 @@ export default function AnalyticsPage() {
           <TabsContent value="kpis" className="space-y-6">
             <ErrorBoundary
               resetKeys={[dateRange.dateFrom, dateRange.dateTo]}
-              onError={(error) => console.error('KPI Analytics Error:', error)}
             >
               <KPIAnalytics dateRange={dateRange} />
             </ErrorBoundary>
           </TabsContent>
         </Tabs>
-
-        {/* Footer Information */}
-        <div className="border-t border-slate-200 pt-6">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 text-sm text-slate-500">
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <Calendar className="h-4 w-4" />
-                <span>
-                  Data from {dateRange.dateFrom} to {dateRange.dateTo}
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Activity className="h-4 w-4" />
-                <span>Real-time updates</span>
-              </div>
-            </div>
-            <div className="text-xs">
-              Last updated: {new Date().toLocaleString()}
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );
