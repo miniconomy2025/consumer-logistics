@@ -17,10 +17,18 @@ import {
 } from "lucide-react";
 import { useKPIAnalytics } from "@/lib/hooks/useDashboard";
 import { formatCurrency, formatNumber, formatGrowth, getGrowthColor, formatPercentage } from "@/lib/utils/formatters";
-import { AnalyticsQueryParams } from "@/lib/types/api";
+import { AnalyticsQueryParams, KPIAnalyticsResponse } from "@/lib/types/api";
 
 interface KPIAnalyticsProps {
   dateRange?: AnalyticsQueryParams;
+}
+
+interface KPIMetric {
+  title: string;
+  value: string;
+  growth: number;
+  icon: React.ComponentType<{ className?: string }>;
+  color: string;
 }
 
 export function KPIAnalytics({ dateRange }: KPIAnalyticsProps) {
@@ -60,7 +68,7 @@ export function KPIAnalytics({ dateRange }: KPIAnalyticsProps) {
 }
 
 // Revenue KPIs Component
-function RevenueKPIs({ kpis }: { kpis: any }) {
+function RevenueKPIs({ kpis }: { kpis: KPIAnalyticsResponse }) {
   const revenueMetrics = [
     {
       title: "Total Revenue",
@@ -105,7 +113,7 @@ function RevenueKPIs({ kpis }: { kpis: any }) {
 }
 
 // Pickup KPIs Component
-function PickupKPIs({ kpis }: { kpis: any }) {
+function PickupKPIs({ kpis }: { kpis: KPIAnalyticsResponse }) {
   const pickupMetrics = [
     {
       title: "Total Pickups",
@@ -150,7 +158,7 @@ function PickupKPIs({ kpis }: { kpis: any }) {
 }
 
 // Performance KPIs Component
-function PerformanceKPIs({ kpis }: { kpis: any }) {
+function PerformanceKPIs({ kpis }: { kpis: KPIAnalyticsResponse }) {
   const performanceMetrics = [
     {
       title: "Avg Processing Time",
@@ -195,7 +203,7 @@ function PerformanceKPIs({ kpis }: { kpis: any }) {
 }
 
 // KPI Card Component
-function KPICard({ metric }: { metric: any }) {
+function KPICard({ metric }: { metric: KPIMetric }) {
   const Icon = metric.icon;
   const growthColor = getGrowthColor(metric.growth);
   const GrowthIcon = metric.growth >= 0 ? TrendingUp : TrendingDown;

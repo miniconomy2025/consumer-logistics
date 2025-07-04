@@ -33,7 +33,6 @@ export function useApi<T>(
       setData(result);
     } catch (err) {
       setError(getErrorMessage(err));
-      console.error('API call failed:', err);
     } finally {
       setLoading(false);
     }
@@ -84,7 +83,6 @@ export function useMutation<T, V = unknown>(
     } catch (err) {
       const errorMessage = getErrorMessage(err);
       setError(errorMessage);
-      console.error('Mutation failed:', err);
       return null;
     } finally {
       setLoading(false);
@@ -161,7 +159,6 @@ export function usePaginatedApi<T>(
       setHasPrev(result.pagination.hasPrev);
     } catch (err) {
       setError(getErrorMessage(err));
-      console.error('Paginated API call failed:', err);
     } finally {
       setLoading(false);
     }
@@ -238,7 +235,6 @@ export function useSearch<T>(
       setData(results);
     } catch (err) {
       setError(getErrorMessage(err));
-      console.error('Search failed:', err);
     } finally {
       setLoading(false);
     }
@@ -303,7 +299,6 @@ export function useOptimistic<T extends { id?: string | number }>(
       setData(result);
     } catch (err) {
       setError(getErrorMessage(err));
-      console.error('Fetch failed:', err);
     } finally {
       setLoading(false);
     }

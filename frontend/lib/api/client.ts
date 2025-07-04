@@ -128,7 +128,6 @@ export async function apiRequest<T>(
       );
     }
     
-    console.log(`[API] ${method} ${url} - Success`);
     return responseData as T;
     
   } catch (error) {

@@ -47,16 +47,16 @@ export function safeGet<T>(obj: unknown, path: string, fallback: T): T {
   }
   
   const keys = path.split('.');
-  let current: any = obj;
+  let current: unknown = obj;
   
   for (const key of keys) {
-    if (current === null || current === undefined || !(key in current)) {
+    if (current === null || current === undefined || typeof current !== 'object' || !(key in current)) {
       return fallback;
     }
-    current = current[key];
+    current = (current as Record<string, unknown>)[key];
   }
-  
-  return current !== undefined ? current : fallback;
+
+  return current !== undefined ? (current as T) : fallback;
 }
 
 /**
@@ -98,18 +98,18 @@ export function formatApiError(error: unknown): string {
   }
   
   if (error && typeof error === 'object') {
-    const errorObj = error as any;
+    const errorObj = error as Record<string, unknown>;
     
     // Check for common error message properties
-    if (errorObj.message) {
+    if (errorObj.message && typeof errorObj.message === 'string') {
       return errorObj.message;
     }
-    
+
     if (errorObj.error) {
       return typeof errorObj.error === 'string' ? errorObj.error : 'An error occurred';
     }
-    
-    if (errorObj.details) {
+
+    if (errorObj.details && typeof errorObj.details === 'string') {
       return errorObj.details;
     }
   }

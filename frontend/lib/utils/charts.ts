@@ -79,23 +79,23 @@ export const defaultTooltipConfig = {
 /**
  * Transform API data for line charts
  */
-export function transformLineChartData<T extends Record<string, any>>(
+export function transformLineChartData<T extends Record<string, unknown>>(
   data: T[],
   xKey: keyof T,
   yKey: keyof T,
   nameKey?: keyof T
 ): Array<{ x: string | number; y: number; name?: string }> {
   return data.map(item => ({
-    x: item[xKey],
+    x: item[xKey] as string | number,
     y: Number(item[yKey]) || 0,
-    ...(nameKey && { name: item[nameKey] }),
+    ...(nameKey && { name: String(item[nameKey]) }),
   }));
 }
 
 /**
  * Transform API data for pie charts
  */
-export function transformPieChartData<T extends Record<string, any>>(
+export function transformPieChartData<T extends Record<string, unknown>>(
   data: T[],
   nameKey: keyof T,
   valueKey: keyof T
@@ -115,7 +115,7 @@ export function transformPieChartData<T extends Record<string, any>>(
 /**
  * Transform API data for bar charts
  */
-export function transformBarChartData<T extends Record<string, any>>(
+export function transformBarChartData<T extends Record<string, unknown>>(
   data: T[],
   categoryKey: keyof T,
   valueKeys: (keyof T)[]
@@ -136,7 +136,7 @@ export function transformBarChartData<T extends Record<string, any>>(
 /**
  * Transform API data for area charts
  */
-export function transformAreaChartData<T extends Record<string, any>>(
+export function transformAreaChartData<T extends Record<string, unknown>>(
   data: T[],
   xKey: keyof T,
   yKeys: (keyof T)[]

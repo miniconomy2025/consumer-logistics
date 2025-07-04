@@ -26,7 +26,7 @@ import {
 } from "lucide-react";
 import { useTrendAnalytics } from "@/lib/hooks/useDashboard";
 import { formatCurrency, formatNumber } from "@/lib/utils/formatters";
-import { AnalyticsQueryParams } from "@/lib/types/api";
+import { AnalyticsQueryParams, MonthlyRevenueItem, CompanyTrendItem, StatusTrendItem, SeasonalPatternsData } from "@/lib/types/api";
 
 interface TrendAnalyticsProps {
   dateRange?: AnalyticsQueryParams;
@@ -72,7 +72,7 @@ export function TrendAnalytics({ dateRange }: TrendAnalyticsProps) {
 }
 
 // Revenue Trend Chart Component
-function RevenueTrendChart({ data }: { data: any[] }) {
+function RevenueTrendChart({ data }: { data: MonthlyRevenueItem[] }) {
   if (!data || data.length === 0) {
     return (
       <Card className="border-slate-200 shadow-sm">
@@ -112,8 +112,8 @@ function RevenueTrendChart({ data }: { data: any[] }) {
                 tick={{ fontSize: 12 }}
                 tickFormatter={(value) => formatCurrency(value, 0)}
               />
-              <Tooltip 
-                formatter={(value: any) => [formatCurrency(value), 'Revenue']}
+              <Tooltip
+                formatter={(value: number) => [formatCurrency(value), 'Revenue']}
                 labelFormatter={(label) => `Month: ${label}`}
                 contentStyle={{
                   backgroundColor: 'white',
@@ -138,7 +138,7 @@ function RevenueTrendChart({ data }: { data: any[] }) {
 }
 
 // Company Trends Chart Component
-function CompanyTrendsChart({ data }: { data: any[] }) {
+function CompanyTrendsChart({ data }: { data: CompanyTrendItem[] }) {
   if (!data || data.length === 0) {
     return (
       <Card className="border-slate-200 shadow-sm">
@@ -159,8 +159,8 @@ function CompanyTrendsChart({ data }: { data: any[] }) {
   const topCompanies = data.slice(0, 5);
   const chartData = topCompanies.map(company => ({
     companyName: company.companyName,
-    totalRevenue: company.monthlyData?.reduce((sum: number, month: any) => sum + month.revenue, 0) || 0,
-    totalPickups: company.monthlyData?.reduce((sum: number, month: any) => sum + month.pickups, 0) || 0,
+    totalRevenue: company.monthlyData?.reduce((sum: number, month) => sum + month.revenue, 0) || 0,
+    totalPickups: company.monthlyData?.reduce((sum: number, month) => sum + month.pickups, 0) || 0,
   }));
 
   return (
@@ -189,8 +189,8 @@ function CompanyTrendsChart({ data }: { data: any[] }) {
                 tick={{ fontSize: 12 }}
                 tickFormatter={(value) => formatCurrency(value, 0)}
               />
-              <Tooltip 
-                formatter={(value: any, name: string) => [
+              <Tooltip
+                formatter={(value: number, name: string) => [
                   name === 'totalRevenue' ? formatCurrency(value) : formatNumber(value),
                   name === 'totalRevenue' ? 'Revenue' : 'Pickups'
                 ]}
@@ -211,7 +211,7 @@ function CompanyTrendsChart({ data }: { data: any[] }) {
 }
 
 // Status Trends Chart Component
-function StatusTrendsChart({ data }: { data: any[] }) {
+function StatusTrendsChart({ data }: { data: StatusTrendItem[] }) {
   if (!data || data.length === 0) {
     return (
       <Card className="border-slate-200 shadow-sm">
@@ -231,7 +231,7 @@ function StatusTrendsChart({ data }: { data: any[] }) {
   // Transform data for pie chart
   const pieData = data.map((status, index) => ({
     name: status.statusName,
-    value: status.monthlyData?.reduce((sum: number, month: any) => sum + month.count, 0) || 0,
+    value: status.monthlyData?.reduce((sum: number, month) => sum + month.count, 0) || 0,
     color: getStatusColor(index),
   }));
 
@@ -254,17 +254,17 @@ function StatusTrendsChart({ data }: { data: any[] }) {
                 cx="50%"
                 cy="50%"
                 labelLine={false}
-                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                label={({ name, percent }) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
                 outerRadius={80}
                 fill="#8884d8"
                 dataKey="value"
               >
-                {pieData.map((entry, index) => (
+                {pieData.map((_, index) => (
                   <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                 ))}
               </Pie>
-              <Tooltip 
-                formatter={(value: any) => [formatNumber(value), 'Count']}
+              <Tooltip
+                formatter={(value: number) => [formatNumber(value), 'Count']}
                 contentStyle={{
                   backgroundColor: 'white',
                   border: '1px solid #e2e8f0',
@@ -280,7 +280,7 @@ function StatusTrendsChart({ data }: { data: any[] }) {
 }
 
 // Seasonal Patterns Chart Component
-function SeasonalPatternsChart({ data }: { data: any }) {
+function SeasonalPatternsChart({ data }: { data: SeasonalPatternsData }) {
   if (!data || (!data.quarterlyRevenue && !data.monthlyAverages)) {
     return (
       <Card className="border-slate-200 shadow-sm">
@@ -322,8 +322,8 @@ function SeasonalPatternsChart({ data }: { data: any }) {
                 tick={{ fontSize: 12 }}
                 tickFormatter={(value) => formatCurrency(value, 0)}
               />
-              <Tooltip 
-                formatter={(value: any) => [formatCurrency(value), 'Revenue']}
+              <Tooltip
+                formatter={(value: number) => [formatCurrency(value), 'Revenue']}
                 labelFormatter={(label) => `Quarter: ${label}`}
                 contentStyle={{
                   backgroundColor: 'white',

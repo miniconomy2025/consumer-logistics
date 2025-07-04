@@ -1,16 +1,14 @@
 "use client";
 
-import { useState, useEffect } from 'react';
-import { ErrorBoundary } from "@/components/common/ErrorBoundary";
+import { useState } from 'react';
+import { ErrorBoundary } from "@/components/error-boundary";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import {
-  Calendar,
   Activity,
   RefreshCw,
   BarChart3,
-  Download,
   AlertCircle,
 } from "lucide-react";
 
@@ -20,28 +18,19 @@ import { KPIAnalytics } from "@/components/dashboard/KPIAnalytics";
 import { ClientOnly } from "@/components/common/ClientOnly";
 
 // Import hooks
-import { useAnalyticsDateRange, useAnalyticsRefresh, useAnalyticsHealth, useAnalyticsExport } from "@/lib/hooks/useDashboard";
+import { useAnalyticsDateRange, useAnalyticsRefresh, useAnalyticsHealth } from "@/lib/hooks/useDashboard";
 
 export default function AnalyticsPage() {
   const [activeTab, setActiveTab] = useState("dashboard");
-  const [currentTime, setCurrentTime] = useState<string>('');
 
   // Date range management
   const { dateRange, setDateRange } = useAnalyticsDateRange();
-  
+
   // Refresh functionality
   const { isRefreshing, refresh } = useAnalyticsRefresh();
-  
+
   // Health monitoring
   const { data: health, error: healthError } = useAnalyticsHealth();
-  
-  // Export functionality
-  const { mutate: exportData, loading: isExporting } = useAnalyticsExport();
-
-  // Set current time on client side to prevent hydration mismatch
-  useEffect(() => {
-    setCurrentTime(new Date().toLocaleString());
-  }, []);
 
   const handleDateRangeChange = (range: string) => {
     const now = new Date();
@@ -141,7 +130,7 @@ export default function AnalyticsPage() {
           {/* Dashboard Tab */}
           <TabsContent value="dashboard" className="space-y-6">
             <ErrorBoundary
-              resetKeys={[dateRange.dateFrom, dateRange.dateTo]}
+              resetKeys={[dateRange.dateFrom, dateRange.dateTo].filter(Boolean) as string[]}
             >
               <AnalyticsDashboard dateRange={dateRange} />
             </ErrorBoundary>
@@ -150,7 +139,7 @@ export default function AnalyticsPage() {
           {/* KPIs Tab */}
           <TabsContent value="kpis" className="space-y-6">
             <ErrorBoundary
-              resetKeys={[dateRange.dateFrom, dateRange.dateTo]}
+              resetKeys={[dateRange.dateFrom, dateRange.dateTo].filter(Boolean) as string[]}
             >
               <KPIAnalytics dateRange={dateRange} />
             </ErrorBoundary>

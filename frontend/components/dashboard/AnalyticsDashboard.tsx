@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { useDashboardAnalytics } from "@/lib/hooks/useDashboard";
 import { formatCurrency, formatNumber, formatGrowth, getGrowthColor } from "@/lib/utils/formatters";
-import { AnalyticsQueryParams } from "@/lib/types/api";
+import { AnalyticsQueryParams, DashboardAnalyticsResponse, RecentPickupItem, TopCompanyItem, StatusDistributionItem } from "@/lib/types/api";
 
 interface AnalyticsDashboardProps {
   dateRange?: AnalyticsQueryParams;
@@ -66,7 +66,7 @@ export function AnalyticsDashboard({ dateRange }: AnalyticsDashboardProps) {
 }
 
 // KPI Cards Component
-function AnalyticsKPICards({ analytics }: { analytics: any }) {
+function AnalyticsKPICards({ analytics }: { analytics: DashboardAnalyticsResponse }) {
   const kpiCards = [
     {
       title: "Total Revenue",
@@ -136,7 +136,7 @@ function AnalyticsKPICards({ analytics }: { analytics: any }) {
 }
 
 // Secondary Metrics Component
-function AnalyticsSecondaryMetrics({ analytics }: { analytics: any }) {
+function AnalyticsSecondaryMetrics({ analytics }: { analytics: DashboardAnalyticsResponse }) {
   const secondaryMetrics = [
     {
       title: "Pending Pickups",
@@ -188,7 +188,7 @@ function AnalyticsSecondaryMetrics({ analytics }: { analytics: any }) {
 }
 
 // Recent Pickups Card Component
-function RecentPickupsCard({ pickups }: { pickups: any[] }) {
+function RecentPickupsCard({ pickups }: { pickups: RecentPickupItem[] }) {
   return (
     <Card className="border-slate-200 shadow-sm">
       <CardHeader>
@@ -221,7 +221,7 @@ function RecentPickupsCard({ pickups }: { pickups: any[] }) {
 }
 
 // Top Companies Card Component
-function TopCompaniesCard({ companies }: { companies: any[] }) {
+function TopCompaniesCard({ companies }: { companies: TopCompanyItem[] }) {
   return (
     <Card className="border-slate-200 shadow-sm">
       <CardHeader>
@@ -252,7 +252,7 @@ function TopCompaniesCard({ companies }: { companies: any[] }) {
 }
 
 // Status Distribution Card Component
-function StatusDistributionCard({ statusData }: { statusData: any[] }) {
+function StatusDistributionCard({ statusData }: { statusData: StatusDistributionItem[] }) {
   return (
     <Card className="border-slate-200 shadow-sm">
       <CardHeader>

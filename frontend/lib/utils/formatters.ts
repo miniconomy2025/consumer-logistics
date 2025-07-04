@@ -45,11 +45,11 @@ export function formatCurrencyCompact(
   locale: string = 'en-ZA'
 ): string {
   if (amount >= 1000000) {
-    return `${formatCurrency(amount / 1000000, currency, locale).replace(/[^\d.,\s\w]/g, '')}M ${currency}`;
+    return `${formatCurrency(amount / 1000000, 2, currency, locale).replace(/[^\d.,\s\w]/g, '')}M ${currency}`;
   } else if (amount >= 1000) {
-    return `${formatCurrency(amount / 1000, currency, locale).replace(/[^\d.,\s\w]/g, '')}K ${currency}`;
+    return `${formatCurrency(amount / 1000, 2, currency, locale).replace(/[^\d.,\s\w]/g, '')}K ${currency}`;
   }
-  return formatCurrency(amount, currency, locale);
+  return formatCurrency(amount, 2, currency, locale);
 }
 
 // ============================================================================
@@ -302,7 +302,7 @@ export function formatChartAxisLabel(value: number, type: 'currency' | 'number' 
  * Format table cell values based on column type
  */
 export function formatTableCell(
-  value: any,
+  value: unknown,
   type: 'currency' | 'number' | 'percentage' | 'date' | 'status' | 'text' = 'text'
 ): string {
   if (value === null || value === undefined) {
@@ -317,7 +317,7 @@ export function formatTableCell(
     case 'percentage':
       return formatPercentage(Number(value));
     case 'date':
-      return formatDate(value);
+      return formatDate(value as string | Date);
     case 'status':
       return String(value);
     case 'text':
@@ -333,22 +333,26 @@ export function formatTableCell(
 /**
  * Check if a value is a valid number
  */
-export function isValidNumber(value: any): boolean {
+export function isValidNumber(value: unknown): boolean {
   return !isNaN(Number(value)) && isFinite(Number(value));
 }
 
 /**
  * Check if a value is a valid date
  */
-export function isValidDate(value: any): boolean {
-  const date = new Date(value);
-  return date instanceof Date && !isNaN(date.getTime());
+export function isValidDate(value: unknown): boolean {
+  try {
+    const date = new Date(value as string | number | Date);
+    return date instanceof Date && !isNaN(date.getTime());
+  } catch {
+    return false;
+  }
 }
 
 /**
  * Safely parse number with fallback
  */
-export function safeParseNumber(value: any, fallback: number = 0): number {
+export function safeParseNumber(value: unknown, fallback: number = 0): number {
   const parsed = Number(value);
   return isValidNumber(parsed) ? parsed : fallback;
 }
@@ -357,9 +361,9 @@ export function safeParseNumber(value: any, fallback: number = 0): number {
  * Safely parse date with fallback
  * Note: Should be used client-side only to prevent hydration mismatches
  */
-export function safeParseDate(value: any, fallback?: Date): Date {
+export function safeParseDate(value: unknown, fallback?: Date): Date {
   if (isValidDate(value)) {
-    return new Date(value);
+    return new Date(value as string | number | Date);
   }
   return fallback || new Date();
 }

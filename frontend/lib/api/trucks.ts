@@ -219,8 +219,7 @@ export async function getFleetSummary(): Promise<{
       averageDailyCost: totalDailyCost / totalTrucks || 0,
       typeDistribution,
     };
-  } catch (error) {
-    console.error('Error getting fleet summary:', error);
+  } catch {
     return {
       totalTrucks: 0,
       totalCapacity: 0,
@@ -241,33 +240,7 @@ export async function checkTruckTypeNameAvailability(name: string): Promise<bool
     return !truckTypes.truckTypes.some(
       type => type.truckTypeName.toLowerCase() === name.toLowerCase()
     );
-  } catch (error) {
-    console.error('Error checking truck type name availability:', error);
+  } catch {
     return false;
   }
-}
-
-// ============================================================================
-// BATCH OPERATIONS
-// ============================================================================
-
-/**
- * Create multiple trucks
- */
-export async function createMultipleTrucks(
-  trucks: CreateTruckRequest[]
-): Promise<TruckResponse[]> {
-  const results: TruckResponse[] = [];
-  
-  for (const truck of trucks) {
-    try {
-      const result = await createTruck(truck);
-      results.push(result);
-    } catch (error) {
-      console.error(`Error creating truck:`, error);
-      // Continue with other trucks
-    }
-  }
-  
-  return results;
 }

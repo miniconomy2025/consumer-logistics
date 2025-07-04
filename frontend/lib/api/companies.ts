@@ -65,7 +65,7 @@ export async function deleteCompany(id: number): Promise<void> {
  * Get top performing companies
  * TODO: Replace with actual API call when backend analytics endpoints are implemented
  */
-export async function getTopPerformers(params?: {
+export async function getTopPerformers(_params?: {
   limit?: number;
   dateFrom?: string;
   dateTo?: string;
