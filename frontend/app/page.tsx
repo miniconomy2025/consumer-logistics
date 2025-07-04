@@ -10,8 +10,6 @@ import {
   Activity,
   RefreshCw,
   BarChart3,
-  TrendingUp,
-  Settings,
   Download,
   AlertCircle,
 } from "lucide-react";
@@ -19,8 +17,6 @@ import {
 // Import analytics components
 import { AnalyticsDashboard } from "@/components/dashboard/AnalyticsDashboard";
 import { KPIAnalytics } from "@/components/dashboard/KPIAnalytics";
-import { TrendAnalytics } from "@/components/dashboard/TrendAnalytics";
-import { OperationalAnalytics } from "@/components/dashboard/OperationalAnalytics";
 import { ClientOnly } from "@/components/common/ClientOnly";
 
 // Import hooks
@@ -145,22 +141,14 @@ export default function AnalyticsPage() {
 
         {/* Analytics Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="dashboard" className="flex items-center gap-2">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-2">
+            <TabsTrigger value="dashboard" className="flex-1 flex items-center justify-center gap-2">
               <BarChart3 className="h-4 w-4" />
               Dashboard
             </TabsTrigger>
-            <TabsTrigger value="kpis" className="flex items-center gap-2">
+            <TabsTrigger value="kpis" className="flex-1 flex items-center justify-center gap-2">
               <Activity className="h-4 w-4" />
               KPIs
-            </TabsTrigger>
-            <TabsTrigger value="trends" className="flex items-center gap-2">
-              <TrendingUp className="h-4 w-4" />
-              Trends
-            </TabsTrigger>
-            <TabsTrigger value="operational" className="flex items-center gap-2">
-              <Settings className="h-4 w-4" />
-              Operations
             </TabsTrigger>
           </TabsList>
 
@@ -181,26 +169,6 @@ export default function AnalyticsPage() {
               onError={(error) => console.error('KPI Analytics Error:', error)}
             >
               <KPIAnalytics dateRange={dateRange} />
-            </ErrorBoundary>
-          </TabsContent>
-
-          {/* Trends Tab */}
-          <TabsContent value="trends" className="space-y-6">
-            <ErrorBoundary
-              resetKeys={[dateRange.dateFrom, dateRange.dateTo]}
-              onError={(error) => console.error('Trend Analytics Error:', error)}
-            >
-              <TrendAnalytics dateRange={dateRange} />
-            </ErrorBoundary>
-          </TabsContent>
-
-          {/* Operational Tab */}
-          <TabsContent value="operational" className="space-y-6">
-            <ErrorBoundary
-              resetKeys={[dateRange.dateFrom, dateRange.dateTo]}
-              onError={(error) => console.error('Operational Analytics Error:', error)}
-            >
-              <OperationalAnalytics dateRange={dateRange} />
             </ErrorBoundary>
           </TabsContent>
         </Tabs>
