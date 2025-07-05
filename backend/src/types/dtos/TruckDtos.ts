@@ -1,15 +1,12 @@
-// Request DTO for creating a Truck Type
 export interface CreateTruckTypeRequest {
   truckTypeName: string;
 }
 
-// Response DTO for a Truck Type
 export interface TruckTypeResponse {
   truckTypeId: number;
   truckTypeName: string;
 }
 
-// Request DTO for creating a Truck
 export interface CreateTruckRequest {
   truckTypeId: number;
   maxPickups: number;
@@ -18,11 +15,9 @@ export interface CreateTruckRequest {
   maxCapacity: number;
 }
 
-// Request DTO for updating a Truck
 export interface UpdateTruckRequest extends Partial<CreateTruckRequest> {}
 
 
-// Response DTO for a Truck (includes related truck type info)
 export interface TruckResponse {
   truckId: number;
   truckTypeId: number;
@@ -37,7 +32,6 @@ export interface TruckResponse {
 
 }
 
-// Generic list response
 export interface TrucksListResponse {
   message: string;
   totalCount: number;

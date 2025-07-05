@@ -9,7 +9,6 @@ export interface ITruckRepository {
   update(id: number, truck: Partial<TruckEntity>): Promise<TruckEntity | null>;
   delete(id: number): Promise<boolean>;
 
-  // TruckType specific operations
   findTruckTypeById(id: number): Promise<TruckTypeEntity | null>;
   findTruckTypeByName(name: string): Promise<TruckTypeEntity | null>;
   findAllTruckTypes(): Promise<TruckTypeEntity[]>;

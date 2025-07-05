@@ -1,12 +1,13 @@
 import { Router } from 'express';
-import { PickupController } from '../controllers/pickupController';
+import { WebhookController } from '../controllers/webhookController';
+import { FinancialNotificationService } from '../services/financialNotificationService';
 import { PickupService } from '../services/pickupService';
+import { LogisticsPlanningService } from '../services/logisticsPlanningService';
+import { SimulationService } from '../services/simulationService';
 import { PickupRepository } from '../repositories/implementations/PickupRepository';
 import { CompanyRepository } from '../repositories/implementations/CompanyRepository';
-import { SimulationService } from '../services/simulationService';
-import { LogisticsPlanningService } from '../services/logisticsPlanningService';
-import { TruckRepository } from '../repositories/implementations/TruckRepository';
 import { LogisticsDetailsRepository } from '../repositories/implementations/LogisticsDetailsRepository';
+import { TruckRepository } from '../repositories/implementations/TruckRepository';
 import { TruckAllocationRepository } from '../repositories/implementations/TruckAllocationRepository';
 import { sqsClient } from '../config/awsSqs';
 
@@ -35,11 +36,16 @@ const pickupService = new PickupService(
     logisticsPlanningService
 );
 
-const pickupController = new PickupController(pickupService); 
+const financialNotificationService = new FinancialNotificationService(
+    pickupService,
+    logisticsPlanningService,
+    simulationService
+);
+
+const webhookController = new WebhookController(financialNotificationService);
 
 const router = Router();
 
-router.post('/', pickupController.createPickup);
-router.get('/', pickupController.getPickupsForCompany); 
+router.post('/payment-updates', webhookController.handleCommercialBankPaymentNotification);
 
 export default router;
