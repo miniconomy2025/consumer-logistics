@@ -44,69 +44,6 @@ export class AnalyticsController {
   };
 
   // ============================================================================
-  // TREND ANALYTICS
-  // ============================================================================
-
-  public getTrendAnalytics = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const params: AnalyticsQueryParams = this.parseQueryParams(req.query);
-      
-      const trends = await this.analyticsService.getTrendAnalytics(params);
-      
-      res.status(200).json(trends);
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  // ============================================================================
-  // OPERATIONAL ANALYTICS
-  // ============================================================================
-
-  public getOperationalAnalytics = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const params: AnalyticsQueryParams = this.parseQueryParams(req.query);
-      
-      const operational = await this.analyticsService.getOperationalAnalytics(params);
-      
-      res.status(200).json(operational);
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  // ============================================================================
-  // COMBINED ANALYTICS (All-in-one endpoint)
-  // ============================================================================
-
-  public getAllAnalytics = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const params: AnalyticsQueryParams = this.parseQueryParams(req.query);
-      
-      // Get all analytics in parallel
-      const [dashboard, kpis, trends, operational] = await Promise.all([
-        this.analyticsService.getDashboardAnalytics(params),
-        this.analyticsService.getKPIAnalytics(params),
-        this.analyticsService.getTrendAnalytics(params),
-        this.analyticsService.getOperationalAnalytics(params),
-      ]);
-
-      const response = {
-        dashboard,
-        kpis,
-        trends,
-        operational,
-        generatedAt: new Date().toISOString(),
-        parameters: params,
-      };
-      
-      res.status(200).json(response);
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  // ============================================================================
   // HEALTH CHECK
   // ============================================================================
 

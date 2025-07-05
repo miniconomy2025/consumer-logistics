@@ -91,7 +91,23 @@ export class TruckRepository implements ITruckRepository {
     }
   }
 
-
+  async updateTruckType(id: number, type: Partial<TruckTypeEntity>): Promise<TruckTypeEntity | null> {
+    logger.info(`Attempting to update truck type with ID: ${id}.`);
+    const existingType = await this.ormTruckTypeRepository.findOneBy({ truck_type_id: id });
+    if (!existingType) {
+      return null;
+    }
+    this.ormTruckTypeRepository.merge(existingType, type);
+    try {
+      return await this.ormTruckTypeRepository.save(existingType);
+    } catch (error: any) {
+      if (error.code === '23505' && error.detail.includes('truck_type_name')) {
+        throw new AppError('Another truck type with this name already exists.', 409);
+      }
+      logger.error('Error updating truck type:', error);
+      throw new AppError('Failed to update truck type due to a database error.', 500);
+    }
+  }
 
   async deleteTruckType(id: number): Promise<boolean> {
     logger.info(`Attempting to delete truck type with ID: ${id}.`);

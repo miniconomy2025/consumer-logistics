@@ -1,48 +1,18 @@
-// Dashboard-specific React Hooks
-
 import { useState, useCallback, useMemo, useEffect } from 'react';
-import { useApi } from './useApi';
 import {
-  getDashboardKPIs,
-  getAnalyticsSummary,
-  getFleetAnalytics,
-  getRevenueTrends,
-  getPickupTrends,
   analyticsPresets,
 } from '../api/analytics';
-
-// Import enhanced analytics hooks
 import {
   useDashboardAnalytics as useEnhancedDashboardAnalytics,
   useKPIAnalytics as useEnhancedKPIAnalytics,
-  useTrendAnalytics as useEnhancedTrendAnalytics,
-  useCombinedAnalytics as useEnhancedCombinedAnalytics,
   useAnalyticsHealth as useEnhancedAnalyticsHealth,
-  useAnalyticsExport,
   useAnalyticsDateRange,
   useAnalyticsRefresh,
   useAnalyticsAggregation,
 } from './useAnalytics';
 import {
-  getCompanies,
-  getTopPerformers,
-} from '../api/companies';
-import {
-  getPickupAnalytics,
-  getRecentPickups,
-  getPendingPickups,
-} from '../api/pickups';
-import {
-  getTrucks,
-  getFleetSummary,
-} from '../api/trucks';
-import {
   AnalyticsQueryParams,
 } from '../types/api';
-
-// ============================================================================
-// NEW ANALYTICS HOOKS - UPDATED FOR BACKEND IMPLEMENTATION
-// ============================================================================
 
 /**
  * Hook for dashboard analytics - Main dashboard data
@@ -59,220 +29,13 @@ export function useKPIAnalytics(params?: AnalyticsQueryParams) {
 }
 
 /**
- * Hook for trend analytics - Historical trends and patterns
- */
-export function useTrendAnalytics(params?: AnalyticsQueryParams) {
-  return useEnhancedTrendAnalytics(params);
-}
-
-
-
-/**
- * Hook for combined analytics - All analytics in one call
- */
-export function useCombinedAnalytics(params?: AnalyticsQueryParams) {
-  return useEnhancedCombinedAnalytics(params);
-}
-
-/**
  * Hook for analytics health check
  */
 export function useAnalyticsHealth() {
   return useEnhancedAnalyticsHealth();
 }
 
-// Export enhanced analytics management hooks
-export { useAnalyticsExport, useAnalyticsDateRange, useAnalyticsRefresh, useAnalyticsAggregation };
-
-// ============================================================================
-// LEGACY DASHBOARD KPI HOOKS (BACKWARD COMPATIBILITY)
-// ============================================================================
-
-/**
- * Hook for dashboard KPIs (legacy - maps to new dashboard analytics)
- */
-export function useDashboardKPIs(params?: AnalyticsQueryParams) {
-  return useApi(
-    () => getDashboardKPIs(params),
-    [params?.dateFrom, params?.dateTo, params?.companyId, params?.truckTypeId]
-  );
-}
-
-/**
- * Hook for analytics summary
- */
-export function useAnalyticsSummary(params?: AnalyticsQueryParams) {
-  return useApi(
-    () => getAnalyticsSummary(params),
-    [params?.dateFrom, params?.dateTo, params?.companyId, params?.truckTypeId]
-  );
-}
-
-// ============================================================================
-// FLEET ANALYTICS HOOKS
-// ============================================================================
-
-/**
- * Hook for fleet analytics
- */
-export function useFleetAnalytics(params?: AnalyticsQueryParams) {
-  return useApi(
-    () => getFleetAnalytics(params),
-    [params?.dateFrom, params?.dateTo, params?.truckTypeId]
-  );
-}
-
-/**
- * Hook for fleet summary
- */
-export function useFleetSummary() {
-  return useApi(() => getFleetSummary());
-}
-
-/**
- * Hook for all trucks
- */
-export function useTrucks() {
-  return useApi(() => getTrucks());
-}
-
-// ============================================================================
-// COMPANY ANALYTICS HOOKS
-// ============================================================================
-
-/**
- * Hook for all companies
- */
-export function useCompanies(params?: {
-  includeStats?: boolean;
-  activeOnly?: boolean;
-  dateFrom?: string;
-  dateTo?: string;
-}) {
-  return useApi(
-    () => getCompanies(params),
-    [params?.includeStats, params?.activeOnly, params?.dateFrom, params?.dateTo]
-  );
-}
-
-/**
- * Hook for top performing companies
- */
-export function useTopPerformers(params?: {
-  limit?: number;
-  dateFrom?: string;
-  dateTo?: string;
-}) {
-  return useApi(
-    () => getTopPerformers(params),
-    [params?.limit, params?.dateFrom, params?.dateTo]
-  );
-}
-
-// ============================================================================
-// PICKUP ANALYTICS HOOKS
-// ============================================================================
-
-
-
-/**
- * Hook for pickup analytics
- */
-export function usePickupAnalytics(params?: {
-  dateFrom?: string;
-  dateTo?: string;
-  companyId?: number;
-}) {
-  return useApi(
-    () => getPickupAnalytics(params),
-    [params?.dateFrom, params?.dateTo, params?.companyId]
-  );
-}
-
-/**
- * Hook for recent pickups
- */
-export function useRecentPickups(limit: number = 10) {
-  return useApi(
-    () => getRecentPickups(limit),
-    [limit]
-  );
-}
-
-/**
- * Hook for pending pickups
- */
-export function usePendingPickups() {
-  return useApi(() => getPendingPickups());
-}
-
-// ============================================================================
-// TREND ANALYTICS HOOKS
-// ============================================================================
-
-/**
- * Hook for revenue trends
- */
-export function useRevenueTrends(params?: {
-  dateFrom?: string;
-  dateTo?: string;
-  period?: 'daily' | 'weekly' | 'monthly';
-}) {
-  return useApi(
-    () => getRevenueTrends(params),
-    [params?.dateFrom, params?.dateTo, params?.period]
-  );
-}
-
-/**
- * Hook for pickup trends
- */
-export function usePickupTrends(params?: {
-  dateFrom?: string;
-  dateTo?: string;
-  period?: 'daily' | 'weekly' | 'monthly';
-}) {
-  return useApi(
-    () => getPickupTrends(params),
-    [params?.dateFrom, params?.dateTo, params?.period]
-  );
-}
-
-// ============================================================================
-// PRESET ANALYTICS HOOKS
-// ============================================================================
-
-/**
- * Hook for last 7 days analytics
- */
-export function useLast7DaysAnalytics() {
-  const dateRange = analyticsPresets.last7Days();
-  return useDashboardKPIs(dateRange);
-}
-
-/**
- * Hook for last 30 days analytics
- */
-export function useLast30DaysAnalytics() {
-  const dateRange = analyticsPresets.last30Days();
-  return useDashboardKPIs(dateRange);
-}
-
-/**
- * Hook for current month analytics
- */
-export function useCurrentMonthAnalytics() {
-  const dateRange = analyticsPresets.currentMonth();
-  return useDashboardKPIs(dateRange);
-}
-
-/**
- * Hook for current year analytics
- */
-export function useCurrentYearAnalytics() {
-  const dateRange = analyticsPresets.currentYear();
-  return useDashboardKPIs(dateRange);
-}
+export { useAnalyticsDateRange, useAnalyticsRefresh, useAnalyticsAggregation };
 
 // ============================================================================
 // DASHBOARD STATE MANAGEMENT

@@ -1,17 +1,12 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
-import { useApi, UseMutationState, useMutation } from './useApi';
+import { useApi } from './useApi';
 import {
   getDashboardAnalytics,
   getKPIAnalytics,
-  getTrendAnalytics,
-  getOperationalAnalytics,
-  getCombinedAnalytics,
   getAnalyticsHealth,
-  exportAnalytics,
 } from '../api/analytics';
 import {
   AnalyticsQueryParams,
-  ExportAnalyticsResponse,
 } from '../types/api';
 
 // ============================================================================
@@ -39,47 +34,10 @@ export function useKPIAnalytics(params?: AnalyticsQueryParams) {
 }
 
 /**
- * Hook for trend analytics
- */
-export function useTrendAnalytics(params?: AnalyticsQueryParams) {
-  return useApi(
-    () => getTrendAnalytics(params),
-    [params?.dateFrom, params?.dateTo, params?.companyId, params?.truckTypeId]
-  );
-}
-
-/**
- * Hook for operational analytics
- */
-export function useOperationalAnalytics(params?: AnalyticsQueryParams) {
-  return useApi(
-    () => getOperationalAnalytics(params),
-    [params?.dateFrom, params?.dateTo, params?.companyId, params?.truckTypeId]
-  );
-}
-
-/**
- * Hook for combined analytics
- */
-export function useCombinedAnalytics(params?: AnalyticsQueryParams) {
-  return useApi(
-    () => getCombinedAnalytics(params),
-    [params?.dateFrom, params?.dateTo, params?.companyId, params?.truckTypeId]
-  );
-}
-
-/**
  * Hook for analytics health monitoring
  */
 export function useAnalyticsHealth() {
   return useApi(() => getAnalyticsHealth());
-}
-
-/**
- * Hook for analytics export functionality
- */
-export function useAnalyticsExport(): UseMutationState<ExportAnalyticsResponse, { reportType: string; format: string }> {
-  return useMutation(({ reportType, format }) => exportAnalytics(reportType, format));
 }
 
 // ============================================================================
@@ -141,8 +99,7 @@ export function useAnalyticsRefresh() {
 
   const refresh = useCallback(async () => {
     setIsRefreshing(true);
-    // Add a small delay to show loading state
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise(resolve => setTimeout(resolve, 1000));
     setLastRefresh(new Date());
     setIsRefreshing(false);
   }, []);
@@ -155,74 +112,14 @@ export function useAnalyticsRefresh() {
 }
 
 /**
- * Hook for analytics error handling and retry logic
- */
-export function useAnalyticsErrorHandler() {
-  const [errors, setErrors] = useState<Array<{ id: string; message: string; timestamp: Date }>>([]);
-
-  const addError = useCallback((message: string) => {
-    const error = {
-      id: Math.random().toString(36).substring(2, 11),
-      message,
-      timestamp: new Date(),
-    };
-    setErrors(prev => [...prev, error]);
-  }, []);
-
-  const removeError = useCallback((id: string) => {
-    setErrors(prev => prev.filter(error => error.id !== id));
-  }, []);
-
-  const clearErrors = useCallback(() => {
-    setErrors([]);
-  }, []);
-
-  return {
-    errors,
-    addError,
-    removeError,
-    clearErrors,
-  };
-}
-
-/**
- * Hook for analytics performance monitoring
- */
-export function useAnalyticsPerformance() {
-  const [metrics, setMetrics] = useState({
-    loadTime: 0,
-    errorRate: 0,
-  });
-
-  const recordLoadTime = useCallback((time: number) => {
-    setMetrics(prev => ({ ...prev, loadTime: time }));
-  }, []);
-
-  const recordError = useCallback(() => {
-    setMetrics(prev => ({
-      ...prev,
-      errorRate: Math.min(prev.errorRate + 0.1, 1)
-    }));
-  }, []);
-
-  return {
-    metrics,
-    recordLoadTime,
-    recordError,
-  };
-}
-
-/**
  * Hook for analytics data aggregation
  */
 export function useAnalyticsAggregation(params?: AnalyticsQueryParams) {
   const dashboard = useDashboardAnalytics(params);
   const kpis = useKPIAnalytics(params);
-  const trends = useTrendAnalytics(params);
-  const operational = useOperationalAnalytics(params);
 
   const aggregatedData = useMemo(() => {
-    if (!dashboard.data || !kpis.data || !trends.data || !operational.data) {
+    if (!dashboard.data || !kpis.data) {
       return null;
     }
 
@@ -237,18 +134,16 @@ export function useAnalyticsAggregation(params?: AnalyticsQueryParams) {
         revenueGrowth: dashboard.data.revenueGrowth,
         pickupGrowth: dashboard.data.pickupGrowth,
         completionRate: kpis.data.completionRate,
-        processingTime: operational.data.averageProcessingTime,
       },
       trends: {
-        revenueByMonth: trends.data.revenueByMonth,
         topCompanies: dashboard.data.topCompanies,
         statusDistribution: dashboard.data.statusDistribution,
       },
     };
-  }, [dashboard.data, kpis.data, trends.data, operational.data]);
+  }, [dashboard.data, kpis.data]);
 
-  const isLoading = dashboard.loading || kpis.loading || trends.loading || operational.loading;
-  const hasError = dashboard.error || kpis.error || trends.error || operational.error;
+  const isLoading = dashboard.loading || kpis.loading;
+  const hasError = dashboard.error || kpis.error;
 
   return {
     data: aggregatedData,
@@ -257,8 +152,6 @@ export function useAnalyticsAggregation(params?: AnalyticsQueryParams) {
     refetch: () => {
       dashboard.refetch();
       kpis.refetch();
-      trends.refetch();
-      operational.refetch();
     },
   };
 }

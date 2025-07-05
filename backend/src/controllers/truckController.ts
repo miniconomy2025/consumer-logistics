@@ -72,7 +72,26 @@ export class TruckController {
     }
   };
 
-
+  // public updateTruckType = async (req: Request, res: Response, next: NextFunction) => {
+  //   try {
+  //     const typeId = parseInt(req.params.id, 10);
+  //     if (isNaN(typeId)) {
+  //       throw new AppError('Invalid truck type ID provided', 400);
+  //     }
+  //     const data: UpdateTruckTypeData = req.body;
+  //     const updatedTruckType = await this.truckManagementService.updateTruckType(typeId, data);
+  //     if (!updatedTruckType) {
+  //       throw new AppError('Truck type not found for update', 404);
+  //     }
+  //     const response: TruckTypeResponse = {
+  //       truckTypeId: updatedTruckType.truck_type_id,
+  //       truckTypeName: updatedTruckType.truck_type_name,
+  //     };
+  //     res.status(200).json(response);
+  //   } catch (error) {
+  //     next(error);
+  //   }
+  // };
 
   public deleteTruckType = async (req: Request, res: Response, next: NextFunction) => {
     try {

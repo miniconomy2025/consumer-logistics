@@ -4,7 +4,6 @@ import cors from 'cors';
 import bodyParser from 'body-parser';
 import truckRoutes from './routes/truckRoutes';
 import pickupRoutes from './routes/pickupRoutes';
-import companyRoutes from './routes/companyRoutes';
 import analyticsRoutes from './routes/analyticsRoutes';
 import { errorMiddleware } from './middleware/errorMiddleware';
 
@@ -19,8 +18,6 @@ app.use(bodyParser.json());
 app.use('/api/trucks', truckRoutes);
 
 app.use('/api/pickups', pickupRoutes);
-
-app.use('/api/companies', companyRoutes);
 
 app.use('/api/analytics', analyticsRoutes);
 

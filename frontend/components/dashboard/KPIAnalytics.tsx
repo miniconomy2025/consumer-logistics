@@ -78,14 +78,14 @@ function RevenueKPIs({ kpis }: { kpis: KPIAnalyticsResponse }) {
     {
       title: "Monthly Revenue",
       value: formatCurrency(kpis.monthlyRevenue),
-      growth: 0, // Not provided
+      growth: 0,
       icon: BarChart3,
       color: "blue",
     },
     {
       title: "Average Order Value",
       value: formatCurrency(kpis.averageOrderValue),
-      growth: 0, // Not provided
+      growth: 0,
       icon: Activity,
       color: "purple",
     },
@@ -123,14 +123,14 @@ function PickupKPIs({ kpis }: { kpis: KPIAnalyticsResponse }) {
     {
       title: "Monthly Pickups",
       value: formatNumber(kpis.monthlyPickups),
-      growth: 0, // Not provided
+      growth: 0,
       icon: BarChart3,
       color: "indigo",
     },
     {
       title: "Avg Pickups/Company",
       value: formatNumber(kpis.averagePickupsPerCompany, 1),
-      growth: 0, // Not provided
+      growth: 0,
       icon: Target,
       color: "orange",
     },
@@ -161,21 +161,21 @@ function PerformanceKPIs({ kpis }: { kpis: KPIAnalyticsResponse }) {
     {
       title: "Avg Processing Time",
       value: `${formatNumber(kpis.averageProcessingTime, 1)} days`,
-      growth: 0, // Not provided
+      growth: 0,
       icon: Clock,
       color: "yellow",
     },
     {
       title: "Completion Rate",
       value: formatPercentage(kpis.completionRate),
-      growth: 0, // Not provided
+      growth: 0,
       icon: Target,
       color: "green",
     },
     {
       title: "Pending Ratio",
       value: formatPercentage(kpis.pendingPickupsRatio),
-      growth: 0, // Not provided
+      growth: 0,
       icon: PieChart,
       color: "orange",
     },

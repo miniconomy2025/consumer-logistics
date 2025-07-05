@@ -1,9 +1,7 @@
 import { ErrorResponse } from '../types/api';
 
-// API Configuration
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
 
-// Custom API Error Class
 export class ApiError extends Error {
   public status: number;
   public code?: string;
@@ -62,47 +60,37 @@ function buildUrl(endpoint: string, params?: Record<string, string | number | bo
   return url.toString();
 }
 
-// Main HTTP Client Function
 export async function apiRequest<T>(
   endpoint: string,
   config: RequestConfig = { method: 'GET' }
 ): Promise<T> {
   const { method, headers = {}, body, params } = config;
   
-  // Build URL with query parameters
   const url = buildUrl(endpoint, params);
   
-  // Default headers
   const defaultHeaders: Record<string, string> = {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
   };
   
-  // Merge headers
   const finalHeaders = { ...defaultHeaders, ...headers };
   
-  // Build fetch options
   const fetchOptions: RequestInit = {
     method,
     headers: finalHeaders,
   };
   
-  // Add body for non-GET requests
   if (body && method !== 'GET') {
     fetchOptions.body = JSON.stringify(body);
   }
   
   try {
-    console.log(`[API] ${method} ${url}`);
-    
     const response = await fetch(url, fetchOptions);
     
-    // Handle non-JSON responses (like 204 No Content)
     if (response.status === 204) {
       return {} as T;
     }
     
-    // Parse response
     let responseData: unknown;
     try {
       responseData = await response.json();
@@ -114,7 +102,6 @@ export async function apiRequest<T>(
       );
     }
     
-    // Handle error responses
     if (!response.ok) {
       const errorResponse = responseData as ErrorResponse;
       throw new ApiError(
@@ -129,7 +116,6 @@ export async function apiRequest<T>(
     return responseData as T;
     
   } catch (error) {
-    // Handle network errors
     if (error instanceof ApiError) {
       throw error;
     }
@@ -142,7 +128,6 @@ export async function apiRequest<T>(
       );
     }
     
-    // Handle other errors
     throw new ApiError(
       error instanceof Error ? error.message : 'Unknown error occurred',
       500,
@@ -151,7 +136,6 @@ export async function apiRequest<T>(
   }
 }
 
-// Convenience methods for different HTTP methods
 export const api = {
   get: <T>(endpoint: string, params?: Record<string, string | number | boolean | undefined>) =>
     apiRequest<T>(endpoint, { method: 'GET', params }),
@@ -169,24 +153,14 @@ export const api = {
     apiRequest<T>(endpoint, { method: 'DELETE', params }),
 };
 
-// Health check function
 export async function checkApiHealth(): Promise<{ status: string; message: string; timestamp: string; uptime: number }> {
   return api.get('/health');
 }
 
-// Request interceptor for adding authentication headers (if needed in future)
-export function setAuthToken(token: string) {
-  // This can be implemented when authentication is added
-  console.log('Auth token set:', token);
-}
-
-// Response interceptor for handling common response patterns
 export function handleApiResponse<T>(response: T): T {
-  // This can be extended for common response transformations
   return response;
 }
 
-// Utility function to handle API errors in components
 export function getErrorMessage(error: unknown): string {
   if (error instanceof ApiError) {
     return error.message;
@@ -199,27 +173,22 @@ export function getErrorMessage(error: unknown): string {
   return 'An unexpected error occurred';
 }
 
-// Utility function to check if error is a specific type
 export function isApiError(error: unknown): error is ApiError {
   return error instanceof ApiError;
 }
 
-// Utility function to check if error is a network error
 export function isNetworkError(error: unknown): boolean {
   return isApiError(error) && error.code === 'NETWORK_ERROR';
 }
 
-// Utility function to check if error is a validation error
 export function isValidationError(error: unknown): boolean {
   return isApiError(error) && error.status === 400;
 }
 
-// Utility function to check if error is a not found error
 export function isNotFoundError(error: unknown): boolean {
   return isApiError(error) && error.status === 404;
 }
 
-// Utility function to check if error is a server error
 export function isServerError(error: unknown): boolean {
   return isApiError(error) && error.status >= 500;
 }

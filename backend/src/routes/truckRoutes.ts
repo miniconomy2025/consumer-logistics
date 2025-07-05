@@ -8,7 +8,7 @@ const truckController = new TruckController();
 router.post('/types', truckController.createTruckType);
 router.get('/types', truckController.getAllTruckTypes);
 router.get('/types/:id', truckController.getTruckTypeById);
-
+//router.put('/types/:id', truckController.updateTruckType);
 router.delete('/types/:id', truckController.deleteTruckType);
 
 

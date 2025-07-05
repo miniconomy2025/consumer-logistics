@@ -14,6 +14,6 @@ export interface ITruckRepository {
   findTruckTypeByName(name: string): Promise<TruckTypeEntity | null>;
   findAllTruckTypes(): Promise<TruckTypeEntity[]>;
   createTruckType(type: Partial<TruckTypeEntity>): Promise<TruckTypeEntity>;
-
+  updateTruckType(id: number, type: Partial<TruckTypeEntity>): Promise<TruckTypeEntity | null>;
   deleteTruckType(id: number): Promise<boolean>;
 }
