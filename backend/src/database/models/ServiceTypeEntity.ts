@@ -1,14 +1,23 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
+import { LogisticsDetailsEntity } from './LogisticsDetailsEntity';
 import { TransactionEntity } from './TransactionEntity';
+
+export enum ServiceTypeEnum {
+    COLLECTION = 1,
+    DELIVERY = 2,
+}
 
 @Entity('service_type')
 export class ServiceTypeEntity {
-  @PrimaryGeneratedColumn({ name: 'service_type_id' })
-  service_type_id: number;
+    @PrimaryGeneratedColumn({ name: 'service_type_id' })
+    service_type_id: number;
 
-  @Column({ name: 'service_type_name', type: 'varchar', length: 50 })
-  service_type_name: string;
+    @Column({ name: 'service_type_name', type: 'varchar', length: 50, unique: true })
+    service_type_name: string;
 
-  @OneToMany(() => TransactionEntity, (transaction) => transaction.service_type_id)
-  transaction: TransactionEntity;
+    @OneToMany(() => TransactionEntity, (transaction) => transaction.service_type_id)
+    transaction: TransactionEntity;  
+  
+    @OneToMany(() => LogisticsDetailsEntity, logisticsDetails => logisticsDetails.serviceType)
+    logisticsDetails: LogisticsDetailsEntity[];
 }

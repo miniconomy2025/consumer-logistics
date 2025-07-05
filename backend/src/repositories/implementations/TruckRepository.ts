@@ -15,7 +15,6 @@ export class TruckRepository implements ITruckRepository {
     this.ormTruckTypeRepository = AppDataSource.getRepository(TruckTypeEntity);
   }
 
-  // --- Truck Entity Operations ---
 
   async findById(id: number): Promise<TruckEntity | null> {
     logger.debug(`Fetching truck by ID: ${id}`);
@@ -60,7 +59,6 @@ export class TruckRepository implements ITruckRepository {
     return result.affected !== 0;
   }
 
-  // --- TruckType Entity Operations (remain unchanged) ---
 
   async findTruckTypeById(id: number): Promise<TruckTypeEntity | null> {
     logger.debug(`Fetching truck type by ID: ${id}`);

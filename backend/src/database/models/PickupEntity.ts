@@ -1,40 +1,69 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, OneToOne } from 'typeorm';
 import { InvoiceEntity } from './InvoiceEntity';
 import { PickupStatusEntity } from './PickupStatusEntity';
 import { CompanyEntity } from './CompanyEntity';
+import { LogisticsDetailsEntity } from './LogisticsDetailsEntity'; 
 
-@Entity('pickup') 
+export enum PickupStatusEnum { 
+    ORDER_RECEIVED = 'Order Received',
+    READY_FOR_COLLECTION = 'Ready for Collection',
+    COLLECTED = 'Collected',
+    DELIVERED = 'Delivered',
+    PAID_TO_LOGISTICS_CO = 'Paid To Logistics Co',
+    CANCELLED = 'Cancelled',
+    FAILED = 'Failed',
+}
+
+@Entity('pickup')
 export class PickupEntity {
-  @PrimaryGeneratedColumn({ name: 'pickup_id' })
-  pickup_id: number;
+    @PrimaryGeneratedColumn({ name: 'pickup_id' })
+    pickup_id: number;
 
-  @Column({ name: 'invoice_id', type: 'int' }) 
-  invoice_id: number;
+    @Column({ name: 'invoice_id', type: 'int' })
+    invoice_id: number;
 
-  @ManyToOne(() => InvoiceEntity)
-  @JoinColumn({ name: 'invoice_id' })
-  invoice: InvoiceEntity;
+    @ManyToOne(() => InvoiceEntity, invoice => invoice.pickups) 
+    @JoinColumn({ name: 'invoice_id' })
+    invoice: InvoiceEntity;
 
-  @Column({ name: 'pickup_status_id', type: 'int' })
-  pickup_status_id: number;
+    @Column({ name: 'pickup_status_id', type: 'int' })
+    pickup_status_id: number;
 
-  @ManyToOne(() => PickupStatusEntity)
-  @JoinColumn({ name: 'pickup_status_id' })
-  pickupStatus: PickupStatusEntity;
+    @ManyToOne(() => PickupStatusEntity, pickupStatus => pickupStatus.pickups)
+    @JoinColumn({ name: 'pickup_status_id' })
+    pickup_status: PickupStatusEntity;
 
-  @Column({ name: 'company_id', type: 'int' })
-  company_id: number;
+    @Column({ name: 'company_id', type: 'int' }) 
+    company_id: number;
 
-  @ManyToOne(() => CompanyEntity)
-  @JoinColumn({ name: 'company_id' })
-  company: CompanyEntity;
+    @ManyToOne(() => CompanyEntity, company => company.pickups) 
+    @JoinColumn({ name: 'company_id' })
+    company: CompanyEntity;
 
-  @Column({ name: 'pickup_date', type: 'date', nullable: true })
-  pickup_date: Date | null;
+    @Column({ name: 'phone_units', type: 'int' }) 
+    phone_units: number;
 
-  @Column({ name: 'unit_price', type: 'decimal', precision: 10, scale: 2 })
-  unit_price: number;
+    @Column({ name: 'order_date', type: 'date' }) 
+    order_date: Date;
 
-  @Column({ name: 'customer', type: 'varchar', length: 255 })
-  customer: string;
+    @Column({ name: 'unit_price', type: 'decimal', precision: 10, scale: 2 })
+    unit_price: number;
+
+    @Column({ name: 'amount_due_to_logistics_co', type: 'decimal', precision: 10, scale: 2, default: 0.0 })
+    amount_due_to_logistics_co: number;
+
+    @Column({ name: 'is_paid_to_logistics_co', type: 'boolean', default: false })
+    is_paid_to_logistics_co: boolean; 
+
+    @Column({ name: 'pickup_location', type: 'varchar', nullable: true })
+    pickup_location: string; 
+
+    @Column({ name: 'delivery_location', type: 'varchar', nullable: true })
+    delivery_location: string; 
+
+    @Column({ name: 'recipient_name', type: 'varchar', length: 255 }) 
+    recipient_name: string;
+
+    @OneToOne(() => LogisticsDetailsEntity, logisticsDetails => logisticsDetails.pickup)
+    logisticsDetails: LogisticsDetailsEntity;
 }
