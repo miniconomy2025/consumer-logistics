@@ -16,11 +16,13 @@
     "typeorm:migration:run": "npm run typeorm migration:run -- -d src/database/config.ts",
     "typeorm:migration:revert": "npm run typeorm migration:revert -- -d src/database/config.ts",
     "db:sync": "npm run typeorm schema:sync -- -d src/database/config.ts",
-    "db:drop": "npm run typeorm schema:drop -- -d src/database/config.ts"
+    "db:drop": "npm run typeorm schema:drop -- -d src/database/config.ts",
+    "db:seed": "ts-node scripts/seed-database.ts"
   },
   "author": "consumer-logistics",
   "license": "MIT",
   "dependencies": {
+    "@types/uuid": "^10.0.0",
     "axios": "^1.7.2",
     "body-parser": "^1.20.2",
     "class-transformer": "^0.5.1",
@@ -32,6 +34,7 @@
     "pg": "^8.16.3",
     "reflect-metadata": "^0.2.2",
     "typeorm": "^0.3.20",
+    "uuid": "^11.1.0",
     "winston": "^3.13.0"
   },
   "devDependencies": {
