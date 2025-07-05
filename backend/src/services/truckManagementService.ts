@@ -5,7 +5,6 @@ import { TruckTypeEntity } from '../database/models/TruckTypeEntity';
 import { AppError } from '../shared/errors/ApplicationError';
 import { logger } from '../utils/logger';
 
-// DTOs for service layer interactions
 export interface CreateTruckData {
   truckTypeId: number;
   maxPickups: number;
@@ -31,12 +30,9 @@ export class TruckManagementService {
     this.truckRepository = truckRepository;
   }
 
-  // --- Truck Operations ---
-
   public async createTruck(data: CreateTruckData): Promise<TruckEntity> {
     logger.info('Attempting to create a new truck.');
 
-    // Ensure truck type exists
     const truckType = await this.truckRepository.findTruckTypeById(data.truckTypeId);
     if (!truckType) {
       throw new AppError(`Truck Type with ID ${data.truckTypeId} not found.`, 404);
@@ -97,8 +93,6 @@ export class TruckManagementService {
     }
     return deleted;
   }
-
-  // --- Truck Type Operations (remain unchanged) ---
 
   public async createTruckType(data: CreateTruckTypeData): Promise<TruckTypeEntity> {
     logger.info('Attempting to create a new truck type.');

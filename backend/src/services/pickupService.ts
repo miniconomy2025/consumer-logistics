@@ -1,18 +1,17 @@
 import { IPickupRepository } from '../repositories/interfaces/IPickupRepository';
 import { PickupRepository } from '../repositories/implementations/PickupRepository';
-import { CompanyEntity } from '../database/models/CompanyEntity';
+import { CompanyEntity } from '../database/models/CompanyEntity'; 
 import { PickupEntity, PickupStatusEnum } from '../database/models/PickupEntity';
 import { ICompanyRepository } from '../repositories/interfaces/ICompanyRepository';
-import { CompanyRepository } from '../repositories/implementations/CompanyRepository';
+import { CompanyRepository } from '../repositories/implementations/CompanyRepository'; 
 import { AppError } from '../shared/errors/ApplicationError';
 import { logger } from '../utils/logger';
-import { SimulationService } from './simulationService';
-import { LogisticsPlanningService } from './logisticsPlanningService';
-
-import { CreatePickupRequest, PickupResponse, GetPickupsRequest } from '../types/dtos/pickupDtos';
+import { SimulationService } from './simulationService'; 
+import { LogisticsPlanningService } from './logisticsPlanningService'; 
+import { GetPickupsRequest, CreatePickupRequest, PickupResponse } from '../types/dtos/pickupDtos'; 
 
 export class PickupService {
-    private pickupRepository: IPickupRepository;
+    private pickupRepository: IPickupRepository; 
     private companyRepository: ICompanyRepository;
     private simulationService: SimulationService;
     private logisticsPlanningService: LogisticsPlanningService;
@@ -47,7 +46,7 @@ export class PickupService {
 
         const pickupStatusId = await this.pickupRepository.getPickupStatusId(PickupStatusEnum.ORDER_RECEIVED);
 
-        const initialInvoice = await this.pickupRepository.createInvoice({
+        const initialInvoice = await this.pickupRepository.createInvoice({ 
             total_amount: amount,
             paid: false,
         });
@@ -56,32 +55,29 @@ export class PickupService {
             throw new AppError('Failed to create initial invoice for pickup.', 500);
         }
 
-        const pickup: Partial<PickupEntity> = {
+        const newPickup = await this.pickupRepository.create({
             invoice_id: initialInvoice.invoice_id,
-            pickup_status_id: pickupStatusId,
-            phone_units: data.quantity, 
-            order_date: orderDateOnly, 
-            unit_price: unit_price, 
-            amount_due_to_logistics_co: amount,
-            is_paid_to_logistics_co: false, 
-            pickup_location: data.pickupLocation, 
-            delivery_location: data.deliveryTo, 
-            recipient_name: data.recipientName, 
             company_id: company.company_id,
+            pickup_status_id: pickupStatusId,
+            phone_units: data.quantity,
+            order_date: orderDateOnly,
+            unit_price: unit_price,
+            amount_due_to_logistics_co: amount, 
+            is_paid_to_logistics_co: false,
+            pickup_location: data.pickupLocation || 'Not Specified',
+            delivery_location: data.deliveryTo || 'Not Specified', 
+            recipient_name: data.recipientName || 'Not Specified',
+        });
+
+        logger.info(`Pickup ${newPickup.pickup_id} created. Invoice ${initialInvoice.reference_number} generated. Amount Due: ${newPickup.amount_due_to_logistics_co}.`);
+        logger.warn(`Pickup ${newPickup.pickup_id} requires payment before logistics can be planned.`);
+        logger.warn(`Please simulate payment via webhook POST to ${process.env.MY_WEBHOOK_URL || '/api/webhook/payment-updates'} with reference '${initialInvoice.reference_number}'.`);
+
+        return {
+            referenceNo: initialInvoice.reference_number,
+            amount: amount.toFixed(2),
+            accountNumber: process.env.ACCOUNT_NUMBER || '01001123456789',
         };
-
-        try {
-            await this.pickupRepository.create(pickup);
-
-            return {
-                referenceNo: initialInvoice.reference_number,
-                amount: amount.toFixed(2),
-                accountNumber: process.env.ACCOUNT_NUMBER || '01001123456789',
-            };
-        } catch (error: any) {
-            logger.error('Error creating pickup request:', error);
-            throw new AppError('Failed to create pickup request due to a database error.', 500);
-        }
     }
 
     public async getPickupById(id: number): Promise<PickupEntity | null> {
