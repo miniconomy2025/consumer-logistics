@@ -1,15 +1,13 @@
 import { IPickupRepository } from '../repositories/interfaces/IPickupRepository';
 import { PickupRepository } from '../repositories/implementations/PickupRepository';
 import { PickupEntity } from '../database/models/PickupEntity';
-import { CompanyEntity } from '../database/models/CompanyEntity';
+
 import { PickupStatusEntity } from '../database/models/PickupStatusEntity';
-import { InvoiceEntity } from '../database/models/InvoiceEntity';
+
 import { AppDataSource } from '../database/config';
 import { AppError } from '../shared/errors/ApplicationError';
 import { logger } from '../utils/logger';
 import {
-  PickupResponse,
-  UpdatePickupRequest,
   PickupSearchParams,
   PickupStatusResponse,
   PickupAnalyticsResponse,
@@ -40,14 +38,7 @@ export interface PickupData {
   };
 }
 
-export interface UpdatePickupData {
-  companyId?: number;
-  pickupStatusId?: number;
-  pickupDate?: string;
-  unitPrice?: number;
-  customer?: string;
-  invoiceId?: number;
-}
+
 
 export class PickupManagementService {
   private pickupRepository: IPickupRepository;
@@ -58,114 +49,13 @@ export class PickupManagementService {
 
   // --- Basic CRUD Operations ---
 
-  public async getPickupById(id: number): Promise<PickupData | null> {
-    logger.debug(`Fetching pickup by ID: ${id}`);
 
-    if (id <= 0) {
-      throw new AppError('Invalid pickup ID provided.', 400);
-    }
 
-    const pickup = await this.pickupRepository.findWithRelations(id);
-    if (!pickup) {
-      return null;
-    }
 
-    return this.mapPickupEntityToData(pickup);
-  }
 
-  public async getAllPickups(params?: PickupSearchParams): Promise<{ pickups: PickupData[]; totalCount: number }> {
-    logger.debug('Fetching all pickups.');
-    
-    const result = await this.pickupRepository.findAllWithRelations(params);
-    
-    return {
-      pickups: result.pickups.map(pickup => this.mapPickupEntityToData(pickup)),
-      totalCount: result.totalCount,
-    };
-  }
 
-  public async updatePickup(id: number, data: UpdatePickupData): Promise<PickupData | null> {
-    logger.info(`Attempting to update pickup with ID: ${id}`);
 
-    if (id <= 0) {
-      throw new AppError('Invalid pickup ID provided.', 400);
-    }
 
-    // Validate the data
-    if (data.unitPrice !== undefined && data.unitPrice < 0) {
-      throw new AppError('Unit price cannot be negative.', 400);
-    }
-
-    if (data.pickupDate !== undefined && data.pickupDate) {
-      const date = new Date(data.pickupDate);
-      if (isNaN(date.getTime())) {
-        throw new AppError('Invalid pickup date format.', 400);
-      }
-    }
-
-    // Validate company exists if provided
-    if (data.companyId !== undefined) {
-      const companyRepository = AppDataSource.getRepository(CompanyEntity);
-      const company = await companyRepository.findOneBy({ company_id: data.companyId });
-      if (!company) {
-        throw new AppError(`Company with ID ${data.companyId} not found.`, 404);
-      }
-    }
-
-    // Validate pickup status exists if provided
-    if (data.pickupStatusId !== undefined) {
-      const statusRepository = AppDataSource.getRepository(PickupStatusEntity);
-      const status = await statusRepository.findOneBy({ pickup_status_id: data.pickupStatusId });
-      if (!status) {
-        throw new AppError(`Pickup status with ID ${data.pickupStatusId} not found.`, 404);
-      }
-    }
-
-    const updateData: Partial<PickupEntity> = {};
-    if (data.companyId !== undefined) updateData.company_id = data.companyId;
-    if (data.pickupStatusId !== undefined) updateData.pickup_status_id = data.pickupStatusId;
-    if (data.pickupDate !== undefined) updateData.pickup_date = data.pickupDate ? new Date(data.pickupDate) : null;
-    if (data.unitPrice !== undefined) updateData.unit_price = data.unitPrice;
-    if (data.customer !== undefined) updateData.customer = data.customer;
-    if (data.invoiceId !== undefined) updateData.invoice_id = data.invoiceId;
-
-    const updatedPickup = await this.pickupRepository.update(id, updateData);
-    
-    if (!updatedPickup) {
-      return null;
-    }
-
-    // Fetch the updated pickup with relations
-    const pickupWithRelations = await this.pickupRepository.findWithRelations(updatedPickup.pickup_id);
-    if (!pickupWithRelations) {
-      throw new AppError('Failed to fetch updated pickup.', 500);
-    }
-
-    logger.info(`Pickup updated with ID: ${updatedPickup.pickup_id}`);
-    return this.mapPickupEntityToData(pickupWithRelations);
-  }
-
-  public async deletePickup(id: number): Promise<boolean> {
-    logger.info(`Attempting to delete pickup with ID: ${id}`);
-
-    if (id <= 0) {
-      throw new AppError('Invalid pickup ID provided.', 400);
-    }
-
-    // Check if pickup exists
-    const pickup = await this.pickupRepository.findById(id);
-    if (!pickup) {
-      throw new AppError('Pickup not found.', 404);
-    }
-
-    const deleted = await this.pickupRepository.delete(id);
-    
-    if (deleted) {
-      logger.info(`Pickup deleted with ID: ${id}`);
-    }
-
-    return deleted;
-  }
 
   // --- Search and Filter Operations ---
 
@@ -213,12 +103,7 @@ export class PickupManagementService {
     return pickups.map(pickup => this.mapPickupEntityToData(pickup));
   }
 
-  public async getPendingPickups(): Promise<PickupData[]> {
-    logger.debug('Fetching pending pickups');
-    
-    const pickups = await this.pickupRepository.getPendingPickups();
-    return pickups.map(pickup => this.mapPickupEntityToData(pickup));
-  }
+
 
   // --- Analytics Operations ---
 

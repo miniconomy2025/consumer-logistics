@@ -26,15 +26,5 @@ export interface ICompanyRepository {
     lastPickupDate: string | null;
   }>>;
 
-  findTopPerformers(limit: number, dateFrom?: string, dateTo?: string): Promise<Array<{
-    company: CompanyEntity;
-    totalRevenue: number;
-    totalPickups: number;
-    averageOrderValue: number;
-    revenueGrowth: number;
-    pickupGrowth: number;
-    lastPickupDate: string | null;
-    performanceScore: number;
-    rank: number;
-  }>>;
+
 }

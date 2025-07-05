@@ -5,61 +5,10 @@ import { api } from './client';
 import {
   PickupResponse,
   PickupsListResponse,
-  CreatePickupRequest,
-  UpdatePickupRequest,
   PickupSearchParams,
   PickupAnalyticsResponse,
   PickupStatusResponse,
 } from '../types/api';
-
-// ============================================================================
-// PICKUP CRUD OPERATIONS
-// ============================================================================
-
-/**
- * Get all pickups
- */
-export async function getPickups(params?: PickupSearchParams): Promise<PickupsListResponse> {
-  return api.get<PickupsListResponse>('/pickups', params);
-}
-
-/**
- * Get pickup by ID
- */
-export async function getPickupById(id: number): Promise<PickupResponse> {
-  return api.get<PickupResponse>(`/pickups/${id}`);
-}
-
-/**
- * Create new pickup
- * This is the only pickup endpoint currently implemented in the backend
- */
-export async function createPickup(data: CreatePickupRequest): Promise<PickupResponse> {
-  // Backend expects: { pickupFrom: string, quantity: number, deliveryTo: string }
-  // CreatePickupRequest now matches this structure exactly
-
-  const backendData = {
-    pickupFrom: data.pickupFrom,
-    quantity: data.quantity,
-    deliveryTo: data.deliveryTo,
-  };
-
-  return api.post<PickupResponse>('/pickups', backendData);
-}
-
-/**
- * Update pickup
- */
-export async function updatePickup(id: number, data: UpdatePickupRequest): Promise<PickupResponse> {
-  return api.put<PickupResponse>(`/pickups/${id}`, data);
-}
-
-/**
- * Delete pickup
- */
-export async function deletePickup(id: number): Promise<void> {
-  return api.delete<void>(`/pickups/${id}`);
-}
 
 // ============================================================================
 // PICKUP ANALYTICS AND SEARCH
@@ -171,22 +120,6 @@ export function formatPickupDate(date: Date): string {
 }
 
 /**
- * Get pickups for dropdown/select components
- */
-export async function getPickupsForSelect(): Promise<Array<{ value: number; label: string }>> {
-  try {
-    const pickups = await getPickups();
-    return pickups.pickups.map(pickup => ({
-      value: pickup.pickupId,
-      label: `Pickup #${pickup.pickupId} - ${pickup.company?.companyName || 'Unknown Company'}`,
-    }));
-  } catch (error) {
-    console.error('Error getting pickups for select:', error);
-    return [];
-  }
-}
-
-/**
  * Get pending pickups
  */
 export async function getPendingPickups(): Promise<PickupResponse[]> {
@@ -220,40 +153,3 @@ export async function getCompletedPickups(params?: {
     return [];
   }
 }
-
-// ============================================================================
-// BATCH OPERATIONS
-// ============================================================================
-
-/**
- * Create multiple pickups
- */
-export async function createMultiplePickups(
-  pickups: CreatePickupRequest[]
-): Promise<PickupResponse[]> {
-  const results: PickupResponse[] = [];
-  
-  for (const pickup of pickups) {
-    try {
-      const result = await createPickup(pickup);
-      results.push(result);
-    } catch (error) {
-      console.error(`Error creating pickup:`, error);
-      // Continue with other pickups
-    }
-  }
-  
-  return results;
-}
-
-/**
- * Update pickup status
- */
-export async function updatePickupStatus(
-  pickupId: number,
-  statusId: number
-): Promise<PickupResponse> {
-  return updatePickup(pickupId, { pickupStatusId: statusId });
-}
-
-

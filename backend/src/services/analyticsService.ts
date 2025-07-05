@@ -7,7 +7,6 @@ import {
   KPIAnalyticsResponse,
   TrendAnalyticsResponse,
   OperationalAnalyticsResponse,
-  ForecastAnalyticsResponse,
   AnalyticsQueryParams,
 } from '../types/dtos/analyticsDtos';
 

@@ -1,9 +1,7 @@
 import { Repository } from 'typeorm';
 import { AppDataSource } from '../../database/config';
 import { PickupEntity } from '../../database/models/PickupEntity';
-import { CompanyEntity } from '../../database/models/CompanyEntity';
-import { PickupStatusEntity } from '../../database/models/PickupStatusEntity';
-import { InvoiceEntity } from '../../database/models/InvoiceEntity';
+
 import { IPickupRepository } from '../interfaces/IPickupRepository';
 import { PickupSearchParams } from '../../types/dtos/pickupDtos';
 import { AppError } from '../../shared/errors/ApplicationError';
@@ -11,15 +9,9 @@ import { logger } from '../../utils/logger';
 
 export class PickupRepository implements IPickupRepository {
   private ormPickupRepository: Repository<PickupEntity>;
-  private ormCompanyRepository: Repository<CompanyEntity>;
-  private ormPickupStatusRepository: Repository<PickupStatusEntity>;
-  private ormInvoiceRepository: Repository<InvoiceEntity>;
 
   constructor() {
     this.ormPickupRepository = AppDataSource.getRepository(PickupEntity);
-    this.ormCompanyRepository = AppDataSource.getRepository(CompanyEntity);
-    this.ormPickupStatusRepository = AppDataSource.getRepository(PickupStatusEntity);
-    this.ormInvoiceRepository = AppDataSource.getRepository(InvoiceEntity);
   }
 
   // --- Basic CRUD Operations ---

@@ -180,60 +180,7 @@ export class CompanyManagementService {
     }));
   }
 
-  public async getTopPerformers(
-    limit: number = 10, 
-    dateFrom?: string, 
-    dateTo?: string
-  ): Promise<CompanyPerformanceData[]> {
-    logger.debug(`Fetching top ${limit} performing companies.`);
 
-    if (limit <= 0 || limit > 100) {
-      throw new AppError('Limit must be between 1 and 100.', 400);
-    }
 
-    const results = await this.companyRepository.findTopPerformers(limit, dateFrom, dateTo);
-    
-    return results.map(result => ({
-      companyId: result.company.company_id,
-      companyName: result.company.company_name,
-      totalRevenue: result.totalRevenue,
-      totalPickups: result.totalPickups,
-      averageOrderValue: result.averageOrderValue,
-      revenueGrowth: result.revenueGrowth,
-      pickupGrowth: result.pickupGrowth,
-      lastPickupDate: result.lastPickupDate,
-      performanceScore: result.performanceScore,
-      rank: result.rank,
-    }));
-  }
 
-  // --- Utility Methods ---
-
-  public async checkCompanyNameAvailability(name: string): Promise<boolean> {
-    logger.debug(`Checking availability for company name: ${name}`);
-
-    if (!name || name.trim().length === 0) {
-      return false;
-    }
-
-    const existingCompany = await this.companyRepository.findByName(name.trim());
-    return existingCompany === null;
-  }
-
-  public async searchCompaniesByName(query: string): Promise<CompanyEntity[]> {
-    logger.debug(`Searching companies by name: ${query}`);
-
-    if (!query || query.trim().length === 0) {
-      return [];
-    }
-
-    // For now, get all companies and filter in memory
-    // In a production system, you'd want to implement proper database search
-    const allCompanies = await this.companyRepository.findAll();
-    
-    const searchTerm = query.trim().toLowerCase();
-    return allCompanies.filter(company => 
-      company.company_name.toLowerCase().includes(searchTerm)
-    );
-  }
 }

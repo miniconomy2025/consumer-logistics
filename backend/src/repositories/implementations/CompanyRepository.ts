@@ -184,34 +184,5 @@ export class CompanyRepository implements ICompanyRepository {
     return results;
   }
 
-  async findTopPerformers(limit: number, dateFrom?: string, dateTo?: string): Promise<Array<{
-    company: CompanyEntity;
-    totalRevenue: number;
-    totalPickups: number;
-    averageOrderValue: number;
-    revenueGrowth: number;
-    pickupGrowth: number;
-    lastPickupDate: string | null;
-    performanceScore: number;
-    rank: number;
-  }>> {
-    logger.debug(`Fetching top ${limit} performing companies.`);
-    
-    const companiesWithStats = await this.findAllWithStats(dateFrom, dateTo);
-    
-    // Calculate performance scores and rank
-    const companiesWithPerformance = companiesWithStats.map((item, index) => ({
-      ...item,
-      revenueGrowth: 0, // TODO: Calculate actual growth when historical data is available
-      pickupGrowth: 0,  // TODO: Calculate actual growth when historical data is available
-      performanceScore: item.totalRevenue * 0.7 + item.totalPickups * 0.3, // Simple scoring algorithm
-      rank: index + 1,
-    }));
 
-    // Sort by performance score and limit results
-    return companiesWithPerformance
-      .sort((a, b) => b.performanceScore - a.performanceScore)
-      .slice(0, limit)
-      .map((item, index) => ({ ...item, rank: index + 1 }));
-  }
 }

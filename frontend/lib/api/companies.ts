@@ -1,6 +1,3 @@
-// Company API Service Functions
-// Backend company endpoints are now implemented and working
-
 import { api } from './client';
 import {
   CompanyResponse,

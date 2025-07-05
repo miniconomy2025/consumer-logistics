@@ -1,12 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { AnalyticsService } from '../services/analyticsService';
-import { AppError } from '../shared/errors/ApplicationError';
 import {
-  DashboardAnalyticsResponse,
-  KPIAnalyticsResponse,
-  TrendAnalyticsResponse,
-  OperationalAnalyticsResponse,
-  ForecastAnalyticsResponse,
   AnalyticsQueryParams,
 } from '../types/dtos/analyticsDtos';
 
@@ -82,39 +76,6 @@ export class AnalyticsController {
   };
 
   // ============================================================================
-  // FORECAST ANALYTICS (Placeholder)
-  // ============================================================================
-
-  public getForecastAnalytics = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      // Placeholder implementation for forecast analytics
-      const forecast: ForecastAnalyticsResponse = {
-        revenueForecast: [],
-        pickupForecast: [],
-        growthProjections: {
-          nextQuarterRevenue: 0,
-          nextQuarterPickups: 0,
-          yearEndProjection: {
-            revenue: 0,
-            pickups: 0,
-            companies: 0,
-          },
-        },
-        modelAccuracy: {
-          revenueAccuracy: 0,
-          pickupAccuracy: 0,
-          lastUpdated: new Date().toISOString(),
-          dataPoints: 0,
-        },
-      };
-      
-      res.status(200).json(forecast);
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  // ============================================================================
   // COMBINED ANALYTICS (All-in-one endpoint)
   // ============================================================================
 
@@ -140,34 +101,6 @@ export class AnalyticsController {
       };
       
       res.status(200).json(response);
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  // ============================================================================
-  // EXPORT ANALYTICS (Placeholder)
-  // ============================================================================
-
-  public exportAnalytics = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const { reportType, format } = req.body;
-      
-      if (!reportType || !format) {
-        throw new AppError('Report type and format are required', 400);
-      }
-
-      // Placeholder implementation for export functionality
-      const exportResponse = {
-        downloadUrl: `/api/analytics/download/${Date.now()}.${format}`,
-        fileName: `analytics-${reportType}-${Date.now()}.${format}`,
-        fileSize: 1024, // Mock file size
-        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours
-        reportType,
-        generatedAt: new Date().toISOString(),
-      };
-      
-      res.status(200).json(exportResponse);
     } catch (error) {
       next(error);
     }
@@ -221,26 +154,5 @@ export class AnalyticsController {
       sortBy: query.sortBy as 'revenue' | 'pickups' | 'date' | 'company' | 'growth',
       sortOrder: query.sortOrder as 'asc' | 'desc',
     };
-  }
-
-  private validateDateRange(dateFrom?: string, dateTo?: string): void {
-    if (dateFrom && dateTo) {
-      const fromDate = new Date(dateFrom);
-      const toDate = new Date(dateTo);
-      
-      if (isNaN(fromDate.getTime()) || isNaN(toDate.getTime())) {
-        throw new AppError('Invalid date format. Use YYYY-MM-DD format.', 400);
-      }
-      
-      if (fromDate > toDate) {
-        throw new AppError('dateFrom cannot be later than dateTo', 400);
-      }
-      
-      // Limit date range to prevent performance issues
-      const daysDiff = Math.abs(toDate.getTime() - fromDate.getTime()) / (1000 * 60 * 60 * 24);
-      if (daysDiff > 365 * 2) { // 2 years max
-        throw new AppError('Date range cannot exceed 2 years', 400);
-      }
-    }
   }
 }

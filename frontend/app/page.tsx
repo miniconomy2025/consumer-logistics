@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from 'react';
-import { ErrorBoundary } from "@/components/error-boundary";
+import { ErrorBoundary } from "@/components/common/ErrorBoundary";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
@@ -129,18 +129,14 @@ export default function AnalyticsPage() {
 
           {/* Dashboard Tab */}
           <TabsContent value="dashboard" className="space-y-6">
-            <ErrorBoundary
-              resetKeys={[dateRange.dateFrom, dateRange.dateTo].filter(Boolean) as string[]}
-            >
+            <ErrorBoundary>
               <AnalyticsDashboard dateRange={dateRange} />
             </ErrorBoundary>
           </TabsContent>
 
           {/* KPIs Tab */}
           <TabsContent value="kpis" className="space-y-6">
-            <ErrorBoundary
-              resetKeys={[dateRange.dateFrom, dateRange.dateTo].filter(Boolean) as string[]}
-            >
+            <ErrorBoundary>
               <KPIAnalytics dateRange={dateRange} />
             </ErrorBoundary>
           </TabsContent>

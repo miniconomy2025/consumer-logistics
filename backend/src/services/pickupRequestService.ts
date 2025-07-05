@@ -1,5 +1,5 @@
 import { IPickupRepository } from '../repositories/interfaces/IPickupRepository';
-import { CreatePickupRequest, PickupResponse } from '../types/dtos/pickupDtos';
+import { CreatePickupRequest, PickupCreationResponse } from '../types/dtos/pickupDtos';
 import { PickupEntity } from '../database/models/PickupEntity';
 import { InvoiceEntity } from '../database/models/InvoiceEntity';
 import { PickupStatusEntity } from '../database/models/PickupStatusEntity';
@@ -13,7 +13,7 @@ import { v4 as uuidv4 } from 'uuid';
 export class PickupService {
   constructor(private pickupRepository: IPickupRepository) {}
 
-  async createPickupRequest(data: CreatePickupRequest): Promise<PickupResponse> {
+  async createPickupRequest(data: CreatePickupRequest): Promise<PickupCreationResponse> {
     logger.info('Attempting to create new pickup request.');
 
     const unit_price = 10;

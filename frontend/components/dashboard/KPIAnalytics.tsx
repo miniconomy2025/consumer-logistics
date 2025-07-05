@@ -1,5 +1,3 @@
-// KPI Analytics Component - Detailed Key Performance Indicators
-
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

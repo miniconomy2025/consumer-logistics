@@ -1,4 +1,4 @@
-import { AnalyticsQueryParams } from '../../types/dtos/analyticsDtos';
+
 
 // Raw data interfaces for repository layer
 export interface RevenueByPeriod {
@@ -222,83 +222,11 @@ export interface IAnalyticsRepository {
     totalPickups: number;
   }>>;
   
-  /**
-   * Get seasonal patterns (quarterly and monthly averages)
-   */
-  getSeasonalPatterns(
-    dateFrom: string,
-    dateTo: string
-  ): Promise<{
-    quarterlyData: Array<{
-      quarter: string;
-      revenue: number;
-      pickupCount: number;
-    }>;
-    monthlyAverages: Array<{
-      monthName: string;
-      averageRevenue: number;
-      averagePickups: number;
-    }>;
-  }>;
+
   
-  /**
-   * Get company trends over time
-   */
-  getCompanyTrends(
-    companyIds: number[],
-    dateFrom: string,
-    dateTo: string,
-    groupBy: 'month' | 'quarter'
-  ): Promise<Array<{
-    companyId: number;
-    companyName: string;
-    monthlyData: Array<{
-      period: string;
-      revenue: number;
-      pickupCount: number;
-      averageOrderValue: number;
-    }>;
-  }>>;
+
   
-  /**
-   * Get status trends over time
-   */
-  getStatusTrends(
-    dateFrom: string,
-    dateTo: string,
-    groupBy: 'month' | 'quarter'
-  ): Promise<Array<{
-    statusName: string;
-    monthlyData: Array<{
-      period: string;
-      count: number;
-      percentage: number;
-    }>;
-  }>>;
+
   
-  // ============================================================================
-  // FORECASTING DATA
-  // ============================================================================
-  
-  /**
-   * Get historical data for forecasting models
-   */
-  getHistoricalDataForForecasting(
-    months: number
-  ): Promise<Array<{
-    month: string;
-    revenue: number;
-    pickupCount: number;
-    companyCount: number;
-  }>>;
-  
-  /**
-   * Get data quality metrics for forecasting accuracy
-   */
-  getDataQualityMetrics(): Promise<{
-    totalDataPoints: number;
-    dataCompleteness: number; // percentage
-    dataConsistency: number; // percentage
-    lastUpdated: Date;
-  }>;
+
 }

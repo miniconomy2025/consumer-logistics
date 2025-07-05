@@ -20,8 +20,7 @@ router.get('/trends', analyticsController.getTrendAnalytics);
 // Operational Analytics - Operational efficiency metrics
 router.get('/operational', analyticsController.getOperationalAnalytics);
 
-// Forecast Analytics - Predictive analytics (placeholder)
-router.get('/forecast', analyticsController.getForecastAnalytics);
+
 
 // Combined Analytics - All analytics in one call
 router.get('/all', analyticsController.getAllAnalytics);
@@ -33,8 +32,7 @@ router.get('/all', analyticsController.getAllAnalytics);
 // Health Check - Analytics system health
 router.get('/health', analyticsController.getAnalyticsHealth);
 
-// Export Analytics - Generate downloadable reports (placeholder)
-router.post('/export', analyticsController.exportAnalytics);
+
 
 // ============================================================================
 // LEGACY/COMPATIBILITY ENDPOINTS

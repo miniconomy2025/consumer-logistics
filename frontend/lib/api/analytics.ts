@@ -2,6 +2,7 @@
 // Updated to use real backend analytics endpoints
 
 import { api } from './client';
+import { calculateGrowth } from '../utils/formatters';
 import {
   DashboardAnalyticsResponse,
   KPIAnalyticsResponse,
@@ -518,20 +519,8 @@ export const analyticsPresets = {
   },
 };
 
-/**
- * Calculate growth percentage
- */
-export function calculateGrowth(current: number, previous: number): number {
-  if (previous === 0) return current > 0 ? 100 : 0;
-  return ((current - previous) / previous) * 100;
-}
 
-/**
- * Format growth for display
- */
-export function formatGrowth(growth: number): string {
-  const sign = growth >= 0 ? '+' : '';
-  return `${sign}${growth.toFixed(1)}%`;
-}
+
+
 
 

@@ -20,7 +20,7 @@ export interface CreateTruckTypeData {
   truckTypeName: string;
 }
 
-export interface UpdateTruckTypeData extends Partial<CreateTruckTypeData> {}
+
 
 export class TruckManagementService {
   private truckRepository: ITruckRepository;
@@ -124,18 +124,7 @@ export class TruckManagementService {
     return this.truckRepository.findAllTruckTypes();
   }
 
-  public async updateTruckType(id: number, data: UpdateTruckTypeData): Promise<TruckTypeEntity | null> {
-    logger.info(`Attempting to update truck type with ID: ${id}.`);
-    const updatedType = await this.truckRepository.updateTruckType(id, {
-        truck_type_name: data.truckTypeName,
-    });
-    if (updatedType) {
-      logger.info(`Truck type with ID: ${id} updated.`);
-    } else {
-      logger.warn(`Truck type with ID: ${id} not found for update.`);
-    }
-    return updatedType;
-  }
+
 
   public async deleteTruckType(id: number): Promise<boolean> {
     logger.info(`Attempting to delete truck type with ID: ${id}.`);

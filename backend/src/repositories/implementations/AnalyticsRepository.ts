@@ -2,9 +2,7 @@ import { Repository } from 'typeorm';
 import { AppDataSource } from '../../database/config';
 import { PickupEntity } from '../../database/models/PickupEntity';
 import { CompanyEntity } from '../../database/models/CompanyEntity';
-import { PickupStatusEntity } from '../../database/models/PickupStatusEntity';
-import { InvoiceEntity } from '../../database/models/InvoiceEntity';
-import { AppError } from '../../shared/errors/ApplicationError';
+
 import { logger } from '../../utils/logger';
 import {
   IAnalyticsRepository,
@@ -20,14 +18,10 @@ import {
 export class AnalyticsRepository implements IAnalyticsRepository {
   private pickupRepository: Repository<PickupEntity>;
   private companyRepository: Repository<CompanyEntity>;
-  private statusRepository: Repository<PickupStatusEntity>;
-  private invoiceRepository: Repository<InvoiceEntity>;
 
   constructor() {
     this.pickupRepository = AppDataSource.getRepository(PickupEntity);
     this.companyRepository = AppDataSource.getRepository(CompanyEntity);
-    this.statusRepository = AppDataSource.getRepository(PickupStatusEntity);
-    this.invoiceRepository = AppDataSource.getRepository(InvoiceEntity);
   }
 
   // ============================================================================
@@ -545,29 +539,5 @@ export class AnalyticsRepository implements IAnalyticsRepository {
     });
   }
 
-  // Simplified implementations for remaining methods
-  async getSeasonalPatterns(dateFrom: string, dateTo: string): Promise<any> {
-    return { quarterlyData: [], monthlyAverages: [] };
-  }
 
-  async getCompanyTrends(companyIds: number[], dateFrom: string, dateTo: string, groupBy: 'month' | 'quarter'): Promise<any> {
-    return [];
-  }
-
-  async getStatusTrends(dateFrom: string, dateTo: string, groupBy: 'month' | 'quarter'): Promise<any> {
-    return [];
-  }
-
-  async getHistoricalDataForForecasting(months: number): Promise<any> {
-    return [];
-  }
-
-  async getDataQualityMetrics(): Promise<any> {
-    return {
-      totalDataPoints: 0,
-      dataCompleteness: 100,
-      dataConsistency: 100,
-      lastUpdated: new Date(),
-    };
-  }
 }

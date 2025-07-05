@@ -5,7 +5,6 @@ import {
   getKPIAnalytics,
   getTrendAnalytics,
   getOperationalAnalytics,
-  getForecastAnalytics,
   getCombinedAnalytics,
   getAnalyticsHealth,
   exportAnalytics,
@@ -55,16 +54,6 @@ export function useTrendAnalytics(params?: AnalyticsQueryParams) {
 export function useOperationalAnalytics(params?: AnalyticsQueryParams) {
   return useApi(
     () => getOperationalAnalytics(params),
-    [params?.dateFrom, params?.dateTo, params?.companyId, params?.truckTypeId]
-  );
-}
-
-/**
- * Hook for forecast analytics
- */
-export function useForecastAnalytics(params?: AnalyticsQueryParams) {
-  return useApi(
-    () => getForecastAnalytics(params),
     [params?.dateFrom, params?.dateTo, params?.companyId, params?.truckTypeId]
   );
 }

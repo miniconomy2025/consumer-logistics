@@ -1,5 +1,3 @@
-// API Client Configuration and Base HTTP Client
-
 import { ErrorResponse } from '../types/api';
 
 // API Configuration

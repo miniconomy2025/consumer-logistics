@@ -16,8 +16,6 @@ import {
   useDashboardAnalytics as useEnhancedDashboardAnalytics,
   useKPIAnalytics as useEnhancedKPIAnalytics,
   useTrendAnalytics as useEnhancedTrendAnalytics,
-  useOperationalAnalytics as useEnhancedOperationalAnalytics,
-  useForecastAnalytics as useEnhancedForecastAnalytics,
   useCombinedAnalytics as useEnhancedCombinedAnalytics,
   useAnalyticsHealth as useEnhancedAnalyticsHealth,
   useAnalyticsExport,
@@ -30,7 +28,6 @@ import {
   getTopPerformers,
 } from '../api/companies';
 import {
-  getPickups,
   getPickupAnalytics,
   getRecentPickups,
   getPendingPickups,
@@ -68,19 +65,7 @@ export function useTrendAnalytics(params?: AnalyticsQueryParams) {
   return useEnhancedTrendAnalytics(params);
 }
 
-/**
- * Hook for operational analytics - Operational efficiency metrics
- */
-export function useOperationalAnalytics(params?: AnalyticsQueryParams) {
-  return useEnhancedOperationalAnalytics(params);
-}
 
-/**
- * Hook for forecast analytics - Predictive analytics
- */
-export function useForecastAnalytics(params?: AnalyticsQueryParams) {
-  return useEnhancedForecastAnalytics(params);
-}
 
 /**
  * Hook for combined analytics - All analytics in one call
@@ -188,12 +173,7 @@ export function useTopPerformers(params?: {
 // PICKUP ANALYTICS HOOKS
 // ============================================================================
 
-/**
- * Hook for all pickups
- */
-export function usePickups() {
-  return useApi(() => getPickups());
-}
+
 
 /**
  * Hook for pickup analytics
