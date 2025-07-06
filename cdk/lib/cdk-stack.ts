@@ -11,9 +11,14 @@ import * as integrations from 'aws-cdk-lib/aws-apigatewayv2-integrations';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import * as origins from 'aws-cdk-lib/aws-cloudfront-origins';
 import { Vpc, SubnetType } from 'aws-cdk-lib/aws-ec2';
+import * as iam from 'aws-cdk-lib/aws-iam';
+import * as elasticbeanstalk from 'aws-cdk-lib/aws-elasticbeanstalk';
 
 interface ExtendedStackProps extends cdk.StackProps {
   deployRegion: string;
+  instanceType: string;
+  minInstances: number;
+  maxInstances: number;
 }
 
 /**
@@ -69,6 +74,25 @@ export class CdkStack extends cdk.Stack {
       ],
     });
 
+    // -====== Security Group ======-
+    const dbSecurityGroup = new ec2.SecurityGroup(this, 'DatabaseSecurityGroup', {
+      vpc: defaultVpc,
+      description: 'Security group for RDS instance',
+      allowAllOutbound: true,
+    });
+
+    const ebSecurityGroup = new ec2.SecurityGroup(this, 'EBSecurityGroup', {
+      vpc: defaultVpc,
+      description: 'Security group for Elastic Beanstalk instances',
+      allowAllOutbound: true,
+    });
+
+    dbSecurityGroup.addIngressRule(
+      ebSecurityGroup,
+      ec2.Port.tcp(5432),
+      'Allow Elastic Beanstalk to connect to PostgreSQL'
+    );
+
     // -====== RDS ======-
     const databaseName = 'customerLogisticsDB';
     const database = new rds.DatabaseInstance(this, databaseName, {
@@ -80,6 +104,7 @@ export class CdkStack extends cdk.Stack {
       vpcSubnets: {
         subnetType: SubnetType.PUBLIC,
       },
+      securityGroups: [dbSecurityGroup],
       publiclyAccessible: true,
       databaseName: databaseName,
       allocatedStorage: 20,
@@ -119,6 +144,7 @@ export class CdkStack extends cdk.Stack {
       vpcSubnets: {
         subnetType: SubnetType.PUBLIC,
       },
+      securityGroups: [dbSecurityGroup],
       timeout: cdk.Duration.seconds(30),
       memorySize: 128,
       environment: {
@@ -138,6 +164,7 @@ export class CdkStack extends cdk.Stack {
       vpcSubnets: {
         subnetType: SubnetType.PUBLIC,
       },
+      securityGroups: [dbSecurityGroup],
       timeout: cdk.Duration.seconds(30),
       memorySize: 128,
       environment: {
@@ -152,6 +179,139 @@ export class CdkStack extends cdk.Stack {
       reportBatchItemFailures: true,
     }));
 
+    // -=== Elastic Beanstalk ===-
+    const roleName = 'consumer-logistics-application-role';
+    const ebInstanceRole = new iam.Role(this, roleName, {
+      roleName: roleName,
+      assumedBy: new iam.ServicePrincipal('ec2.amazonaws.com'),
+    });
+
+    ebInstanceRole.addManagedPolicy(
+      iam.ManagedPolicy.fromAwsManagedPolicyName('AWSElasticBeanstalkWebTier')
+    );
+
+    ebInstanceRole.addToPolicy(new iam.PolicyStatement({
+      effect: iam.Effect.ALLOW,
+      actions: [
+        'rds-db:connect',
+        'rds:DescribeDBInstances',
+      ],
+      resources: [database.instanceArn],
+    }));
+
+    const instanceProfile = new iam.CfnInstanceProfile(this, 'InstanceProfile', {
+      roles: [ebInstanceRole.roleName],
+    });
+
+    const ebServiceRole = new iam.Role(this, 'ElasticBeanstalkServiceRole', {
+      roleName: 'aws-elasticbeanstalk-service-role',
+      assumedBy: new iam.ServicePrincipal('elasticbeanstalk.amazonaws.com'),
+    });
+
+    ebServiceRole.addManagedPolicy(
+      iam.ManagedPolicy.fromAwsManagedPolicyName('AWSElasticBeanstalkManagedUpdatesCustomerRolePolicy')
+    );
+    ebServiceRole.addManagedPolicy(
+      iam.ManagedPolicy.fromAwsManagedPolicyName('service-role/AWSElasticBeanstalkEnhancedHealth')
+    );
+
+    const app = new elasticbeanstalk.CfnApplication(this, 'Application', {
+      applicationName: 'consumer-logistics-api',
+    });
+
+    const environment = new elasticbeanstalk.CfnEnvironment(this, 'Environment', {
+      environmentName: 'consumer-logistics-env',
+      applicationName: app.applicationName || 'consumer-logistics-api',
+      solutionStackName: '64bit Amazon Linux 2023 v6.5.1 running Node.js 22',
+      optionSettings: [
+        {
+          namespace: 'aws:autoscaling:launchconfiguration',
+          optionName: 'IamInstanceProfile',
+          value: instanceProfile.attrArn,
+        },
+        {
+          namespace: 'aws:autoscaling:launchconfiguration',
+          optionName: 'InstanceType',
+          value: props.instanceType,
+        },
+        {
+          namespace: 'aws:autoscaling:launchconfiguration',
+          optionName: 'SecurityGroups',
+          value: ebSecurityGroup.securityGroupId,
+        },
+        {
+          namespace: 'aws:autoscaling:asg',
+          optionName: 'MinSize',
+          value: props.minInstances.toString(),
+        },
+        {
+          namespace: 'aws:autoscaling:asg',
+          optionName: 'MaxSize',
+          value: props.maxInstances.toString(),
+        },
+        {
+          namespace: 'aws:elasticbeanstalk:environment',
+          optionName: 'EnvironmentType',
+          value: 'SingleInstance',
+        },
+        {
+          namespace: 'aws:elasticbeanstalk:environment',
+          optionName: 'ServiceRole',
+          value: 'aws-elasticbeanstalk-service-role',
+        },
+        {
+          namespace: 'aws:elasticbeanstalk:environment:process:default',
+          optionName: 'HealthCheckPath',
+          value: '/health',
+        },
+        {
+          namespace: 'aws:elasticbeanstalk:application:environment',
+          optionName: 'NODE_ENV',
+          value: 'production',
+        },
+        {
+          namespace: 'aws:elasticbeanstalk:application:environment',
+          optionName: 'DB_HOST',
+          value: database.instanceEndpoint.hostname,
+        },
+        {
+          namespace: 'aws:elasticbeanstalk:application:environment',
+          optionName: 'DB_PORT',
+          value: '5432',
+        },
+        {
+          namespace: 'aws:elasticbeanstalk:application:environment',
+          optionName: 'DB_NAME',
+          value: databaseName,
+        },
+        {
+          namespace: 'aws:elasticbeanstalk:application:environment',        
+          optionName: 'DB_USERNAME',        
+          value: database.secret?.secretValueFromJson('username').unsafeUnwrap() || '',        
+        },        
+        {
+          namespace: 'aws:elasticbeanstalk:application:environment',        
+          optionName: 'DB_PASSWORD',        
+          value: database.secret?.secretValueFromJson('password').unsafeUnwrap() || '',        
+        },
+        {
+          namespace: 'aws:ec2:vpc',
+          optionName: 'VPCId',
+          value: defaultVpc.vpcId,
+        },
+        {
+          namespace: 'aws:ec2:vpc',
+          optionName: 'Subnets',
+          value: defaultVpc.publicSubnets.map(subnet => subnet.subnetId).join(','),
+        },
+        {
+          namespace: 'aws:ec2:vpc',
+          optionName: 'ELBSubnets',
+          value: defaultVpc.publicSubnets.map(subnet => subnet.subnetId).join(','),
+        },
+      ],
+    });
+
     // -=== API Gateway ===-
     const api = new apigatewayv2.HttpApi(this, 'ConsumerLogisticsAPI', {
       apiName: 'ConsumerLogisticsAPI',
@@ -165,6 +325,15 @@ export class CdkStack extends cdk.Stack {
       methods: [apigatewayv2.HttpMethod.POST],
       integration: new integrations.HttpLambdaIntegration('PaymentWebhookIntegration', handlePopLambda),
     });
+
+    // Elastic Beanstalk Application URL
+    const ebAppUrl = `http://${environment.attrEndpointUrl}`;
+
+    api.addRoutes({
+      path: '/{proxy+}',
+      methods: [apigatewayv2.HttpMethod.ANY],
+      integration: new integrations.HttpUrlIntegration('EBAppIntegration', ebAppUrl),
+    })
 
   }
 }
