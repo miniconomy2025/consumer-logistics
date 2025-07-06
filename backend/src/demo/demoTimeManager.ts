@@ -1,4 +1,4 @@
-import { TimeManager } from '../services/TimeManager';
+import { TimeManager } from '../services/TimeManagementService';
 
 // This file is for demonstration purposes only and should not be used in production.
 // To run this demo, use the following command:
@@ -8,7 +8,7 @@ import { TimeManager } from '../services/TimeManager';
 async function main() {
   const manager = TimeManager.getInstance();
   
-  const simulationStartTime = new Date('2025-07-06T08:00:00Z'); 
+  const simulationStartTime = new Date('2025-07-06T08:00:00Z');
   const syncEndpoint = null; // Optional sync endpoint
   
   if (syncEndpoint) {
@@ -24,7 +24,7 @@ async function main() {
   console.log('Simulation Start Time:', manager.getSimulationStartTime().toISOString());
   console.log('Initial Simulated Time:', manager.getCurrentTime().toISOString());
   console.log('Simulation Speed:', `${manager.getSimulationSpeed()}x real time`);
-  
+
   const syncStatus = manager.getSyncStatus();
   console.log('Auto-sync enabled:', syncStatus.enabled);
   if (syncStatus.endpoint) {

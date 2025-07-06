@@ -1,4 +1,4 @@
-import { TimeManager } from '../TimeManager';
+import { TimeManager } from '../timeManagementService';
 import axios from 'axios';
 
 jest.mock('axios');
@@ -28,7 +28,10 @@ describe('TimeManager Singleton', () => {
     const initialTime = manager.getCurrentTime().getTime();
     expect(manager.isSimulationRunning()).toBe(true);
 
+    // Wait a bit to ensure real time has passed
     await new Promise((r) => setTimeout(r, 2000));
+    
+    // Now when we call getCurrentTime(), it should calculate the new time
     const advancedTime = manager.getCurrentTime().getTime();
 
     expect(advancedTime).toBeGreaterThan(initialTime);
