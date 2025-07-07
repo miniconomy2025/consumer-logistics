@@ -3,10 +3,12 @@ import { TruckEntity } from './models/TruckEntity';
 import { TruckTypeEntity } from './models/TruckTypeEntity';
 import { PickupEntity } from './models/PickupEntity'; 
 import { InvoiceEntity } from './models/InvoiceEntity';
-import { PickupStatusEntity } from './models/PickupStatusEntity'; 
-import { CompanyEntity } from './models/CompanyEntity'; 
+import { PickupStatusEntity } from './models/PickupStatusEntity';
+import { CompanyEntity } from './models/CompanyEntity';
+import { TransactionEntity } from './models/TransactionEntity';
+import { ServiceTypeEntity } from './models/ServiceTypeEntity';
+import { TransactionTypeEntity } from './models/TransactionType';
 import { LogisticsDetailsEntity } from './models/LogisticsDetailsEntity'; 
-import { ServiceTypeEntity } from './models/ServiceTypeEntity'; 
 import { TruckAllocationEntity } from './models/TruckAllocationEntity';
 
 import dotenv from 'dotenv';
@@ -31,6 +33,7 @@ export const AppDataSource = new DataSource({
         PickupStatusEntity,
         CompanyEntity, 
         LogisticsDetailsEntity,
+        TransactionEntity,
         ServiceTypeEntity,
         TruckAllocationEntity,
     ],

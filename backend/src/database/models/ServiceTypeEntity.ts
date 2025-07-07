@@ -1,5 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
 import { LogisticsDetailsEntity } from './LogisticsDetailsEntity';
+import { TransactionEntity } from './TransactionEntity';
 
 export enum ServiceTypeEnum {
     COLLECTION = 1,
@@ -14,6 +15,9 @@ export class ServiceTypeEntity {
     @Column({ name: 'service_type_name', type: 'varchar', length: 50, unique: true })
     service_type_name: string;
 
+    @OneToMany(() => TransactionEntity, (transaction) => transaction.service_type_id)
+    transaction: TransactionEntity;  
+  
     @OneToMany(() => LogisticsDetailsEntity, logisticsDetails => logisticsDetails.serviceType)
     logisticsDetails: LogisticsDetailsEntity[];
 }

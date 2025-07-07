@@ -5,6 +5,7 @@ import bodyParser from 'body-parser';
 
 import truckRoutes from './routes/truckRoutes';
 import pickupRoutes from './routes/pickupRoutes';
+import analyticsRoutes from './routes/analyticsRoutes';
 import companyRoutes from './routes/companyRoutes';
 import webhookRoutes from './routes/webhookRoutes';
 import simulationRoutes from './routes/simulationRoutes';
@@ -23,8 +24,9 @@ app.use('/api/trucks', truckRoutes);
 app.use('/api/pickups', pickupRoutes);
 app.use('/api/webhook', webhookRoutes);
 app.use('/api/simulation', simulationRoutes); 
+app.use('/api/analytics', analyticsRoutes);
 
-app.get('/health', (_req, res) => {
+app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok', message: 'Service is healthy' });
 });
 
