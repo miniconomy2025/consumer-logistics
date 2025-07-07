@@ -91,6 +91,9 @@ export class LogisticsPlanningService {
         logger.info(`Logistics detail ${scheduledLogistics.logistics_details_id} created/updated for Pickup ${pickupId}.`);
         logger.info(`In-sim Collection Scheduled: ${scheduledLogistics.scheduled_time.toISOString()} (Real-world: ${scheduledLogistics.scheduled_real_pickup_timestamp?.toLocaleTimeString()})`);
         logger.info(`In-sim Delivery Scheduled: ${scheduledLogistics.scheduled_real_delivery_timestamp ? scheduledLogistics.scheduled_real_delivery_timestamp.toISOString() : 'N/A'} (Real-world: ${scheduledLogistics.scheduled_real_delivery_timestamp?.toLocaleTimeString()})`);
+        logger.info(`Simulated Real-world Pickup Timestamp: ${scheduledLogistics.scheduled_real_simulated_pickup_timestamp?.toISOString()}`);
+        logger.info(`Simulated Real-world Delivery Timestamp: ${scheduledLogistics.scheduled_real_simulated_delivery_timestamp?.toISOString()}`);
+
 
         const now = new Date();
         const realWorldDelaySeconds = Math.max(0, Math.floor(((scheduledLogistics.scheduled_real_pickup_timestamp?.getTime() || 0) - now.getTime()) / 1000));
@@ -123,9 +126,9 @@ export class LogisticsPlanningService {
         let assignedTruck: TruckEntity | null = null;
         let savedLogisticsDetail: LogisticsDetailsEntity | null = null;
         let attempts = 0;
-        const MAX_ATTEMPTS = 365; 
+        const MAX_ATTEMPTS = 365;
 
-        let assignedTruckPickupsToday: number = 0; 
+        let assignedTruckPickupsToday: number = 0;
 
         const allTrucks = await this.truckRepository.findAll();
         if (allTrucks.length === 0) {
@@ -142,30 +145,47 @@ export class LogisticsPlanningService {
                 }
 
                 const activeLogisticsForTruckToday = await this.logisticsDetailsRepository.findActiveLogisticsForTruckOnDay(truck.truck_id, currentInSimDate);
-                const currentPickups = activeLogisticsForTruckToday.length; 
+                const currentPickups = activeLogisticsForTruckToday.length;
 
                 if (currentPickups >= truck.max_pickups) {
                     logger.debug(`Truck ${truck.truck_id} (max_pickups: ${truck.max_pickups}) already has ${currentPickups} pickups scheduled for ${currentInSimDate.toISOString().split('T')[0]}. Skipping for this truck.`);
-                    continue; 
+                    continue;
                 }
-                
+
                 assignedTruck = truck;
-                assignedTruckPickupsToday = currentPickups; 
-                break; 
+                assignedTruckPickupsToday = currentPickups;
+                break;
             }
 
             if (assignedTruck) {
                 const scheduledRealPickupTime = this.simulationService.getRealWorldPickupTimestamp(currentInSimDate);
                 const scheduledRealDeliveryTime = this.simulationService.getRealWorldDeliveryTimestamp(currentInSimDate);
 
+                // These new fields should store the in-simulation date's start/end of day timestamps directly,
+                // as they are meant to represent the precise simulated time.
+                const simulatedPickupTimestamp = new Date(Date.UTC(
+                    currentInSimDate.getUTCFullYear(),
+                    currentInSimDate.getUTCMonth(),
+                    currentInSimDate.getUTCDate(),
+                    0, 0, 0, 0 
+                ));
+                const simulatedDeliveryTimestamp = new Date(Date.UTC(
+                    currentInSimDate.getUTCFullYear(),
+                    currentInSimDate.getUTCMonth(),
+                    currentInSimDate.getUTCDate(),
+                    23, 59, 59, 999 
+                ));
+
                 const newLogisticsDetailData = {
                     pickup_id: pickupId,
-                    service_type_id: ServiceTypeEnum.COLLECTION, 
-                    scheduled_time: currentInSimDate, 
+                    service_type_id: ServiceTypeEnum.COLLECTION,
+                    scheduled_time: currentInSimDate,
                     quantity: quantity,
-                    logistics_status: LogisticsStatus.PENDING_PLANNING, 
+                    logistics_status: LogisticsStatus.PENDING_PLANNING,
                     scheduled_real_pickup_timestamp: scheduledRealPickupTime,
                     scheduled_real_delivery_timestamp: scheduledRealDeliveryTime,
+                    scheduled_real_simulated_pickup_timestamp: simulatedPickupTimestamp, 
+                    scheduled_real_simulated_delivery_timestamp: simulatedDeliveryTimestamp, 
                 };
 
                 savedLogisticsDetail = await this.logisticsDetailsRepository.create(newLogisticsDetailData);
@@ -176,9 +196,9 @@ export class LogisticsPlanningService {
             }
 
             if (!savedLogisticsDetail) {
-                currentInSimDate = new Date(currentInSimDate); 
+                currentInSimDate = new Date(currentInSimDate);
                 currentInSimDate.setUTCDate(currentInSimDate.getUTCDate() + 1);
-                currentInSimDate.setUTCHours(0, 0, 0, 0); 
+                currentInSimDate.setUTCHours(0, 0, 0, 0);
                 attempts++;
                 logger.debug(`No available truck for pickup ${pickupId} on ${currentInSimDate.toISOString().split('T')[0]}. Trying next day.`);
             }

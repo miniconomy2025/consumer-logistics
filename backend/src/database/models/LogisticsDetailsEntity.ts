@@ -40,6 +40,12 @@ export class LogisticsDetailsEntity {
     @Column({ name: 'scheduled_real_delivery_timestamp', type: 'timestamp', nullable: true }) 
     scheduled_real_delivery_timestamp: Date | null;
 
+    @Column({ name: 'scheduled_simulated_pickup_timestamp', type: 'timestamp', nullable: true })
+    scheduled_real_simulated_pickup_timestamp: Date | null;
+
+    @Column({ name: 'scheduled_simulated_delivery_timestamp', type: 'timestamp', nullable: true })
+    scheduled_real_simulated_delivery_timestamp: Date | null;
+
     @ManyToOne(() => ServiceTypeEntity, serviceType => serviceType.logisticsDetails)
     @JoinColumn({ name: 'service_type_id' })
     serviceType: ServiceTypeEntity;

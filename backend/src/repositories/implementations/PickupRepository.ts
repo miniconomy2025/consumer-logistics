@@ -35,10 +35,12 @@ export class PickupRepository implements IPickupRepository {
     async findById(id: number): Promise<PickupEntity | null> {
         logger.debug(`Fetching pickup by ID: ${id}`);
         return this.ormPickupRepository.findOne({
-            where: { pickup_id: id },
-            relations: ['company', 'pickup_status', 'invoice', 'logisticsDetails']  
-        });
+          where: { pickup_id: id },
+            relations: ['company', 'pickup_status', 'invoice', 'logisticsDetails'] 
+      });
     }
+
+    
 
     async findByInvoiceReference(invoiceReference: string): Promise<PickupEntity | null> {
         logger.debug(`Fetching pickup by Invoice Reference: ${invoiceReference}`);

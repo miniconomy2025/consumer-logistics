@@ -7,6 +7,8 @@ import { LogisticsStatus } from '../database/models/LogisticsDetailsEntity';
 import { AppError } from '../shared/errors/ApplicationError';
 import { PickupStatusEnum } from '../database/models/PickupEntity';
 import { PickupService } from './pickupService';
+import * as https from 'https';
+import { URL } from 'url';
 
 interface SQSMessageBody {
   eventType: 'COLLECTION_SCHEDULED' | 'DELIVERY_SCHEDULED';
@@ -20,17 +22,19 @@ export class SQSWorkerService {
   private pickupService: PickupService;
 
   private pollingIntervalMs: number = 5000;
+  private readonly DELIVERY_SUCCESS_WEBHOOK_URL: string;
 
   constructor(
     logisticsPlanningService: LogisticsPlanningService,
-    simulationService: SimulationService, 
+    simulationService: SimulationService,
     pickupService: PickupService,
-    sqsClientInstance: SQSClient = sqsClient 
+    sqsClientInstance: SQSClient = sqsClient
   ) {
     this.logisticsPlanningService = logisticsPlanningService;
     this.simulationService = simulationService;
     this.pickupService = pickupService;
     this.sqsClient = sqsClientInstance;
+    this.DELIVERY_SUCCESS_WEBHOOK_URL = 'https://975a-41-121-32-65.ngrok-free.app/webhook';
   }
 
   public startPollingPickupQueue(): void {
@@ -55,6 +59,7 @@ export class SQSWorkerService {
             logger.warn('Received SQS message with empty body or no ReceiptHandle. Skipping.');
             continue;
           }
+
           let messageBody: SQSMessageBody;
           try {
             messageBody = JSON.parse(message.Body);
@@ -71,7 +76,7 @@ export class SQSWorkerService {
 
             const fullLogisticsForDelivery = await this.logisticsPlanningService.logisticsDetailsRepository.findById(collectedLogistics.logistics_details_id);
             if (!fullLogisticsForDelivery || !fullLogisticsForDelivery.scheduled_real_delivery_timestamp) {
-                throw new AppError(`Scheduled delivery time not found for logistics detail ${collectedLogistics.logistics_details_id}.`, 500);
+              throw new AppError(`Scheduled delivery time not found for logistics detail ${collectedLogistics.logistics_details_id}.`, 500);
             }
 
             const targetDeliveryTime = fullLogisticsForDelivery.scheduled_real_delivery_timestamp;
@@ -80,19 +85,19 @@ export class SQSWorkerService {
 
             await this.logisticsPlanningService.sendDeliveryMessageToSQS(fullLogisticsForDelivery.logistics_details_id, realWorldDeliveryDelaySeconds);
             await this.logisticsPlanningService.logisticsDetailsRepository.update(fullLogisticsForDelivery.logistics_details_id, {
-                logistics_status: LogisticsStatus.QUEUED_FOR_DELIVERY
+              logistics_status: LogisticsStatus.QUEUED_FOR_DELIVERY,
             });
+
             logger.info(`Delivery for Logistics ID ${fullLogisticsForDelivery.logistics_details_id} queued to DELIVERY SQS with ${realWorldDeliveryDelaySeconds}s delay, targeting real time: ${targetDeliveryTime.toLocaleTimeString()}.`);
 
             await this.deleteMessageFromQueue(SQS_PICKUP_QUEUE_URL, message.ReceiptHandle);
-
           } catch (processError) {
             logger.error(`Error processing SQS message for Logistics ID ${messageBody.logisticsDetailsId}:`, processError);
             const logisticsDetail = await this.logisticsPlanningService.logisticsDetailsRepository.findById(messageBody.logisticsDetailsId);
             if (logisticsDetail && logisticsDetail.pickup?.pickup_id) {
-                await this.logisticsPlanningService.logisticsDetailsRepository.update(logisticsDetail.logistics_details_id, { logistics_status: LogisticsStatus.FAILED });
-                await this.pickupService.updatePickupStatus(logisticsDetail.pickup.pickup_id, PickupStatusEnum.FAILED);
-                logger.error(`Logistics/Pickup for ID ${logisticsDetail.pickup.pickup_id} marked as FAILED due to processing error.`);
+              await this.logisticsPlanningService.logisticsDetailsRepository.update(logisticsDetail.logistics_details_id, { logistics_status: LogisticsStatus.FAILED });
+              await this.pickupService.updatePickupStatus(logisticsDetail.pickup.pickup_id, PickupStatusEnum.FAILED);
+              logger.error(`Logistics/Pickup for ID ${logisticsDetail.pickup.pickup_id} marked as FAILED due to processing error.`);
             }
           }
         }
@@ -105,6 +110,7 @@ export class SQSWorkerService {
   }
 
   public startPollingDeliveryQueue(): void {
+    logger.warn('Starting delivery queue poller...');
     logger.info(`Starting SQS Delivery Queue Poller for ${SQS_DELIVERY_QUEUE_URL}`);
     this.pollDeliveryQueue();
   }
@@ -126,6 +132,7 @@ export class SQSWorkerService {
             logger.warn('Received SQS message with empty body or no ReceiptHandle. Skipping.');
             continue;
           }
+
           let messageBody: SQSMessageBody;
           try {
             messageBody = JSON.parse(message.Body);
@@ -142,38 +149,76 @@ export class SQSWorkerService {
 
             const assignedTruckId = deliveredLogistics.truckAllocations?.[0]?.truck_id;
             if (assignedTruckId) {
-                logger.info(`Delivery handled by Truck ID: ${assignedTruckId}.`);
+              logger.info(`Delivery handled by Truck ID: ${assignedTruckId}.`);
             } else {
-                logger.warn(`No truck found for Logistics ID ${deliveredLogistics.logistics_details_id} via TruckAllocation.`);
+              logger.warn(`No truck found for Logistics ID ${deliveredLogistics.logistics_details_id} via TruckAllocation.`);
             }
 
+            const pickup = deliveredLogistics.pickup;
             logger.info(`Delivery for Logistics ID ${deliveredLogistics.logistics_details_id} completed.`);
-            logger.info(`Pickup ID: ${deliveredLogistics.pickup?.pickup_id} with Amount Due: ${deliveredLogistics.pickup?.amount_due_to_logistics_co} has been delivered.`);
-            logger.info(`It should have been paid already. Current pickup status: ${deliveredLogistics.pickup?.pickup_status?.status_name}`);
+            logger.info(`Pickup status: ${pickup?.pickup_status?.status_name}`);
+            logger.info(`Invoice payment status: ${pickup?.invoice?.paid ? 'Paid' : 'Unpaid'}`);
 
-            logger.info(`You can simulate payment confirmation (if not already paid) by POSTing to ${process.env.MY_WEBHOOK_URL} with payload:`);
-            logger.info(JSON.stringify({
-                "transaction_number": "SIM_TXN_DELIVERY_" + Date.now(),
-                "status": "SUCCESS",
-                "amount": deliveredLogistics.pickup?.amount_due_to_logistics_co || 0,
-                "timestamp": new Date().toISOString(),
-                "description": `Payment for delivery of Pickup ${deliveredLogistics.pickup?.pickup_id} from ${deliveredLogistics.pickup?.company?.company_name}`,
-                "from": "SIM_PHO_CO_ACC",
-                "to": "SIM_LOG_CO_ACC",
-                "reference": `pickup_${deliveredLogistics.pickup?.pickup_id}`
-            }, null, 2));
+            if (pickup) {
+              const webhookPayload = {
+                status: 'delivered',
+                deliveryFrom: pickup.company?.company_name || pickup.pickup_location || 'Unknown Company',
+                deliveryTo: pickup.recipient_name || pickup.delivery_location || 'Unknown Recipient',
+                units: pickup.phone_units ?? 0,
+                deliveryDate: deliveredLogistics.scheduled_real_simulated_delivery_timestamp?.toISOString() || new Date().toISOString(),
+              };
 
+              logger.warn('Sending Webhook Payload:', webhookPayload);
+
+              try {
+                const webhookUrl = new URL(this.DELIVERY_SUCCESS_WEBHOOK_URL);
+                const postData = JSON.stringify(webhookPayload);
+
+                const options = {
+                  hostname: webhookUrl.hostname,
+                  port: webhookUrl.port || (webhookUrl.protocol === 'https:' ? 443 : 80),
+                  path: webhookUrl.pathname + webhookUrl.search,
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Content-Length': Buffer.byteLength(postData),
+                  },
+                };
+
+                const req = https.request(options, (res) => {
+                  let data = '';
+                  res.on('data', (chunk) => (data += chunk));
+                  res.on('end', () => {
+                    if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
+                      logger.info(`Webhook sent successfully. Status: ${res.statusCode}`);
+                    } else {
+                      logger.error(`Webhook failed. Status: ${res.statusCode}, Response: ${data}`);
+                    }
+                  });
+                });
+
+                req.on('error', (e) => {
+                  logger.error(`Webhook send error: ${e.message}`);
+                });
+
+                req.write(postData);
+                req.end();
+              } catch (e: any) {
+                logger.error(`Webhook construction/sending error: ${e.message}`);
+              }
+            } else {
+              logger.warn(`No pickup data found for logistics detail ${deliveredLogistics.logistics_details_id}`);
+            }
 
             await this.deleteMessageFromQueue(SQS_DELIVERY_QUEUE_URL, message.ReceiptHandle);
-
           } catch (processError) {
             logger.error(`Error processing SQS message for Logistics ID ${messageBody.logisticsDetailsId}:`, processError);
-             const logisticsDetail = await this.logisticsPlanningService.logisticsDetailsRepository.findById(messageBody.logisticsDetailsId);
-             if (logisticsDetail && logisticsDetail.pickup?.pickup_id) {
-                 await this.logisticsPlanningService.logisticsDetailsRepository.update(logisticsDetail.logistics_details_id, { logistics_status: LogisticsStatus.FAILED });
-                 await this.pickupService.updatePickupStatus(logisticsDetail.pickup.pickup_id, PickupStatusEnum.FAILED);
-                 logger.error(`Logistics/Pickup for ID ${logisticsDetail.pickup.pickup_id} marked as FAILED due to processing error.`);
-             }
+            const logisticsDetail = await this.logisticsPlanningService.logisticsDetailsRepository.findById(messageBody.logisticsDetailsId);
+            if (logisticsDetail?.pickup?.pickup_id) {
+              await this.logisticsPlanningService.logisticsDetailsRepository.update(logisticsDetail.logistics_details_id, { logistics_status: LogisticsStatus.FAILED });
+              await this.pickupService.updatePickupStatus(logisticsDetail.pickup.pickup_id, PickupStatusEnum.FAILED);
+              logger.error(`Logistics/Pickup for ID ${logisticsDetail.pickup.pickup_id} marked as FAILED.`);
+            }
           }
         }
       }
@@ -183,7 +228,6 @@ export class SQSWorkerService {
       setTimeout(() => this.pollDeliveryQueue(), this.pollingIntervalMs);
     }
   }
-  
 
   private async deleteMessageFromQueue(queueUrl: string, receiptHandle: string): Promise<void> {
     const deleteCommand = new DeleteMessageCommand({

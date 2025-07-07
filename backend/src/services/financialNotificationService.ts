@@ -49,14 +49,14 @@ export class FinancialNotificationService {
             }
 
             
-            if (notification.amount < pickupByInvoice.amount_due_to_logistics_co) {
-                logger.warn(`Received insufficient payment for invoice ${notification.reference}. Expected: ${pickupByInvoice.amount_due_to_logistics_co}, Received: ${notification.amount}`);
+            if (pickupByInvoice.invoice && notification.amount < pickupByInvoice.invoice.total_amount) {
+                logger.warn(`Received insufficient payment for invoice ${notification.reference}. Expected: ${pickupByInvoice.invoice.total_amount}, Received: ${notification.amount}`);
                 throw new AppError('Insufficient payment received.', 400);
             }
          
-            if (pickupByInvoice.invoice.total_amount > 0 && notification.amount > pickupByInvoice.invoice.total_amount) {
-                logger.warn(`Received overpayment for invoice ${notification.reference}. Expected: ${pickupByInvoice.invoice.total_amount}, Received: ${notification.amount}. Processing as successful.`);
-            }
+            if (pickupByInvoice.invoice && notification.amount > pickupByInvoice.invoice.total_amount) {
+              logger.warn(`Received overpayment for invoice ${notification.reference}. Expected: ${pickupByInvoice.invoice.total_amount}, Received: ${notification.amount}. Processing as successful.`);
+          }
 
             const paidPickup = await this.pickupService.markPickupAndInvoiceAsPaid(notification.reference);
             logger.info(`Invoice ${notification.reference} and Pickup ${paidPickup.pickup_id} marked as PAID_TO_LOGISTICS_CO based on webhook notification.`);

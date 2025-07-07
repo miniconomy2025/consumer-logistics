@@ -62,14 +62,13 @@ export class PickupService {
             phone_units: data.quantity,
             order_date: orderDateOnly,
             unit_price: unit_price,
-            amount_due_to_logistics_co: amount, 
-            is_paid_to_logistics_co: false,
             pickup_location: data.pickupLocation || 'Not Specified',
             delivery_location: data.deliveryTo || 'Not Specified', 
             recipient_name: data.recipientName || 'Not Specified',
+            order_timestamp_simulated: currentInSimDate,
         });
 
-        logger.info(`Pickup ${newPickup.pickup_id} created. Invoice ${initialInvoice.reference_number} generated. Amount Due: ${newPickup.amount_due_to_logistics_co}.`);
+        logger.info(`Pickup ${newPickup.pickup_id} created. Invoice ${initialInvoice.reference_number} generated.`);
         logger.warn(`Pickup ${newPickup.pickup_id} requires payment before logistics can be planned.`);
         logger.warn(`Please simulate payment via webhook POST to ${process.env.MY_WEBHOOK_URL || '/api/webhook/payment-updates'} with reference '${initialInvoice.reference_number}'.`);
 
@@ -111,7 +110,7 @@ export class PickupService {
         if (!pickup.invoice) {
             throw new AppError(`Invoice for pickup ${pickup.pickup_id} not found.`, 500);
         }
-        if (pickup.invoice.paid && pickup.is_paid_to_logistics_co) {
+        if (pickup.invoice.paid) {
             logger.warn(`Invoice ${invoiceReference} and Pickup ${pickup.pickup_id} already marked as paid. Idempotent operation.`);
             return pickup;
         }
@@ -121,7 +120,6 @@ export class PickupService {
 
         const paidStatusId = await this.pickupRepository.getPickupStatusId(PickupStatusEnum.PAID_TO_LOGISTICS_CO);
         const updatedPickup = await this.pickupRepository.update(pickup.pickup_id, {
-            is_paid_to_logistics_co: true,
             pickup_status_id: paidStatusId
         });
 

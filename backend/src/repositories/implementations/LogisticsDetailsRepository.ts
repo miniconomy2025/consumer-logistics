@@ -1,4 +1,4 @@
-import { Repository, LessThanOrEqual, Between, In } from 'typeorm'; 
+import { Repository, LessThanOrEqual, Between, In } from 'typeorm';
 import { AppDataSource } from '../../database/config';
 import { LogisticsDetailsEntity, LogisticsStatus } from '../../database/models/LogisticsDetailsEntity';
 import { ILogisticsDetailsRepository } from '../interfaces/ILogisticsDetailsRepository';
@@ -21,6 +21,7 @@ export class LogisticsDetailsRepository implements ILogisticsDetailsRepository {
                 'pickup',
                 'pickup.company',
                 'pickup.pickup_status',
+                'pickup.invoice',
                 'truckAllocations',
                 'truckAllocations.truck',
                 'truckAllocations.truck.truckType'
@@ -58,7 +59,7 @@ export class LogisticsDetailsRepository implements ILogisticsDetailsRepository {
                 truckAllocations: {
                     truck_id: truckId,
                 },
-                logistics_status: In([ 
+                logistics_status: In([
                     LogisticsStatus.PENDING_PLANNING,
                     LogisticsStatus.READY_FOR_SQS_QUEUEING,
                     LogisticsStatus.QUEUED_FOR_COLLECTION,
@@ -66,7 +67,7 @@ export class LogisticsDetailsRepository implements ILogisticsDetailsRepository {
                     LogisticsStatus.QUEUED_FOR_DELIVERY
                 ]),
             },
-            relations: ['truckAllocations'], 
+            relations: ['truckAllocations'],
         });
     }
 
@@ -90,7 +91,21 @@ export class LogisticsDetailsRepository implements ILogisticsDetailsRepository {
         }
         this.ormRepository.merge(existingDetail, data);
         try {
-            return await this.ormRepository.save(existingDetail);
+            const savedDetail = await this.ormRepository.save(existingDetail);
+            const updatedDetailWithRelations = await this.ormRepository.findOne({
+                where: { logistics_details_id: savedDetail.logistics_details_id },
+                relations: [
+                    'serviceType',
+                    'pickup',
+                    'pickup.company',
+                    'pickup.pickup_status',
+                    'pickup.invoice',
+                    'truckAllocations',
+                    'truckAllocations.truck',
+                    'truckAllocations.truck.truckType'
+                ],
+            });
+            return updatedDetailWithRelations;
         } catch (error: any) {
             logger.error('Error updating logistics detail:', error);
             throw new AppError('Failed to update logistics detail due to a database error.', 500);

@@ -52,8 +52,8 @@ export class PickupController {
                 pickup_location: p.pickup_location,
                 delivery_location: p.delivery_location,
                 recipient_name: p.recipient_name,
-                amount_due: parseFloat(p.amount_due_to_logistics_co.toString()),
-                is_paid: p.is_paid_to_logistics_co,
+                amount_due: parseFloat(p.invoice.total_amount.toString()),
+                is_paid: p.invoice?.paid || false,
             }));
 
             res.status(200).json(response);
