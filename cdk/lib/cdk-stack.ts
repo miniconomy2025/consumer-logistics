@@ -147,6 +147,7 @@ export class CdkStack extends cdk.Stack {
       securityGroups: [dbSecurityGroup],
       timeout: cdk.Duration.seconds(30),
       memorySize: 128,
+      allowPublicSubnet: true,
       environment: {
         REGION: props.deployRegion,
         PAYMENT_PROCESSING_QUEUE_URL: paymentQueue.queueUrl,
@@ -164,6 +165,7 @@ export class CdkStack extends cdk.Stack {
       vpcSubnets: {
         subnetType: SubnetType.PUBLIC,
       },
+      allowPublicSubnet: true,
       securityGroups: [dbSecurityGroup],
       timeout: cdk.Duration.seconds(30),
       memorySize: 128,
