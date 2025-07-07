@@ -24,15 +24,14 @@ describe('TimeManager Enhanced Tests', () => {
   });
 
   describe('Initialization and State Management', () => {
-    it('should initialize with current time on construction', () => {
-      const beforeTime = Date.now();
+    it('should initialize with default simulation start date on construction', () => {
       const newManager = TimeManager.getInstance();
-      const afterTime = Date.now();
+      const currentTime = newManager.getCurrentTime();
 
-      const currentTime = newManager.getCurrentTime().getTime();
-      // Allow for small timing differences (within 100ms)
-      expect(Math.abs(currentTime - beforeTime)).toBeLessThan(100);
-      expect(Math.abs(currentTime - afterTime)).toBeLessThan(100);
+      // Should initialize with default simulation start date (2050-01-01)
+      expect(currentTime.getFullYear()).toBe(2050);
+      expect(currentTime.getMonth()).toBe(0); // January
+      expect(currentTime.getDate()).toBe(1);
     });
 
     it('should properly initialize simulation time with provided start time', () => {
@@ -50,14 +49,14 @@ describe('TimeManager Enhanced Tests', () => {
       expect(manager.getRealStartTime().getTime()).toBeCloseTo(Date.now(), -2);
     });
 
-    it('should initialize simulation time with current time when no start time provided', () => {
-      const beforeStart = Date.now();
+    it('should initialize simulation time with default start date when no start time provided', () => {
       manager.startSimulation();
-      const afterStart = Date.now();
-      
-      const simStartTime = manager.getSimulationStartTime().getTime();
-      expect(simStartTime).toBeGreaterThanOrEqual(beforeStart);
-      expect(simStartTime).toBeLessThanOrEqual(afterStart);
+
+      const simStartTime = manager.getSimulationStartTime();
+      // Should use default simulation start date (2050-01-01)
+      expect(simStartTime.getFullYear()).toBe(2050);
+      expect(simStartTime.getMonth()).toBe(0); // January
+      expect(simStartTime.getDate()).toBe(1);
     });
 
     it('should reset all state properly', () => {
@@ -497,11 +496,12 @@ describe('TimeManager Enhanced Tests', () => {
 
       manager.reset();
 
-      // After reset, should be close to current real time
+      // After reset, should be back to default simulation start date
       const timeAfterReset = manager.getCurrentTime();
-      const now = new Date();
 
-      expect(Math.abs(timeAfterReset.getTime() - now.getTime())).toBeLessThan(1000);
+      expect(timeAfterReset.getFullYear()).toBe(2050);
+      expect(timeAfterReset.getMonth()).toBe(0); // January
+      expect(timeAfterReset.getDate()).toBe(1);
       expect(timeAfterReset.getTime()).not.toBe(timeAfterStart.getTime());
     });
 

@@ -68,13 +68,15 @@ describe('TimeManager Singleton', () => {
   it('should reset simulation properly', () => {
     const manager = TimeManager.getInstance();
     manager.startSimulation(new Date('2023-01-01T00:00:00Z'));
-    
+
     manager.reset();
-    
+
     expect(manager.isSimulationRunning()).toBe(false);
-    const now = new Date();
+    // After reset, should use default simulation start date (2050-01-01)
     const currentTime = manager.getCurrentTime();
-    expect(Math.abs(currentTime.getTime() - now.getTime())).toBeLessThan(1000);
+    expect(currentTime.getFullYear()).toBe(2050);
+    expect(currentTime.getMonth()).toBe(0); // January
+    expect(currentTime.getDate()).toBe(1);
   });
 
   it('should return correct simulation speed', () => {
@@ -113,22 +115,173 @@ describe('TimeManager Singleton', () => {
   it('should provide detailed sync status', () => {
     const manager = TimeManager.getInstance();
     const endpoint = 'http://test-endpoint/sync';
-    
+
     manager.startSimulation(new Date(), endpoint);
     const status = manager.getSyncStatus();
-    
+
     expect(status.enabled).toBe(true);
     expect(status.endpoint).toBe(endpoint);
     expect(status.failedAttempts).toBe(0);
     expect(status.maxFailures).toBe(3);
+    expect(status.lastSyncTime).toBeUndefined(); // No sync performed yet
   });
 
   it('should allow resetting sync failure count', () => {
     const manager = TimeManager.getInstance();
-    
+
     manager.resetSyncFailureCount();
     const status = manager.getSyncStatus();
-    
+
     expect(status.failedAttempts).toBe(0);
+  });
+
+  it('should update lastSyncTime after successful sync', async () => {
+    const manager = TimeManager.getInstance();
+    const simDate = new Date('2025-07-06T12:00:00Z');
+    mockedAxios.get.mockResolvedValueOnce({
+      data: { currentSimTime: simDate.toISOString() }
+    });
+
+    await manager.syncTime('http://fake-endpoint/sim-time');
+    const status = manager.getSyncStatus();
+
+    expect(status.lastSyncTime).toBeDefined();
+    expect(status.lastSyncTime!.getTime()).toBeCloseTo(Date.now(), -2);
+  });
+});
+
+describe('TimeManager Event System', () => {
+  let manager: TimeManager;
+
+  beforeEach(() => {
+    manager = TimeManager.getInstance();
+    manager.reset();
+  });
+
+  afterEach(() => {
+    manager.stopSimulation();
+  });
+
+  it('should register midnight callbacks', () => {
+    const mockCallback = jest.fn();
+    manager.onMidnight(mockCallback);
+
+    // Verify callback is registered (we can't easily test the actual trigger without complex timing)
+    expect(manager['onMidnightCallbacks']).toContain(mockCallback);
+  });
+
+  it('should register pre-midnight callbacks', () => {
+    const mockCallback = jest.fn();
+    manager.onBeforeMidnight(mockCallback);
+
+    // Verify callback is registered
+    expect(manager['onBeforeMidnightCallbacks']).toContain(mockCallback);
+  });
+
+  it('should trigger midnight callbacks when time crosses 00:00', () => {
+    const mockCallback = jest.fn();
+    manager.onMidnight(mockCallback);
+
+    // Manually trigger the time check method to test event logic
+    manager['lastSimDateString'] = '2050-01-01'; // Set previous day
+    manager['simTime'] = new Date('2050-01-02T00:00:00Z'); // Set current time to midnight of next day
+
+    // Call the private method directly to test event triggering
+    manager['checkAndTriggerTimeEvents']();
+
+    expect(mockCallback).toHaveBeenCalledWith(expect.any(Date));
+    const callArg = mockCallback.mock.calls[0][0];
+    expect(callArg.getUTCHours()).toBe(0);
+    expect(callArg.getUTCMinutes()).toBe(0);
+  });
+
+  it('should trigger pre-midnight callbacks at 23:59', () => {
+    const mockCallback = jest.fn();
+    manager.onBeforeMidnight(mockCallback);
+
+    // Set time to 23:59
+    manager['simTime'] = new Date('2050-01-01T23:59:30Z');
+
+    // Call the private method directly
+    manager['checkAndTriggerTimeEvents']();
+
+    expect(mockCallback).toHaveBeenCalledWith(expect.any(Date));
+    const callArg = mockCallback.mock.calls[0][0];
+    expect(callArg.getUTCHours()).toBe(23);
+    expect(callArg.getUTCMinutes()).toBe(59);
+  });
+
+  it('should handle callback errors gracefully', () => {
+    const errorCallback = jest.fn(() => {
+      throw new Error('Test callback error');
+    });
+    const normalCallback = jest.fn();
+
+    manager.onMidnight(errorCallback);
+    manager.onMidnight(normalCallback);
+
+    // Set up for midnight trigger
+    manager['lastSimDateString'] = '2050-01-01';
+    manager['simTime'] = new Date('2050-01-02T00:00:00Z');
+
+    // Should not throw despite error in callback
+    expect(() => manager['checkAndTriggerTimeEvents']()).not.toThrow();
+
+    expect(errorCallback).toHaveBeenCalled();
+    expect(normalCallback).toHaveBeenCalled(); // Should still be called despite error
+  });
+});
+
+describe('TimeManager Utility Methods', () => {
+  let manager: TimeManager;
+
+  beforeEach(() => {
+    manager = TimeManager.getInstance();
+    manager.reset();
+  });
+
+  afterEach(() => {
+    manager.stopSimulation();
+  });
+
+  it('should convert simulation date to real-world timestamp', () => {
+    const simStartTime = new Date('2050-01-01T00:00:00Z');
+    manager.startSimulation(simStartTime);
+
+    // Test conversion for a date 1 simulation day later
+    const simDate = new Date('2050-01-02T00:00:00Z');
+    const realWorldTime = manager.getRealWorldTimestampFromSimulationDate(simDate);
+
+    // Should be 2 real minutes later (1 sim day = 2 real minutes)
+    const expectedRealTime = new Date(manager.getRealStartTime().getTime() + (2 * 60 * 1000));
+    expect(Math.abs(realWorldTime.getTime() - expectedRealTime.getTime())).toBeLessThan(1000);
+  });
+
+  it('should calculate pickup timestamp for start of simulation day', () => {
+    const simStartTime = new Date('2050-01-01T12:30:45Z');
+    manager.startSimulation(simStartTime);
+
+    const simDate = new Date('2050-01-02T15:20:10Z');
+    const pickupTime = manager.getRealWorldPickupTimestamp(simDate);
+
+    // Should map to the start of the real-world day corresponding to 2050-01-02T00:00:00Z
+    const expectedSimMidnight = new Date('2050-01-02T00:00:00Z');
+    const expectedRealTime = manager.getRealWorldTimestampFromSimulationDate(expectedSimMidnight);
+
+    expect(pickupTime.getTime()).toBe(expectedRealTime.getTime());
+  });
+
+  it('should calculate delivery timestamp for end of simulation day', () => {
+    const simStartTime = new Date('2050-01-01T12:30:45Z');
+    manager.startSimulation(simStartTime);
+
+    const simDate = new Date('2050-01-02T15:20:10Z');
+    const deliveryTime = manager.getRealWorldDeliveryTimestamp(simDate);
+
+    // Should map to the end of the real-world day corresponding to 2050-01-02T23:59:59.999Z
+    const expectedSimEndOfDay = new Date('2050-01-02T23:59:59.999Z');
+    const expectedRealTime = manager.getRealWorldTimestampFromSimulationDate(expectedSimEndOfDay);
+
+    expect(deliveryTime.getTime()).toBe(expectedRealTime.getTime());
   });
 });
