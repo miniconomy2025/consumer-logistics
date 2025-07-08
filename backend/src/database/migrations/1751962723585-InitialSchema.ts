@@ -49,7 +49,6 @@ export class InitialSchema1751962723585 implements MigrationInterface {
         await queryRunner.query(`DROP TABLE "transaction_type"`);
         await queryRunner.query(`DROP TABLE "service_type"`);
         await queryRunner.query(`DROP TABLE "truck_type"`);
-        await queryRunner.query(`DROP TABLE "bank_account"`);
     }
 
 }
