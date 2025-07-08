@@ -1,6 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
 import { TruckTypeEntity } from './TruckTypeEntity';
-import { TruckAllocationEntity } from './TruckAllocationEntity'; 
+import { TruckAllocationEntity } from './TruckAllocationEntity';
 
 @Entity('truck')
 export class TruckEntity {
@@ -22,10 +22,13 @@ export class TruckEntity {
     @Column({ name: 'max_capacity', type: 'decimal', precision: 10, scale: 2 })
     max_capacity: number;
 
+    @Column({ name: 'is_available', type: 'boolean', default: true })
+    is_available: boolean;
+
     @ManyToOne(() => TruckTypeEntity, truckType => truckType.trucks)
     @JoinColumn({ name: 'truck_type_id' })
     truckType: TruckTypeEntity;
 
-    @OneToMany(() => TruckAllocationEntity, truckAllocation => truckAllocation.truck) 
+    @OneToMany(() => TruckAllocationEntity, truckAllocation => truckAllocation.truck)
     truckAllocations: TruckAllocationEntity[];
 }

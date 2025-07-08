@@ -11,6 +11,8 @@ export interface CreateTruckData {
   maxDropoffs: number;
   dailyOperatingCost: number;
   maxCapacity: number;
+  isAvailable?: boolean;
+
 }
 
 export interface UpdateTruckData extends Partial<CreateTruckData> {}
@@ -44,6 +46,7 @@ export class TruckManagementService {
       max_dropoffs: data.maxDropoffs,
       daily_operating_cost: data.dailyOperatingCost,
       max_capacity: data.maxCapacity,
+      is_available: data.isAvailable ?? true,
     });
     logger.info(`Truck created with ID: ${newTruck.truck_id}`);
     return newTruck;
@@ -73,7 +76,7 @@ export class TruckManagementService {
         max_dropoffs: data.maxDropoffs,
         daily_operating_cost: data.dailyOperatingCost,
         max_capacity: data.maxCapacity,
-
+        is_available: data.isAvailable
     });
     if (updatedTruck) {
       logger.info(`Truck with ID: ${id} updated.`);

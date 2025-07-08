@@ -1,32 +1,34 @@
 import { IPickupRepository } from '../repositories/interfaces/IPickupRepository';
-import { PickupRepository } from '../repositories/implementations/PickupRepository';
-import { CompanyEntity } from '../database/models/CompanyEntity'; 
 import { PickupEntity, PickupStatusEnum } from '../database/models/PickupEntity';
 import { ICompanyRepository } from '../repositories/interfaces/ICompanyRepository';
-import { CompanyRepository } from '../repositories/implementations/CompanyRepository'; 
 import { AppError } from '../shared/errors/ApplicationError';
 import { logger } from '../utils/logger';
-import { SimulationService } from './simulationService'; 
-import { LogisticsPlanningService } from './logisticsPlanningService'; 
-import { GetPickupsRequest, CreatePickupRequest, PickupResponse } from '../types/dtos/pickupDtos'; 
+import { SimulationService } from './simulationService';
+import { LogisticsPlanningService } from './logisticsPlanningService';
+import { GetPickupsRequest, CreatePickupRequest, PickupResponse } from '../types/dtos/pickupDtos';
 import { getLogisticsAccountNumber } from '../utils/bankAccountUtils';
+import { TimeManager } from './timeManager';
 
 export class PickupService {
-    private pickupRepository: IPickupRepository; 
+    private pickupRepository: IPickupRepository;
     private companyRepository: ICompanyRepository;
-    private simulationService: SimulationService;
-    private logisticsPlanningService: LogisticsPlanningService;
+    private timeManager: TimeManager;
+    private logisticsPlanningService?: LogisticsPlanningService; // optional to support late binding
 
     constructor(
         pickupRepository: IPickupRepository,
         companyRepository: ICompanyRepository,
-        simulationService: SimulationService,
-        logisticsPlanningService: LogisticsPlanningService
+        timeManager: TimeManager,
+        logisticsPlanningService?: LogisticsPlanningService // optional param
     ) {
         this.pickupRepository = pickupRepository;
         this.companyRepository = companyRepository;
-        this.simulationService = simulationService;
+        this.timeManager = timeManager;
         this.logisticsPlanningService = logisticsPlanningService;
+    }
+
+    public setLogisticsPlanningService(service: LogisticsPlanningService): void {
+        this.logisticsPlanningService = service;
     }
 
     public async createPickupRequest(data: CreatePickupRequest): Promise<PickupResponse> {
@@ -42,12 +44,12 @@ export class PickupService {
             logger.info(`Company '${company.company_name}' registered with ID: ${company.company_id}.`);
         }
 
-        const currentInSimDate = this.simulationService.getInSimulationDate();
+        const currentInSimDate = this.timeManager.getCurrentTime();
         const orderDateOnly = new Date(Date.UTC(currentInSimDate.getUTCFullYear(), currentInSimDate.getUTCMonth(), currentInSimDate.getUTCDate()));
 
         const pickupStatusId = await this.pickupRepository.getPickupStatusId(PickupStatusEnum.ORDER_RECEIVED);
 
-        const initialInvoice = await this.pickupRepository.createInvoice({ 
+        const initialInvoice = await this.pickupRepository.createInvoice({
             total_amount: amount,
             paid: false,
         });
@@ -63,14 +65,11 @@ export class PickupService {
             phone_units: data.quantity,
             order_date: orderDateOnly,
             unit_price: unit_price,
-            amount_due_to_logistics_co: amount, 
-            is_paid_to_logistics_co: false,
-            pickup_location: data.pickupLocation || 'Not Specified',
-            delivery_location: data.deliveryTo || 'Not Specified', 
             recipient_name: data.recipientName || 'Not Specified',
+            order_timestamp_simulated: currentInSimDate,
         });
 
-        logger.info(`Pickup ${newPickup.pickup_id} created. Invoice ${initialInvoice.reference_number} generated. Amount Due: ${newPickup.amount_due_to_logistics_co}.`);
+        logger.info(`Pickup ${newPickup.pickup_id} created. Invoice ${initialInvoice.reference_number} generated.`);
         logger.warn(`Pickup ${newPickup.pickup_id} requires payment before logistics can be planned.`);
         logger.warn(`Please simulate payment via webhook POST to ${process.env.MY_WEBHOOK_URL || '/api/webhook/payment-updates'} with reference '${initialInvoice.reference_number}'.`);
 
@@ -112,7 +111,7 @@ export class PickupService {
         if (!pickup.invoice) {
             throw new AppError(`Invoice for pickup ${pickup.pickup_id} not found.`, 500);
         }
-        if (pickup.invoice.paid && pickup.is_paid_to_logistics_co) {
+        if (pickup.invoice.paid) {
             logger.warn(`Invoice ${invoiceReference} and Pickup ${pickup.pickup_id} already marked as paid. Idempotent operation.`);
             return pickup;
         }
@@ -122,7 +121,6 @@ export class PickupService {
 
         const paidStatusId = await this.pickupRepository.getPickupStatusId(PickupStatusEnum.PAID_TO_LOGISTICS_CO);
         const updatedPickup = await this.pickupRepository.update(pickup.pickup_id, {
-            is_paid_to_logistics_co: true,
             pickup_status_id: paidStatusId
         });
 
