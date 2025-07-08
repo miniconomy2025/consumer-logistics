@@ -3,11 +3,10 @@ import { PickupEntity, PickupStatusEnum } from '../database/models/PickupEntity'
 import { ICompanyRepository } from '../repositories/interfaces/ICompanyRepository';
 import { AppError } from '../shared/errors/ApplicationError';
 import { logger } from '../utils/logger';
-import { SimulationService } from './simulationService';
+import { TimeManager } from './timeManager';
 import { LogisticsPlanningService } from './logisticsPlanningService';
 import { GetPickupsRequest, CreatePickupRequest, PickupResponse } from '../types/dtos/pickupDtos';
 import { getLogisticsAccountNumber } from '../utils/bankAccountUtils';
-import { TimeManager } from './timeManager';
 
 export class PickupService {
     private pickupRepository: IPickupRepository;
