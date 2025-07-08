@@ -68,8 +68,8 @@ export class TimeManager {
     // Configuration constants
     private readonly maxFailedSyncs: number = 3;
     private readonly SIM_DAY_MS = 2 * 60 * 1000; // 2 minutes in ms = 1 sim day
-    private readonly SYNC_INTERVAL_MS = 5 * 60 * 1000; // Sync every 5 minutes in real-world time
-    private readonly SYNC_TIMEOUT_MS = 10 * 1000; // 10 second timeout for sync requests
+    private readonly SYNC_INTERVAL_MS = 30 * 1000; // Sync every 30 seconds
+    private readonly SYNC_TIMEOUT_MS = 5 * 1000; // 5 second timeout for sync requests
     private readonly DEFAULT_SIM_START_DATE = new Date('2050-01-01T00:00:00.000Z');
 
     /**
