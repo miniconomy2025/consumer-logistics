@@ -1,4 +1,4 @@
-import { Repository, LessThanOrEqual, Between, In } from 'typeorm';
+import {  In } from 'typeorm';
 import { AppDataSource } from '../database/config';
 import { LogisticsDetailsEntity, LogisticsStatus } from '../database/models/LogisticsDetailsEntity';
 import { TruckEntity } from '../database/models/TruckEntity';
@@ -9,17 +9,12 @@ import { TimeManager } from './timeManager';
 import { SQSClient, SendMessageCommand } from '@aws-sdk/client-sqs';
 import { sqsClient, SQS_PICKUP_QUEUE_URL, SQS_DELIVERY_QUEUE_URL } from '../config/awsSqs';
 import { ILogisticsDetailsRepository } from '../repositories/interfaces/ILogisticsDetailsRepository';
-import { LogisticsDetailsRepository } from '../repositories/implementations/LogisticsDetailsRepository';
 import { IPickupRepository } from '../repositories/interfaces/IPickupRepository';
-import { PickupRepository } from '../repositories/implementations/PickupRepository';
-import { PickupEntity, PickupStatusEnum } from '../database/models/PickupEntity';
+import { PickupStatusEnum } from '../database/models/PickupEntity';
 import { ITruckRepository } from '../repositories/interfaces/ITruckRepository';
-import { TruckRepository } from '../repositories/implementations/TruckRepository';
 import { ITruckAllocationRepository } from '../repositories/interfaces/ITruckAllocationRepository';
-import { TruckAllocationRepository } from '../repositories/implementations/TruckAllocationRepository';
 import { TruckAllocationEntity } from '../database/models/TruckAllocationEntity';
-import { PickupService } from './pickupService'; // Ensure this import is present
-
+import { PickupService } from './pickupService'; 
 export interface CreateLogisticsDetailsData {
     pickupId: number;
     serviceTypeId: ServiceTypeEnum;
@@ -30,9 +25,8 @@ export interface CreateLogisticsDetailsData {
 export class LogisticsPlanningService {
     public logisticsDetailsRepository: ILogisticsDetailsRepository;
     private truckRepository: ITruckRepository;
-    private serviceTypeRepository: Repository<ServiceTypeEntity>;
     private pickupRepository: IPickupRepository;
-    private pickupService: PickupService; // Reference to PickupService
+    private pickupService: PickupService; 
     private truckAllocationRepository: ITruckAllocationRepository;
     private timeManager: TimeManager;
     private sqsClient: SQSClient;
@@ -43,16 +37,15 @@ export class LogisticsPlanningService {
         truckRepository: ITruckRepository,
         pickupRepository: IPickupRepository,
         truckAllocationRepository: ITruckAllocationRepository,
-        pickupService: PickupService, // Inject PickupService
+        pickupService: PickupService, 
         sqsClientInstance: SQSClient = sqsClient
     ) {
         this.timeManager = timeManager;
         this.logisticsDetailsRepository = logisticsDetailsRepository;
         this.truckRepository = truckRepository;
-        this.serviceTypeRepository = AppDataSource.getRepository(ServiceTypeEntity);
         this.pickupRepository = pickupRepository;
         this.truckAllocationRepository = truckAllocationRepository;
-        this.pickupService = pickupService; // Assign PickupService
+        this.pickupService = pickupService; 
         this.sqsClient = sqsClientInstance;
     }
 
@@ -64,12 +57,9 @@ export class LogisticsPlanningService {
     public async planNewCollectionAfterPayment(
         pickupId: number,
         quantity: number,
-        pickupLocation: string,
-        deliveryLocation: string,
         initialInSimPickupDate: Date
     ): Promise<LogisticsDetailsEntity> {
         logger.info(`Planning logistics for Pickup ID: ${pickupId} after payment. Initial Requested In-Sim Pickup Date: ${initialInSimPickupDate.toISOString()}`);
-        logger.debug(`Pickup Location: ${pickupLocation}, Delivery Location: ${deliveryLocation}`);
 
         const pickup = await this.pickupRepository.findById(pickupId);
         if (!pickup) {
@@ -91,10 +81,8 @@ export class LogisticsPlanningService {
                 pickupId,
                 quantity,
                 initialInSimPickupDate,
-                pickupLocation,
-                deliveryLocation,
-                undefined, // No truck to exclude initially
-                pickup.logisticsDetails?.logistics_details_id // Pass existing logistics detail ID if any
+                undefined, 
+                pickup.logisticsDetails?.logistics_details_id 
             );
         } catch (error: any) {
             logger.error(`Initial logistics assignment failed for pickup ${pickupId}: ${error.message}`, error);
@@ -124,7 +112,6 @@ export class LogisticsPlanningService {
         }
         logger.info(`Logistics detail ${updatedLogisticsDetail.logistics_details_id} queued to SQS for collection with ${realWorldDelaySeconds}s delay.`);
 
-        // --- FIXED: Use PickupService to update status ---
         await this.pickupService.updatePickupStatus(pickupId, PickupStatusEnum.READY_FOR_COLLECTION);
         logger.info(`Pickup ${pickupId} status updated to READY_FOR_COLLECTION.`);
 
@@ -135,8 +122,6 @@ export class LogisticsPlanningService {
         pickupId: number,
         quantity: number,
         requestedInSimDate: Date,
-        pickupLocation: string,
-        deliveryLocation: string,
         excludeTruckId?: number,
         logisticsDetailIdToUpdate?: number
     ): Promise<LogisticsDetailsEntity> {
@@ -169,10 +154,13 @@ export class LogisticsPlanningService {
                     logistics_status: statusToSet,
                 });
             }
-            // --- FIXED: Use PickupService to update status ---
             await this.pickupService.updatePickupStatus(pickupId, PickupStatusEnum.FAILED);
-            // Changed from 500 to 400 for client-side resource unavailability
             throw new AppError(`Cannot schedule pickup ${pickupId}: No available trucks to assign.`, 400);
+        }
+
+        const pickup = await this.pickupRepository.findById(pickupId);
+        if (!pickup) {
+            throw new AppError(`Pickup with ID ${pickupId} not found during truck assignment.`, 404);
         }
 
         while (attempts < MAX_ATTEMPTS && !savedLogisticsDetail) {
@@ -230,10 +218,10 @@ export class LogisticsPlanningService {
                     savedLogisticsDetail = await this.logisticsDetailsRepository.update(logisticsDetailIdToUpdate, newLogisticsDetailData);
                     const existingAllocation = await this.truckAllocationRepository.findByLogisticsDetailId(logisticsDetailIdToUpdate);
                     if (existingAllocation && existingAllocation.truck_id !== assignedTruck.truck_id) {
-                         await AppDataSource.getRepository(TruckAllocationEntity).delete({ logistics_details_id: logisticsDetailIdToUpdate });
-                         await this.truckAllocationRepository.create(logisticsDetailIdToUpdate, assignedTruck.truck_id);
+                        await AppDataSource.getRepository(TruckAllocationEntity).delete({ logistics_details_id: logisticsDetailIdToUpdate });
+                        await this.truckAllocationRepository.create(logisticsDetailIdToUpdate, assignedTruck.truck_id);
                     } else if (!existingAllocation) {
-                         await this.truckAllocationRepository.create(logisticsDetailIdToUpdate, assignedTruck.truck_id);
+                        await this.truckAllocationRepository.create(logisticsDetailIdToUpdate, assignedTruck.truck_id);
                     }
                 } else {
                     savedLogisticsDetail = await this.logisticsDetailsRepository.create(newLogisticsDetailData);
@@ -264,17 +252,15 @@ export class LogisticsPlanningService {
             if (logisticsDetailIdToUpdate) {
                 logisticsToReturn = (await this.logisticsDetailsRepository.update(logisticsDetailIdToUpdate, { logistics_status: statusToSet })) as LogisticsDetailsEntity;
             } else {
-                 logisticsToReturn = await this.logisticsDetailsRepository.create({
+                logisticsToReturn = await this.logisticsDetailsRepository.create({
                     pickup_id: pickupId,
                     service_type_id: ServiceTypeEnum.COLLECTION,
                     scheduled_time: currentInSimDate,
                     quantity: quantity,
                     logistics_status: statusToSet,
-                 });
+                });
             }
-            // --- FIXED: Use PickupService to update status ---
             await this.pickupService.updatePickupStatus(pickupId, PickupStatusEnum.FAILED);
-            // Changed from 500 to 400 for client-side resource unavailability
             throw new AppError(`Cannot find a slot for pickup ${pickupId} after ${MAX_ATTEMPTS} attempts. Logistics status set to ${statusToSet}.`, 400);
         }
 
@@ -487,8 +473,6 @@ export class LogisticsPlanningService {
             logisticsDetail.pickup.pickup_id,
             logisticsDetail.quantity,
             this.timeManager.getCurrentTime(),
-            logisticsDetail.pickup.pickup_location,
-            logisticsDetail.pickup.delivery_location,
             excludeTruckId,
             logisticsDetailsId
         );
@@ -590,5 +574,64 @@ export class LogisticsPlanningService {
         logger.info(`Re-planned delivery for Logistics ID ${savedAlternativeDeliveryLogistics.logistics_details_id} re-queued to DELIVERY SQS with ${realWorldDeliveryDelaySeconds}s delay.`);
 
         return savedAlternativeDeliveryLogistics;
+    }
+
+    public async replanPendingOrFailed(): Promise<void> {
+        const statusesToReplan = [
+            LogisticsStatus.NO_TRUCKS_AVAILABLE,
+            LogisticsStatus.PENDING_REPLANNING,
+            LogisticsStatus.TRUCK_UNAVAILABLE,
+            LogisticsStatus.STUCK_IN_TRANSIT,
+            LogisticsStatus.ALTERNATIVE_DELIVERY_PLANNED,
+            LogisticsStatus.FAILED 
+        ];
+
+        logger.info(`[LogisticsPlanningService] Starting re-planning for logistics with statuses: ${statusesToReplan.join(', ')}`);
+
+        const failedLogistics = await this.logisticsDetailsRepository.find({
+            where: { logistics_status: In(statusesToReplan) },
+            relations: ['pickup', 'pickup.company'], 
+        });
+
+        if (failedLogistics.length === 0) {
+            logger.info('[LogisticsPlanningService] No logistics details found requiring re-planning.');
+            return;
+        }
+
+        logger.info(`[LogisticsPlanningService] Found ${failedLogistics.length} logistics details to re-plan.`);
+
+        for (const detail of failedLogistics) {
+            if (!detail.pickup) {
+                logger.warn(`Skipping replanning for logistics detail ${detail.logistics_details_id}: No associated pickup found.`);
+                continue;
+            }
+
+            try {
+                logger.info(`Retrying logistics for Pickup ID: ${detail.pickup.pickup_id} (Logistics ID: ${detail.logistics_details_id}). Current Status: ${detail.logistics_status}`);
+
+                if (detail.logistics_status !== LogisticsStatus.STUCK_IN_TRANSIT &&
+                    detail.logistics_status !== LogisticsStatus.ALTERNATIVE_DELIVERY_PLANNED) {
+                    await this.logisticsDetailsRepository.update(detail.logistics_details_id, {
+                        logistics_status: LogisticsStatus.PENDING_REPLANNING
+                    });
+                    await this.pickupService.updatePickupStatus(detail.pickup.pickup_id, PickupStatusEnum.ORDER_RECEIVED); 
+                }
+
+                if (detail.logistics_status === LogisticsStatus.STUCK_IN_TRANSIT ||
+                    detail.logistics_status === LogisticsStatus.ALTERNATIVE_DELIVERY_PLANNED) {
+                    logger.info(`Attempting alternative delivery for logistics ${detail.logistics_details_id}.`);
+                    await this.planAlternativeDelivery(detail.logistics_details_id);
+                } else {
+                    logger.info(`Attempting to reassign truck for logistics ${detail.logistics_details_id}.`);
+                    await this.reassignTruckForLogistics(detail.logistics_details_id);
+                }
+
+                logger.info(`Successfully re-planned logistics detail ${detail.logistics_details_id}.`);
+            } catch (err: any) {
+                logger.warn(`Retry for logistics detail ${detail.logistics_details_id} (Pickup ID: ${detail.pickup.pickup_id}) failed again: ${err.message}`);
+            }
+        }
+
+        logger.info(`Retry process completed. Re-attempted ${failedLogistics.length} failed logistics.`);
     }
 }

@@ -2,7 +2,7 @@ import { logger } from '../utils/logger';
 import { PickupService } from './pickupService';
 import { LogisticsPlanningService } from './logisticsPlanningService';
 import { AppError } from '../shared/errors/ApplicationError';
-import { TimeManager } from './timeManager'; // Replaced SimulationService
+import { TimeManager } from './timeManager'; 
 import { PickupStatusEnum } from '../database/models/PickupEntity';
 
 export interface PaymentNotification {
@@ -19,16 +19,16 @@ export interface PaymentNotification {
 export class FinancialNotificationService {
     private pickupService: PickupService;
     private logisticsPlanningService: LogisticsPlanningService;
-    private timeManager: TimeManager; // Replaced SimulationService
+    private timeManager: TimeManager; 
 
     constructor(
         pickupService: PickupService,
         logisticsPlanningService: LogisticsPlanningService,
-        timeManager: TimeManager // Replaced SimulationService
+        timeManager: TimeManager 
     ) {
         this.pickupService = pickupService;
         this.logisticsPlanningService = logisticsPlanningService;
-        this.timeManager = timeManager; // Replaced SimulationService
+        this.timeManager = timeManager; 
     }
 
     public async processPaymentNotification(notification: PaymentNotification): Promise<void> {
@@ -59,28 +59,19 @@ export class FinancialNotificationService {
             const paidPickup = await this.pickupService.markPickupAndInvoiceAsPaid(notification.reference);
             logger.info(`Invoice ${notification.reference} and Pickup ${paidPickup.pickup_id} marked as PAID_TO_LOGISTICS_CO based on webhook notification.`);
 
-            // Use TimeManager here
             const currentInSimTime = this.timeManager.getCurrentTime();
             let initialInSimPickupDate: Date;
             const startOfCurrentInSimDay = new Date(Date.UTC(currentInSimTime.getUTCFullYear(), currentInSimTime.getUTCMonth(), currentInSimTime.getUTCDate(), 0, 0, 0, 0));
 
-            // Logic to determine initial pickup date based on current in-sim time
             if (currentInSimTime.getUTCHours() === 0 && currentInSimTime.getUTCMinutes() === 0 && currentInSimTime.getUTCSeconds() === 0 && currentInSimTime.getUTCMilliseconds() === 0) {
                 initialInSimPickupDate = startOfCurrentInSimDay;
             } else {
-                // If it's not exactly midnight, schedule for the next simulated day's midnight
                 initialInSimPickupDate = new Date(Date.UTC(currentInSimTime.getUTCFullYear(), currentInSimTime.getUTCMonth(), currentInSimTime.getUTCDate() + 1, 0, 0, 0, 0));
             }
-
-            const pickupLocation = paidPickup.pickup_location || 'Location Not Specified';
-            const deliveryLocation = paidPickup.delivery_location || 'Location Not Specified';
-
             try {
                 await this.logisticsPlanningService.planNewCollectionAfterPayment(
                     paidPickup.pickup_id,
                     paidPickup.phone_units,
-                    pickupLocation,
-                    deliveryLocation,
                     initialInSimPickupDate
                 );
                 logger.info(`Logistics planning triggered for Pickup ${paidPickup.pickup_id} after payment.`);

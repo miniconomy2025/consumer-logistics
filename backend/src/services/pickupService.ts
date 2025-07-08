@@ -1,9 +1,6 @@
 import { IPickupRepository } from '../repositories/interfaces/IPickupRepository';
-import { PickupRepository } from '../repositories/implementations/PickupRepository';
-import { CompanyEntity } from '../database/models/CompanyEntity';
 import { PickupEntity, PickupStatusEnum } from '../database/models/PickupEntity';
 import { ICompanyRepository } from '../repositories/interfaces/ICompanyRepository';
-import { CompanyRepository } from '../repositories/implementations/CompanyRepository';
 import { AppError } from '../shared/errors/ApplicationError';
 import { logger } from '../utils/logger';
 import { TimeManager } from './timeManager';
@@ -66,8 +63,6 @@ export class PickupService {
             phone_units: data.quantity,
             order_date: orderDateOnly,
             unit_price: unit_price,
-            pickup_location: data.pickupLocation || 'Not Specified',
-            delivery_location: data.deliveryTo || 'Not Specified',
             recipient_name: data.recipientName || 'Not Specified',
             order_timestamp_simulated: currentInSimDate,
         });

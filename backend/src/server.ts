@@ -69,6 +69,15 @@ AppDataSource.initialize()
             sqsClient
         );
 
+        timeManager.onMidnight(async (simTime) => {
+            logger.info(`Midnight Tick! Sim Time: ${simTime.toISOString()}`);
+            try {
+                await logisticsPlanningService.replanPendingOrFailed();
+            } catch (err: any) {
+                logger.error('Error during logistics reattempt at midnight:', err);
+            }
+        });
+
         sqsWorkerService.startPollingPickupQueue();
         sqsWorkerService.startPollingDeliveryQueue();
 

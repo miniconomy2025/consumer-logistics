@@ -1,17 +1,17 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToOne } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
 import { InvoiceEntity } from './InvoiceEntity';
-import { ServiceTypeEntity } from './ServiceTypeEntity';
+import { TransactionTypeEntity } from './TransactionTypeEntity';
 
-@Entity('transaction')
+@Entity('transaction_ledger')
 export class TransactionEntity {
-  @PrimaryGeneratedColumn({ name: 'transaction_id' })
-  transaction_id: number;
+  @PrimaryGeneratedColumn({ name: 'transaction_ledger_id' })
+  transaction_ledger_id: number;
 
   @Column({ name: 'invoice_id', type: 'int'})
   invoice_id: number;
 
-  @Column({ name: 'service_type_id', type: 'int' })
-  service_type_id: number;
+  @Column({ name: 'transaction_type_id', type: 'int' })
+  transaction_type_id: number;
 
   @Column({ name: 'amount', type: 'decimal', precision: 10, scale: 2 })
   amount: number;
@@ -19,13 +19,9 @@ export class TransactionEntity {
   @Column({ name: 'transaction_date', type: 'date' })
   transaction_date: Date;
 
-  @Column({ name: 'transaction_type_id', type: 'int' })
-  transaction_type_id: number;
-
-  @OneToOne(() => InvoiceEntity, (invoice) => invoice.invoice_id)
+  @ManyToOne(() => InvoiceEntity, (invoice) => invoice.transactions)
   invoice: InvoiceEntity;
 
-  @OneToOne(() => ServiceTypeEntity, (service_type) => service_type.service_type_id)
-  service_type: ServiceTypeEntity;
-
+  @ManyToOne(() => TransactionTypeEntity, (transactionType) => transactionType.transactions)
+  transaction_type: TransactionTypeEntity;
 }

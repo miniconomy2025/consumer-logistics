@@ -52,12 +52,6 @@ export class PickupEntity {
     @Column({ name: 'unit_price', type: 'decimal', precision: 10, scale: 2 })
     unit_price: number;
 
-    @Column({ name: 'pickup_location', type: 'varchar', nullable: true })
-    pickup_location: string;
-
-    @Column({ name: 'delivery_location', type: 'varchar', nullable: true })
-    delivery_location: string;
-
     @Column({ name: 'recipient_name', type: 'varchar', length: 255 })
     recipient_name: string;
 

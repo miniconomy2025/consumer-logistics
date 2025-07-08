@@ -18,8 +18,6 @@ export class PickupController {
             if (
                 typeof data.quantity !== 'number' ||
                 !data.pickupFrom ||
-                !data.deliveryTo ||
-                !data.pickupLocation || 
                 !data.recipientName 
             ) {
                 throw new AppError('Invalid request body: pickupFrom, quantity, deliveryTo, pickupLocation, and recipientName are required.', 400);
@@ -49,8 +47,6 @@ export class PickupController {
                 quantity: p.phone_units,
                 company_name: p.company ? p.company.company_name : 'Unknown', 
                 status: p.pickup_status ? p.pickup_status.status_name : 'Unknown',
-                pickup_location: p.pickup_location,
-                delivery_location: p.delivery_location,
                 recipient_name: p.recipient_name,
                 amount_due: parseFloat(p.invoice.total_amount.toString()),
                 is_paid: p.invoice?.paid || false,
