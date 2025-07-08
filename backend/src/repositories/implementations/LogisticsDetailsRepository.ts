@@ -1,4 +1,4 @@
-import { Repository, LessThanOrEqual, Between, In } from 'typeorm';
+import { Repository, LessThanOrEqual, Between, In, FindManyOptions } from 'typeorm'; 
 import { AppDataSource } from '../../database/config';
 import { LogisticsDetailsEntity, LogisticsStatus } from '../../database/models/LogisticsDetailsEntity';
 import { ILogisticsDetailsRepository } from '../interfaces/ILogisticsDetailsRepository';
@@ -71,7 +71,6 @@ export class LogisticsDetailsRepository implements ILogisticsDetailsRepository {
         });
     }
 
-
     async create(data: Partial<LogisticsDetailsEntity>): Promise<LogisticsDetailsEntity> {
         logger.info('Attempting to create new logistics detail.');
         const newDetail = this.ormRepository.create(data);
@@ -110,5 +109,10 @@ export class LogisticsDetailsRepository implements ILogisticsDetailsRepository {
             logger.error('Error updating logistics detail:', error);
             throw new AppError('Failed to update logistics detail due to a database error.', 500);
         }
+    }
+
+    async find(options?: FindManyOptions<LogisticsDetailsEntity>): Promise<LogisticsDetailsEntity[]> {
+        logger.debug('Finding logistics details with provided options.');
+        return this.ormRepository.find(options);
     }
 }

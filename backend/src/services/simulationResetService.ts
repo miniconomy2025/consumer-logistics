@@ -3,7 +3,7 @@ import { logger } from '../utils/logger';
 import { PickupStatusEntity } from '../database/models/PickupStatusEntity';
 import { ServiceTypeEntity } from '../database/models/ServiceTypeEntity';
 import { TruckTypeEntity } from '../database/models/TruckTypeEntity';
-import { CompanyEntity } from '../database/models/CompanyEntity';
+import { TimeManager } from './timeManager';
 
 export class SimulationResetService {
 
@@ -47,6 +47,8 @@ export class SimulationResetService {
       throw error; 
     }
 
+  TimeManager.getInstance().reset();
+    logger.info('TimeManager clock reset for simulation environment.');
     logger.info('Database reset, migrated, and seeded successfully for simulation.');
   }
 

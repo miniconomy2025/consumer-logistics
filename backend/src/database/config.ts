@@ -10,6 +10,8 @@ import { ServiceTypeEntity } from './models/ServiceTypeEntity';
 import { TransactionTypeEntity } from './models/TransactionType';
 import { LogisticsDetailsEntity } from './models/LogisticsDetailsEntity'; 
 import { TruckAllocationEntity } from './models/TruckAllocationEntity';
+import { TransactionTypeEntity } from './models/TransactionTypeEntity'
+import { TransactionEntity } from './models/TransactionEntity';
 
 import dotenv from 'dotenv';
 import path from 'path';
@@ -28,6 +30,8 @@ export const AppDataSource = new DataSource({
     entities: [
         TruckEntity,
         TruckTypeEntity,
+        TransactionTypeEntity,
+        TransactionEntity,
         PickupEntity,
         InvoiceEntity,
         PickupStatusEntity,

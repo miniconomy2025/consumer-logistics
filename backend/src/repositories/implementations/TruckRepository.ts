@@ -46,13 +46,21 @@ export class TruckRepository implements ITruckRepository {
 
     async update(id: number, truck: Partial<TruckEntity>): Promise<TruckEntity | null> {
         logger.info(`Attempting to update truck with ID: ${id}.`);
-        const existingTruck = await this.ormTruckRepository.findOneBy({ truck_id: id });
+        const existingTruck = await this.ormTruckRepository.findOne({ 
+            where: { truck_id: id }, 
+            relations: ['truckType']
+        });
         if (!existingTruck) {
             return null;
         }
         this.ormTruckRepository.merge(existingTruck, truck);
         try {
-            return await this.ormTruckRepository.save(existingTruck);
+            const savedTruck = await this.ormTruckRepository.save(existingTruck);
+            const updatedTruckWithRelations = await this.ormTruckRepository.findOne({
+                where: { truck_id: savedTruck.truck_id },
+                relations: ['truckType']
+            });
+            return updatedTruckWithRelations; 
         } catch (error: any) {
             logger.error('Error updating truck:', error);
             throw new AppError('Failed to update truck due to a database error.', 500);

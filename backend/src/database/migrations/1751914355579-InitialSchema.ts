@@ -1,7 +1,7 @@
 import { MigrationInterface, QueryRunner } from "typeorm";
 
-export class InitialSchema1751835267267 implements MigrationInterface {
-    name = 'InitialSchema1751835267267'
+export class InitialSchema1751914355579 implements MigrationInterface {
+    name = 'InitialSchema1751914355579'
 
     public async up(queryRunner: QueryRunner): Promise<void> {
         await queryRunner.query(`CREATE TABLE "truck_type" ("truck_type_id" SERIAL NOT NULL, "truck_type_name" character varying(50) NOT NULL, CONSTRAINT "UQ_dcf57b08a142ad5f1a00235c75d" UNIQUE ("truck_type_name"), CONSTRAINT "PK_93b246e71b8d868aa3c671ee265" PRIMARY KEY ("truck_type_id"))`);
@@ -12,7 +12,9 @@ export class InitialSchema1751835267267 implements MigrationInterface {
         await queryRunner.query(`CREATE TABLE "pickup" ("pickup_id" SERIAL NOT NULL, "invoice_id" integer NOT NULL, "pickup_status_id" integer NOT NULL, "company_id" integer NOT NULL, "phone_units" integer NOT NULL, "order_date" date NOT NULL, "order_timestamp_simulated" TIMESTAMP NOT NULL, "unit_price" numeric(10,2) NOT NULL, "pickup_location" character varying, "delivery_location" character varying, "recipient_name" character varying(255) NOT NULL, CONSTRAINT "PK_8ec4ec7d42e29ddf2b184fc41fe" PRIMARY KEY ("pickup_id"))`);
         await queryRunner.query(`CREATE TABLE "logistics_details" ("logistics_details_id" SERIAL NOT NULL, "pickup_id" integer NOT NULL, "service_type_id" integer NOT NULL, "scheduled_time" TIMESTAMP NOT NULL, "quantity" integer NOT NULL, "logistics_status" character varying(50) NOT NULL DEFAULT 'PENDING_PLANNING', "scheduled_real_pickup_timestamp" TIMESTAMP, "scheduled_real_delivery_timestamp" TIMESTAMP, "scheduled_simulated_pickup_timestamp" TIMESTAMP, "scheduled_simulated_delivery_timestamp" TIMESTAMP, CONSTRAINT "REL_6175ebf66d95eacc6c2f98eb68" UNIQUE ("pickup_id"), CONSTRAINT "PK_f29bf3112ce89b41c7a228f8a8e" PRIMARY KEY ("logistics_details_id"))`);
         await queryRunner.query(`CREATE TABLE "truck_allocation" ("logistics_details_id" integer NOT NULL, "truck_id" integer NOT NULL, CONSTRAINT "PK_015b364af139e634e12b7972e4b" PRIMARY KEY ("logistics_details_id", "truck_id"))`);
-        await queryRunner.query(`CREATE TABLE "truck" ("truck_id" SERIAL NOT NULL, "truck_type_id" integer NOT NULL, "max_pickups" integer NOT NULL, "max_dropoffs" integer NOT NULL, "daily_operating_cost" numeric(10,2) NOT NULL, "max_capacity" numeric(10,2) NOT NULL, CONSTRAINT "PK_21860c9f57b19eb3cab391f6a38" PRIMARY KEY ("truck_id"))`);
+        await queryRunner.query(`CREATE TABLE "truck" ("truck_id" SERIAL NOT NULL, "truck_type_id" integer NOT NULL, "max_pickups" integer NOT NULL, "max_dropoffs" integer NOT NULL, "daily_operating_cost" numeric(10,2) NOT NULL, "max_capacity" numeric(10,2) NOT NULL, "is_available" boolean NOT NULL DEFAULT true, CONSTRAINT "PK_21860c9f57b19eb3cab391f6a38" PRIMARY KEY ("truck_id"))`);
+        await queryRunner.query(`CREATE TABLE "transaction" ("transaction_id" SERIAL NOT NULL, "invoice_id" integer NOT NULL, "service_type_id" integer NOT NULL, "amount" numeric(10,2) NOT NULL, "transaction_date" date NOT NULL, "transaction_type_id" integer NOT NULL, CONSTRAINT "PK_6e02e5a0a6a7400e1c944d1e946" PRIMARY KEY ("transaction_id"))`);
+        await queryRunner.query(`CREATE TABLE "transaction_type" ("transaction_type_id" SERIAL NOT NULL, "transaction_type_name" character varying(50) NOT NULL, "transactionTransactionId" integer, CONSTRAINT "PK_fa15cdd9f6ea232ff4f50c0970c" PRIMARY KEY ("transaction_type_id"))`);
         await queryRunner.query(`ALTER TABLE "pickup" ADD CONSTRAINT "FK_b1d25a1c18b1f80c0343fa3bc39" FOREIGN KEY ("invoice_id") REFERENCES "invoice"("invoice_id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE "pickup" ADD CONSTRAINT "FK_26a8ef77e9c68c89dcfa0180956" FOREIGN KEY ("pickup_status_id") REFERENCES "pickup_status"("pickup_status_id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE "pickup" ADD CONSTRAINT "FK_abbc6385c3a1168d68e4afdff36" FOREIGN KEY ("company_id") REFERENCES "company"("company_id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
@@ -21,9 +23,11 @@ export class InitialSchema1751835267267 implements MigrationInterface {
         await queryRunner.query(`ALTER TABLE "truck_allocation" ADD CONSTRAINT "FK_ad9928c792556d50c6061073812" FOREIGN KEY ("logistics_details_id") REFERENCES "logistics_details"("logistics_details_id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE "truck_allocation" ADD CONSTRAINT "FK_f058855242ff926dd7a3c888a45" FOREIGN KEY ("truck_id") REFERENCES "truck"("truck_id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE "truck" ADD CONSTRAINT "FK_66a6938220a862042238520f419" FOREIGN KEY ("truck_type_id") REFERENCES "truck_type"("truck_type_id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE "transaction_type" ADD CONSTRAINT "FK_a4b17514430d1050752bbbf505d" FOREIGN KEY ("transactionTransactionId") REFERENCES "transaction"("transaction_id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
     }
 
     public async down(queryRunner: QueryRunner): Promise<void> {
+        await queryRunner.query(`ALTER TABLE "transaction_type" DROP CONSTRAINT "FK_a4b17514430d1050752bbbf505d"`);
         await queryRunner.query(`ALTER TABLE "truck" DROP CONSTRAINT "FK_66a6938220a862042238520f419"`);
         await queryRunner.query(`ALTER TABLE "truck_allocation" DROP CONSTRAINT "FK_f058855242ff926dd7a3c888a45"`);
         await queryRunner.query(`ALTER TABLE "truck_allocation" DROP CONSTRAINT "FK_ad9928c792556d50c6061073812"`);
@@ -32,6 +36,8 @@ export class InitialSchema1751835267267 implements MigrationInterface {
         await queryRunner.query(`ALTER TABLE "pickup" DROP CONSTRAINT "FK_abbc6385c3a1168d68e4afdff36"`);
         await queryRunner.query(`ALTER TABLE "pickup" DROP CONSTRAINT "FK_26a8ef77e9c68c89dcfa0180956"`);
         await queryRunner.query(`ALTER TABLE "pickup" DROP CONSTRAINT "FK_b1d25a1c18b1f80c0343fa3bc39"`);
+        await queryRunner.query(`DROP TABLE "transaction_type"`);
+        await queryRunner.query(`DROP TABLE "transaction"`);
         await queryRunner.query(`DROP TABLE "truck"`);
         await queryRunner.query(`DROP TABLE "truck_allocation"`);
         await queryRunner.query(`DROP TABLE "logistics_details"`);

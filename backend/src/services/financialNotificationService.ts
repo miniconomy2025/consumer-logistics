@@ -2,7 +2,7 @@ import { logger } from '../utils/logger';
 import { PickupService } from './pickupService';
 import { LogisticsPlanningService } from './logisticsPlanningService';
 import { AppError } from '../shared/errors/ApplicationError';
-import { SimulationService } from './simulationService';
+import { TimeManager } from './timeManager'; // Replaced SimulationService
 import { PickupStatusEnum } from '../database/models/PickupEntity';
 
 export interface PaymentNotification {
@@ -13,22 +13,22 @@ export interface PaymentNotification {
     description?: string;
     from?: string;
     to?: string;
-    reference?: string; 
+    reference?: string;
 }
 
 export class FinancialNotificationService {
     private pickupService: PickupService;
     private logisticsPlanningService: LogisticsPlanningService;
-    private simulationService: SimulationService;
+    private timeManager: TimeManager; // Replaced SimulationService
 
     constructor(
         pickupService: PickupService,
         logisticsPlanningService: LogisticsPlanningService,
-        simulationService: SimulationService
+        timeManager: TimeManager // Replaced SimulationService
     ) {
         this.pickupService = pickupService;
         this.logisticsPlanningService = logisticsPlanningService;
-        this.simulationService = simulationService;
+        this.timeManager = timeManager; // Replaced SimulationService
     }
 
     public async processPaymentNotification(notification: PaymentNotification): Promise<void> {
@@ -40,7 +40,6 @@ export class FinancialNotificationService {
                 throw new AppError('Payment notification reference is missing. Cannot link to an invoice/pickup.', 400);
             }
 
-    
             const pickupByInvoice = await this.pickupService.getPickupByInvoiceReference(notification.reference);
 
             if (!pickupByInvoice || !pickupByInvoice.invoice) {
@@ -48,12 +47,11 @@ export class FinancialNotificationService {
                 throw new AppError(`No pickup or invoice found for reference: ${notification.reference}.`, 404);
             }
 
-            
             if (pickupByInvoice.invoice && notification.amount < pickupByInvoice.invoice.total_amount) {
                 logger.warn(`Received insufficient payment for invoice ${notification.reference}. Expected: ${pickupByInvoice.invoice.total_amount}, Received: ${notification.amount}`);
                 throw new AppError('Insufficient payment received.', 400);
             }
-         
+
             if (pickupByInvoice.invoice && notification.amount > pickupByInvoice.invoice.total_amount) {
               logger.warn(`Received overpayment for invoice ${notification.reference}. Expected: ${pickupByInvoice.invoice.total_amount}, Received: ${notification.amount}. Processing as successful.`);
           }
@@ -61,13 +59,16 @@ export class FinancialNotificationService {
             const paidPickup = await this.pickupService.markPickupAndInvoiceAsPaid(notification.reference);
             logger.info(`Invoice ${notification.reference} and Pickup ${paidPickup.pickup_id} marked as PAID_TO_LOGISTICS_CO based on webhook notification.`);
 
-            const currentInSimTime = this.simulationService.getInSimulationDate();
+            // Use TimeManager here
+            const currentInSimTime = this.timeManager.getCurrentTime();
             let initialInSimPickupDate: Date;
             const startOfCurrentInSimDay = new Date(Date.UTC(currentInSimTime.getUTCFullYear(), currentInSimTime.getUTCMonth(), currentInSimTime.getUTCDate(), 0, 0, 0, 0));
 
+            // Logic to determine initial pickup date based on current in-sim time
             if (currentInSimTime.getUTCHours() === 0 && currentInSimTime.getUTCMinutes() === 0 && currentInSimTime.getUTCSeconds() === 0 && currentInSimTime.getUTCMilliseconds() === 0) {
                 initialInSimPickupDate = startOfCurrentInSimDay;
             } else {
+                // If it's not exactly midnight, schedule for the next simulated day's midnight
                 initialInSimPickupDate = new Date(Date.UTC(currentInSimTime.getUTCFullYear(), currentInSimTime.getUTCMonth(), currentInSimTime.getUTCDate() + 1, 0, 0, 0, 0));
             }
 
