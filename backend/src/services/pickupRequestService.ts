@@ -1,13 +1,11 @@
 import { IPickupRepository } from '../repositories/interfaces/IPickupRepository';
-import { PickupRepository } from '../repositories/implementations/PickupRepository';
-import { CompanyEntity } from '../database/models/CompanyEntity';
 import { PickupEntity, PickupStatusEnum } from '../database/models/PickupEntity';
 import { ICompanyRepository } from '../repositories/interfaces/ICompanyRepository';
-import { CompanyRepository } from '../repositories/implementations/CompanyRepository';
 import { AppError } from '../shared/errors/ApplicationError';
 import { logger } from '../utils/logger';
 import { SimulationService } from './simulationService';
 import { LogisticsPlanningService } from './logisticsPlanningService';
+import { getLogisticsAccountNumber } from '../utils/bankAccountUtils';
 
 import { CreatePickupRequest, PickupResponse, GetPickupsRequest } from '../types/dtos/pickupDtos';
 
@@ -76,7 +74,7 @@ export class PickupService {
             return {
                 referenceNo: initialInvoice.reference_number,
                 amount: amount.toFixed(2),
-                accountNumber: process.env.ACCOUNT_NUMBER || '01001123456789',
+                accountNumber: await getLogisticsAccountNumber(),
             };
         } catch (error: any) {
             logger.error('Error creating pickup request:', error);

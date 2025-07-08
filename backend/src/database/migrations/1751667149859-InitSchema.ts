@@ -13,6 +13,7 @@ export class InitSchema1751667149859 implements MigrationInterface {
         await queryRunner.query(`CREATE TABLE "logistics_details" ("logistics_details_id" SERIAL NOT NULL, "pickup_id" integer NOT NULL, "service_type_id" integer NOT NULL, "scheduled_time" TIMESTAMP NOT NULL, "quantity" integer NOT NULL, "logistics_status" character varying(50) NOT NULL DEFAULT 'PENDING_PLANNING', "scheduled_real_pickup_timestamp" TIMESTAMP, "scheduled_real_delivery_timestamp" TIMESTAMP, CONSTRAINT "REL_6175ebf66d95eacc6c2f98eb68" UNIQUE ("pickup_id"), CONSTRAINT "PK_f29bf3112ce89b41c7a228f8a8e" PRIMARY KEY ("logistics_details_id"))`);
         await queryRunner.query(`CREATE TABLE "truck_allocation" ("logistics_details_id" integer NOT NULL, "truck_id" integer NOT NULL, CONSTRAINT "PK_015b364af139e634e12b7972e4b" PRIMARY KEY ("logistics_details_id", "truck_id"))`);
         await queryRunner.query(`CREATE TABLE "truck" ("truck_id" SERIAL NOT NULL, "truck_type_id" integer NOT NULL, "max_pickups" integer NOT NULL, "max_dropoffs" integer NOT NULL, "daily_operating_cost" numeric(10,2) NOT NULL, "max_capacity" numeric(10,2) NOT NULL, CONSTRAINT "PK_21860c9f57b19eb3cab391f6a38" PRIMARY KEY ("truck_id"))`);
+        await queryRunner.query(`CREATE TABLE "bank_account" ("id" SERIAL PRIMARY KEY, "account_number" VARCHAR(50) NOT NULL)`);
         await queryRunner.query(`ALTER TABLE "pickup" ADD CONSTRAINT "FK_b1d25a1c18b1f80c0343fa3bc39" FOREIGN KEY ("invoice_id") REFERENCES "invoice"("invoice_id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE "pickup" ADD CONSTRAINT "FK_26a8ef77e9c68c89dcfa0180956" FOREIGN KEY ("pickup_status_id") REFERENCES "pickup_status"("pickup_status_id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE "pickup" ADD CONSTRAINT "FK_abbc6385c3a1168d68e4afdff36" FOREIGN KEY ("company_id") REFERENCES "company"("company_id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
@@ -41,6 +42,7 @@ export class InitSchema1751667149859 implements MigrationInterface {
         await queryRunner.query(`DROP TABLE "invoice"`);
         await queryRunner.query(`DROP TABLE "service_type"`);
         await queryRunner.query(`DROP TABLE "truck_type"`);
+        await queryRunner.query(`DROP TABLE "bank_account"`);
     }
 
 }

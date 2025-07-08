@@ -9,6 +9,7 @@ import { logger } from '../utils/logger';
 import { SimulationService } from './simulationService'; 
 import { LogisticsPlanningService } from './logisticsPlanningService'; 
 import { GetPickupsRequest, CreatePickupRequest, PickupResponse } from '../types/dtos/pickupDtos'; 
+import { getLogisticsAccountNumber } from '../utils/bankAccountUtils';
 
 export class PickupService {
     private pickupRepository: IPickupRepository; 
@@ -76,7 +77,7 @@ export class PickupService {
         return {
             referenceNo: initialInvoice.reference_number,
             amount: amount.toFixed(2),
-            accountNumber: process.env.ACCOUNT_NUMBER || '01001123456789',
+            accountNumber: await getLogisticsAccountNumber(),
         };
     }
 
