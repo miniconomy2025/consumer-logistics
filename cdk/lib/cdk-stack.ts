@@ -288,7 +288,7 @@ export class CdkStack extends cdk.Stack {
         },
         {
           namespace: 'aws:elasticbeanstalk:application:environment',        
-          optionName: 'DB_USERNAME',        
+          optionName: 'DB_USER',        
           value: database.secret?.secretValueFromJson('username').unsafeUnwrap() || '',        
         },        
         {
