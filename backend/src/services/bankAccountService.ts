@@ -10,7 +10,7 @@ export class BankAccountService {
     let bankAccount = await this.bankAccountRepo.findOneBy({});
     if (!bankAccount) {
       try {
-        const response = await fetch('https://<bank-api-domain>/account', {
+        const response = await fetch('https://<bank-api-domain>/account', {   // Replace with actual API domain
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({})

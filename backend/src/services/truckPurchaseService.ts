@@ -3,7 +3,6 @@ import { selectTrucksToBuy, calculateTruckCosts } from '../utils/truckPurchaseUt
 import { applyForLoan } from './loanService';
 import { TruckManagementService } from './truckManagementService';
 import { TruckRepository } from '../repositories/implementations/TruckRepository';
-import { logger } from '../utils/logger';
 
 export class TruckPurchaseService {
   async purchaseTrucks(daysToCover: number = 7) {
@@ -16,8 +15,8 @@ export class TruckPurchaseService {
     if (!loanResult.success) throw new Error('Loan application failed');
 
     for (const truck of trucksToBuy) {
-      // Order from market
-      const orderResponse = await fetch('https://<market-api-domain>/trucks', {
+      // Order from the hand
+      const orderResponse = await fetch('https://<market-api-domain>/trucks', {  // Replace with actual API domain
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -30,22 +29,21 @@ export class TruckPurchaseService {
       const orderId = orderData.orderId;
 
       // Pay for the order
-      const paymentResponse = await fetch('https://<market-api-domain>/orders/payments', {
+      const paymentResponse = await fetch('https://<market-api-domain>/orders/payments', {  // Replace with actual API domain
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ orderId })
       });
       if (!paymentResponse.ok) throw new Error(`Payment failed for order ${orderId}`);
 
-      // Persist in DB using existing service
       const truckManagementService = new TruckManagementService(new TruckRepository());
       const truckType = await truckManagementService.getTruckTypeByName(truck.truckName);
       if (!truckType) throw new Error(`Truck type not found: ${truck.truckName}`);
       for (let i = 0; i < truck.quantityToBuy; i++) {
         await truckManagementService.createTruck({
           truckTypeId: truckType.truck_type_id,
-          maxPickups: 3, // Set correct value
-          maxDropoffs: 3, // Set correct value
+          maxPickups: 250, 
+          maxDropoffs: 500, 
           dailyOperatingCost: truck.operatingCost,
           maxCapacity: 1000, // Set correct value
           isAvailable: true
