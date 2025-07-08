@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  output: "export", // Enables static HTML export
+  trailingSlash: true, 
   eslint: {
     // Only run ESLint on these directories during production builds
     dirs: ['app'],
