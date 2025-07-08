@@ -77,7 +77,7 @@ export class SimulationResetService {
       await queryRunner.manager.getRepository(ServiceTypeEntity).insert(serviceTypesData);
       logger.info('Seeded service types.');
 
-      const defaultTruckType = { truck_type_name: 'Small Van' };
+      const defaultTruckType = { truck_type_name: 'Small Truck' };
       await queryRunner.manager.getRepository(TruckTypeEntity).insert(defaultTruckType);
       logger.info('Seeded default truck type.');
 

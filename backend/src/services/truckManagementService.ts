@@ -144,4 +144,8 @@ export class TruckManagementService {
     }
     return deleted;
   }
+  public async breakdownTrucksByType(truckTypeName: string, count: number): Promise<number> {
+    logger.info(`Breaking down ${count} '${truckTypeName}' truck(s).`);
+    return this.truckRepository.markNTrucksUnavailableByTypeName(truckTypeName, count);
+  }
 }

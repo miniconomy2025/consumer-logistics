@@ -249,7 +249,8 @@ export class TimeManager {
 
         // Trigger midnight event (00:00) once per simulation day
         // This condition ensures it fires only when the date part changes AND it's midnight
-        if (hours === 0 && minutes === 0 && currentDateStr !== this.lastSimDateString) {
+         if (currentDateStr !== this.lastSimDateString && hours === 0)
+            {
             this.lastSimDateString = currentDateStr; // Update the last triggered day
             logger.info(`[TimeManager] MIDNIGHT (00:00:00) in simulation: ${currentSimTime.toISOString()}`);
             this.onMidnightCallbacks.forEach(callback => {

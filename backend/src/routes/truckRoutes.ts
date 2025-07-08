@@ -23,6 +23,6 @@ router.get('/', truckController.getAllTrucks);
 router.get('/:id', truckController.getTruckById);
 router.put('/:id', truckController.updateTruck);
 router.delete('/:id', truckController.deleteTruck);
-
+router.post('/failure', truckController.bulkBreakdown);
 
 export default router;

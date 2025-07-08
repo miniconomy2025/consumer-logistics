@@ -1,8 +1,8 @@
 import { APIGatewayProxyHandler, APIGatewayProxyResult } from 'aws-lambda';
-import { getDataSource } from '../utils/database';
 import { isValidPayment } from '../utils/payment';
 import { PaymentRecord } from '../entities/payment-record';
 import { sendToSQS } from '../config/aws-client';
+import { getDataSource } from '../config/database';
 
 const paymentProcessingQueueUrl = process.env.PAYMENT_PROCESSING_QUEUE_URL!;
 
