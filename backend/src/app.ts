@@ -8,6 +8,8 @@ import pickupRoutes from './routes/pickupRoutes';
 import analyticsRoutes from './routes/analyticsRoutes';
 import companyRoutes from './routes/companyRoutes';
 import webhookRoutes from './routes/webhookRoutes';
+import simulationRoutes from './routes/simulationRoutes';
+
 
 import { errorMiddleware } from './middleware/errorMiddleware';
 
@@ -21,6 +23,7 @@ app.use('/api/companies', companyRoutes);
 app.use('/api/trucks', truckRoutes);
 app.use('/api/pickups', pickupRoutes);
 app.use('/api/webhook', webhookRoutes);
+app.use('/api/simulation', simulationRoutes); 
 app.use('/api/analytics', analyticsRoutes);
 
 app.get('/health', (req, res) => {

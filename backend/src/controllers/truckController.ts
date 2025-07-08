@@ -103,6 +103,7 @@ export class TruckController {
                 maxDropoffs: newTruck.max_dropoffs,
                 dailyOperatingCost: newTruck.daily_operating_cost,
                 maxCapacity: newTruck.max_capacity,
+                isAvailable: newTruck.is_available, 
             };
             res.status(201).json(response);
         } catch (error) {
@@ -131,6 +132,7 @@ export class TruckController {
                 maxDropoffs: truck.max_dropoffs,
                 dailyOperatingCost: truck.daily_operating_cost,
                 maxCapacity: truck.max_capacity,
+                isAvailable: truck.is_available,
             };
             res.status(200).json(response);
         } catch (error) {
@@ -155,6 +157,7 @@ export class TruckController {
                     maxDropoffs: truck.max_dropoffs,
                     dailyOperatingCost: truck.daily_operating_cost,
                     maxCapacity: truck.max_capacity,
+                    isAvailable: truck.is_available, 
                 })),
             };
             res.status(200).json(response);
@@ -170,7 +173,21 @@ export class TruckController {
                 throw new AppError('Invalid truck ID provided', 400);
             }
             const data: UpdateTruckRequest = req.body;
-            const updatedTruck = await this.truckManagementService.updateTruck(truckId, data);
+
+            const updatePayloadForService: Partial<CreateTruckRequest & { is_available?: boolean }> = {
+                truckTypeId: data.truckTypeId,
+                maxPickups: data.maxPickups,
+                maxDropoffs: data.maxDropoffs,
+                dailyOperatingCost: data.dailyOperatingCost,
+                maxCapacity: data.maxCapacity,
+            };
+
+            if (typeof data.isAvailable === 'boolean') {
+                updatePayloadForService.isAvailable = data.isAvailable; 
+            }
+
+            const updatedTruck = await this.truckManagementService.updateTruck(truckId, updatePayloadForService); 
+            
             if (!updatedTruck) {
                 throw new AppError('Truck not found for update', 404);
             }
@@ -185,6 +202,7 @@ export class TruckController {
                 maxDropoffs: updatedTruck.max_dropoffs,
                 dailyOperatingCost: updatedTruck.daily_operating_cost,
                 maxCapacity: updatedTruck.max_capacity,
+                isAvailable: updatedTruck.is_available, // ADDED: include is_available in response
             };
             res.status(200).json(response);
         } catch (error) {

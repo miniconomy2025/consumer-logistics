@@ -1,5 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
 import { PickupEntity } from './PickupEntity';
+import { TransactionEntity } from './TransactionEntity';
 
 @Entity('invoice')
 export class InvoiceEntity {
@@ -17,4 +18,7 @@ export class InvoiceEntity {
 
     @OneToMany(() => PickupEntity, pickup => pickup.invoice) 
     pickups: PickupEntity[];
+
+    @OneToMany(() => TransactionEntity, transaction => transaction.invoice)
+    transactions: TransactionEntity[];
 }

@@ -13,6 +13,7 @@ export interface CreateTruckRequest {
   maxDropoffs: number;
   dailyOperatingCost: number;
   maxCapacity: number;
+  isAvailable?: boolean;
 }
 
 export interface UpdateTruckRequest extends Partial<CreateTruckRequest> {}
@@ -29,7 +30,7 @@ export interface TruckResponse {
   maxDropoffs: number;
   dailyOperatingCost: number;
   maxCapacity: number;
-
+  isAvailable: boolean; 
 }
 
 export interface TrucksListResponse {

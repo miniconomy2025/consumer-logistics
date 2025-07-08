@@ -6,13 +6,14 @@ import { AppDataSource } from './database/config';
 import { logger } from './utils/logger';
 import { SQSWorkerService } from './services/sqsWorkerService';
 import { LogisticsPlanningService } from './services/logisticsPlanningService';
-import { SimulationService } from './services/simulationService';
+import { TimeManager } from './services/timeManager';
 import { PickupService } from './services/pickupService';
 import { PickupRepository } from './repositories/implementations/PickupRepository';
 import { LogisticsDetailsRepository } from './repositories/implementations/LogisticsDetailsRepository';
 import { CompanyRepository } from './repositories/implementations/CompanyRepository';
 import { TruckRepository } from './repositories/implementations/TruckRepository';
 import { TruckAllocationRepository } from './repositories/implementations/TruckAllocationRepository';
+import { sqsClient } from './config/awsSqs';
 
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
@@ -34,28 +35,58 @@ AppDataSource.initialize()
       logger.info(` Environment: ${process.env.NODE_ENV}`);
     });
 
-    const simulationService = new SimulationService();
-    const pickupService = new PickupService(
-      new PickupRepository(),
-      new CompanyRepository(),
-      simulationService,
-      new LogisticsPlanningService(
-        simulationService,
-        new LogisticsDetailsRepository(),
-        new TruckRepository(),
-        new PickupRepository(),
-        new TruckAllocationRepository()
-      )
-    );
+        const timeManager = TimeManager.getInstance();
+        
+        const pickupRepository = new PickupRepository();
+        const companyRepository = new CompanyRepository();
+        const logisticsDetailsRepository = new LogisticsDetailsRepository();
+        const truckRepository = new TruckRepository();
+        const truckAllocationRepository = new TruckAllocationRepository();
+
+        const pickupService = new PickupService(
+            pickupRepository,
+            companyRepository,
+            timeManager,
+            undefined
+        );
+
+        const logisticsPlanningService = new LogisticsPlanningService(
+            timeManager,
+            logisticsDetailsRepository,
+            truckRepository,
+            pickupRepository,
+            truckAllocationRepository,
+            pickupService,
+            sqsClient
+        );
+
+        pickupService.setLogisticsPlanningService(logisticsPlanningService);
 
     const sqsWorkerService = new SQSWorkerService(
-      pickupService['logisticsPlanningService'],
-      simulationService,
-      pickupService
-    );
+     logisticsPlanningService,
+            timeManager,
+            pickupService,
+            sqsClient
+        );
 
-    sqsWorkerService.startPollingPickupQueue();
-    sqsWorkerService.startPollingDeliveryQueue();
+        timeManager.onMidnight(async (simTime) => {
+            logger.info(`Midnight Tick! Sim Time: ${simTime.toISOString()}`);
+            try {
+                await logisticsPlanningService.replanPendingOrFailed();
+            } catch (err: any) {
+                logger.error('Error during logistics reattempt at midnight:', err);
+            }
+        });
+
+        sqsWorkerService.startPollingPickupQueue();
+        sqsWorkerService.startPollingDeliveryQueue();
+
+        if (process.env.ENABLE_TIME_MANAGER_CLOCK === 'true') {
+            timeManager.startSimulation(undefined, undefined, 1000); // tick every 1s
+            logger.info('TimeManager internal clock started.');
+        } else {
+            logger.warn('TimeManager internal clock is NOT enabled. Time will only advance via API or manual sync.');
+     }
   })
   .catch((error) => {
     logger.error('Failed to connect to the database or start the server:', error);
