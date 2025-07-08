@@ -50,7 +50,7 @@ export class SQSWorkerService {
         this.pickupService = pickupService;
         this.sqsClient = sqsClientInstance;
         this.DELIVERY_SUCCESS_WEBHOOK_URL = process.env.DELIVERY_WEBHOOK_URL || 
-            'https://8ab52f4d2076.ngrok-free.app/api/webhook/delivery-success';
+            'https://webhook.site/948ae0f0-871f-427d-a745-c13e0345dff7';
         
         logger.info('SQSWorkerService initialized.', {
             webhookUrl: this.DELIVERY_SUCCESS_WEBHOOK_URL,
@@ -480,7 +480,7 @@ export class SQSWorkerService {
             logger.info(`Re-planning logistics detail ${detail.logistics_details_id} (Pickup ${detail.pickup.pickup_id}). Status: ${detail.logistics_status}`);
 
             if (detail.logistics_status === LogisticsStatus.STUCK_IN_TRANSIT || 
-                detail.logistics_status === LogisticsStatus.ALTERNATIVE_DELIVERY_PLANNED) {
+                detail.logistics_status === LogisticsStatus.ALTERNATIVE_DELIVERY_PLANNED ) {
                 await this.logisticsPlanningService.planAlternativeDelivery(detail.logistics_details_id);
             } else {
                 await this.logisticsPlanningService.reassignTruckForLogistics(detail.logistics_details_id);

@@ -44,3 +44,8 @@ export interface TruckTypesListResponse {
   totalCount: number;
   truckTypes: TruckTypeResponse[];
 }
+
+export interface BulkTruckBreakdownRequest {
+  truckTypeName: string; 
+  count: number;        
+}

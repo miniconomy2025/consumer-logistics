@@ -15,4 +15,5 @@ export interface ITruckRepository {
   createTruckType(type: Partial<TruckTypeEntity>): Promise<TruckTypeEntity>;
   updateTruckType(id: number, type: Partial<TruckTypeEntity>): Promise<TruckTypeEntity | null>;
   deleteTruckType(id: number): Promise<boolean>;
+  markNTrucksUnavailableByTypeName(truckTypeName: string, count: number): Promise<number>;
 }

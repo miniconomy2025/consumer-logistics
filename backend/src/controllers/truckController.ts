@@ -71,6 +71,23 @@ export class TruckController {
             next(error);
         }
     };
+    public bulkBreakdown = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+        const { truckName, failureQuantity } = req.body;
+    
+        if (!truckName || typeof truckName !== 'string' || typeof failureQuantity !== 'number' || failureQuantity <= 0) {
+            throw new AppError('Invalid truckTypeName or count provided', 400);
+        }
+    
+        const affected = await this.truckManagementService.breakdownTrucksByType(truckName, failureQuantity);
+    
+        res.status(200).json({
+            message: `${affected} truck(s) of type '${truckName}' marked as unavailable.`,
+        });
+        } catch (error) {
+        next(error);
+        }
+    };
 
     public deleteTruckType = async (req: Request, res: Response, next: NextFunction) => {
         try {
