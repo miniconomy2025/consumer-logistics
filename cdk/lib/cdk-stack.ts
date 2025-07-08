@@ -132,6 +132,36 @@ export class CdkStack extends cdk.Stack {
       visibilityTimeout: cdk.Duration.seconds(60),
     });
 
+    const pickUpDLQ = new sqs.Queue(this, 'PickupDLQ', {
+      encryption: sqs.QueueEncryption.KMS_MANAGED,
+      retentionPeriod: cdk.Duration.days(7),
+    });
+
+    const pickUpQueue = new sqs.Queue(this, 'PickupQueue', {
+      encryption: sqs.QueueEncryption.KMS_MANAGED,
+      retentionPeriod: cdk.Duration.days(1),
+      deadLetterQueue: {
+        queue: pickUpDLQ,
+        maxReceiveCount: MAX_RECEIVE_COUNT,
+      },
+      visibilityTimeout: cdk.Duration.seconds(60),
+    });
+
+    const deliveryDLQ = new sqs.Queue(this, 'DeliveryDLQ', {
+      encryption: sqs.QueueEncryption.KMS_MANAGED,
+      retentionPeriod: cdk.Duration.days(7),
+    });
+
+    const deliveryQueue = new sqs.Queue(this, 'DeliveryQueue', {
+      encryption: sqs.QueueEncryption.KMS_MANAGED,
+      retentionPeriod: cdk.Duration.days(1),
+      deadLetterQueue: {
+        queue: deliveryDLQ,
+        maxReceiveCount: MAX_RECEIVE_COUNT,
+      },
+      visibilityTimeout: cdk.Duration.seconds(60),
+    });
+
     // -===== Lambda =====-
     const handlePopLambda = new NodejsFunction(this, 'HandlePopLambda', {
       runtime: lambda.Runtime.NODEJS_22_X,
@@ -151,6 +181,7 @@ export class CdkStack extends cdk.Stack {
       environment: {
         REGION: props.deployRegion,
         PAYMENT_PROCESSING_QUEUE_URL: paymentQueue.queueUrl,
+        DB_SECRET_ID: database.secret?.secretArn || ''
       },
     });
 
@@ -170,9 +201,17 @@ export class CdkStack extends cdk.Stack {
       timeout: cdk.Duration.seconds(30),
       memorySize: 128,
       environment: {
-        REGION: props.deployRegion
+        REGION: props.deployRegion,        
+        PICKUP_QUEUE_URL: pickUpQueue.queueUrl,
+        DB_SECRET_ID: database.secret?.secretArn || ''
       },
     });
+
+  
+    if (database.secret) {
+      database.secret.grantRead(handlePopLambda);
+      database.secret.grantRead(processPayment);
+    }
 
     // -=== SQS Event Source ===-
     processPayment.addEventSource(new cdk.aws_lambda_event_sources.SqsEventSource(paymentQueue, {
@@ -288,7 +327,7 @@ export class CdkStack extends cdk.Stack {
         },
         {
           namespace: 'aws:elasticbeanstalk:application:environment',        
-          optionName: 'DB_USERNAME',        
+          optionName: 'DB_USER',        
           value: database.secret?.secretValueFromJson('username').unsafeUnwrap() || '',        
         },        
         {
@@ -296,6 +335,21 @@ export class CdkStack extends cdk.Stack {
           optionName: 'DB_PASSWORD',        
           value: database.secret?.secretValueFromJson('password').unsafeUnwrap() || '',        
         },
+        {
+          namespace: 'aws:elasticbeanstalk:application:environment',        
+          optionName: 'SQS_DELIVERY_QUEUE_URL',        
+          value: deliveryQueue.queueUrl,        
+        },
+        {
+          namespace: 'aws:elasticbeanstalk:application:environment',
+          optionName: 'SQS_PICKUP_QUEUE_URL',
+          value: pickUpQueue.queueUrl,
+        },
+        {
+          namespace: 'aws:elasticbeanstalk:application:environment',        
+          optionName: 'AWS_REGION',        
+          value:  props.deployRegion || '',        
+        }, 
         {
           namespace: 'aws:ec2:vpc',
           optionName: 'VPCId',

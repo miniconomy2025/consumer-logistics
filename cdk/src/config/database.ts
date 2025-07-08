@@ -7,17 +7,46 @@ import { PickupStatus } from '../entities/pickup-status';
 import { TransactionLedger } from '../entities/transaction-ledger';
 import { TransactionType } from '../entities/transaction-type';
 import { PhoneCompany } from '../entities/phone-company';
+import { getDbCredentials } from './aws-client';
 
-export const AppDataSource = new DataSource({
-  type: 'postgres',
-  host: process.env.DB_HOST,
-  port: parseInt(process.env.DB_PORT || '5432'),
-  username: process.env.DB_USERNAME,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
-  synchronize: false,
-  logging: false,
-  entities: [PaymentRecord, Invoice, Pickup, TransactionLedger, TransactionType, PickupStatus, PhoneCompany],
-  migrations: [],
-  subscribers: [],
+
+let AppDataSource: DataSource;
+
+export async function getDataSource(): Promise<DataSource> {
+  if (AppDataSource && AppDataSource.isInitialized) {
+    return AppDataSource;
+  }
+
+  const creds = await getDbCredentials();
+
+  AppDataSource = new DataSource({
+    type: 'postgres',
+    host: creds.host,
+    port: creds.port,
+    username: creds.username,
+    password: creds.password,
+    database: creds.database,
+    synchronize: false,
+    logging: false,
+    entities: [
+      PaymentRecord,
+      Invoice,
+      Pickup,
+      TransactionLedger,
+      TransactionType,
+      PickupStatus,
+      PhoneCompany,
+    ],
+  });
+
+  await AppDataSource.initialize();
+  return AppDataSource;
+}
+
+process.on('SIGTERM', async () => {
+  if (AppDataSource?.isInitialized) {
+    await AppDataSource.destroy();
+    console.log('DB connection closed on SIGTERM');
+  }
+  process.exit(0);
 });

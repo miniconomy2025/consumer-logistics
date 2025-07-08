@@ -1,7 +1,5 @@
 import { SQSEvent, SQSHandler } from 'aws-lambda';
-import { getDataSource } from '../utils/database';
 import { sendToSQS } from '../config/aws-client';
-
 import { Invoice } from '../entities/invoice';
 import { Pickup } from '../entities/pickup';
 import { TransactionLedger } from '../entities/transaction-ledger';
@@ -9,6 +7,7 @@ import { TransactionType } from '../entities/transaction-type';
 import { PickupStatus } from '../entities/pickup-status';
 import { OrderStatus, TransactionTypeName } from '../types/enum';
 import { PaymentRecord } from '../entities/payment-record';
+import { getDataSource } from '../config/database';
 
 const pickupQueueUrl = process.env.PICKUP_QUEUE_URL!;
 const TRANSACTION_TYPE_NAME = TransactionTypeName.PaymentReceived;
