@@ -264,6 +264,22 @@ export class CdkStack extends cdk.Stack {
       iam.ManagedPolicy.fromAwsManagedPolicyName('service-role/AWSElasticBeanstalkEnhancedHealth')
     );
 
+    ebInstanceRole.addToPolicy(new iam.PolicyStatement({
+      effect: iam.Effect.ALLOW,
+      actions: [
+        'sqs:ReceiveMessage',
+        'sqs:DeleteMessage',
+        'sqs:GetQueueAttributes',
+        'sqs:ChangeMessageVisibility'
+      ],
+      resources: [
+        deliveryQueue.queueArn,
+        pickUpQueue.queueArn,
+        deliveryDLQ.queueArn,
+        pickUpDLQ.queueArn
+      ],
+    }));
+
     const app = new elasticbeanstalk.CfnApplication(this, 'Application', {
       applicationName: 'consumer-logistics-api',
     });
