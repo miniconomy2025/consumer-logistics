@@ -1,6 +1,7 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import {
-  analyticsPresets,
+  createAnalyticsParams,
+  analyticsRangeOptions,
 } from '../api/analytics';
 import {
   useDashboardAnalytics as useEnhancedDashboardAnalytics,
@@ -12,6 +13,7 @@ import {
 } from './useAnalytics';
 import {
   AnalyticsQueryParams,
+  AnalyticsDateRange,
 } from '../types/api';
 
 /**
@@ -42,11 +44,11 @@ export { useAnalyticsDateRange, useAnalyticsRefresh, useAnalyticsAggregation };
 // ============================================================================
 
 /**
- * Hook for managing dashboard date range
- * Uses client-side only execution to prevent hydration mismatches
+ * Hook for managing dashboard date range using predefined ranges
+ * Server-side date calculation using TimeManager
  */
-export function useDashboardDateRange(initialRange: 'last7Days' | 'last30Days' | 'currentMonth' | 'currentYear' = 'last30Days') {
-  const [range, setRange] = useState(initialRange);
+export function useDashboardDateRange(initialRange: AnalyticsDateRange = 'last30days') {
+  const [range, setRange] = useState<AnalyticsDateRange>(initialRange);
   const [isClient, setIsClient] = useState(false);
 
   // Ensure we're on the client side to prevent hydration mismatches
@@ -54,34 +56,12 @@ export function useDashboardDateRange(initialRange: 'last7Days' | 'last30Days' |
     setIsClient(true);
   }, []);
 
-  const dateRange = useMemo(() => {
-    if (!isClient) {
-      // Return a default range for SSR to prevent hydration mismatch
-      // Always use last30Days for consistent SSR
-      return {
-        dateFrom: '2025-06-03', // 30 days ago from current date
-        dateTo: '2025-07-03'     // current date
-      };
-    }
-
-    switch (range) {
-      case 'last7Days':
-        return analyticsPresets.last7Days();
-      case 'last30Days':
-        return analyticsPresets.last30Days();
-      case 'currentMonth':
-        return analyticsPresets.currentMonth();
-      case 'currentYear':
-        return analyticsPresets.currentYear();
-      default:
-        return analyticsPresets.last30Days();
-    }
-  }, [range, isClient]);
+  const analyticsParams = useMemo(() => createAnalyticsParams(range), [range]);
 
   return {
     range,
     setRange,
-    dateRange,
+    analyticsParams,
     isClient, // Expose this so components can show loading states
   };
 }

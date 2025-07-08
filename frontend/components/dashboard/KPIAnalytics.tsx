@@ -19,6 +19,9 @@ import { AnalyticsQueryParams, KPIAnalyticsResponse } from "@/lib/types/api";
 
 interface KPIAnalyticsProps {
   dateRange?: AnalyticsQueryParams;
+  data?: KPIAnalyticsResponse | null;
+  loading?: boolean;
+  error?: string | null;
 }
 
 interface KPIMetric {
@@ -29,8 +32,13 @@ interface KPIMetric {
   color: string;
 }
 
-export function KPIAnalytics({ dateRange }: KPIAnalyticsProps) {
-  const { data: kpis, loading, error } = useKPIAnalytics(dateRange);
+export function KPIAnalytics({ dateRange, data: propData, loading: propLoading, error: propError }: KPIAnalyticsProps) {
+  // Use prop data if provided, otherwise fetch data
+  const hookResult = useKPIAnalytics(propData ? undefined : dateRange);
+
+  const kpis = propData ?? hookResult.data;
+  const loading = propLoading ?? hookResult.loading;
+  const error = propError ?? hookResult.error;
 
   if (loading) {
     return <KPIAnalyticsSkeleton />;

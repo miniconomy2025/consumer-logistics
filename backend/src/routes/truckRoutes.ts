@@ -2,7 +2,6 @@ import { Router } from 'express';
 import { TruckController } from '../controllers/truckController';
 import { TruckManagementService } from '../services/truckManagementService';
 import { TruckRepository } from '../repositories/implementations/TruckRepository';
-import { AppError } from '../shared/errors/ApplicationError'; // Import AppError for error handling
 
 
 const truckRepository = new TruckRepository();

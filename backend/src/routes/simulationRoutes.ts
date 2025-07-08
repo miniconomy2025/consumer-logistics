@@ -37,10 +37,10 @@ router.post('/set-time', (req, res) => {
             return res.status(400).json({ message: 'Invalid newTime provided. Must be a valid date string.' });
         }
         timeManager.setSimulationTime(new Date(newTime));
-        res.status(200).json({ message: `Simulation time manually set to: ${timeManager.getCurrentTime().toISOString()}` });
+        return res.status(200).json({ message: `Simulation time manually set to: ${timeManager.getCurrentTime().toISOString()}` });
     } catch (error: any) {
         logger.error('Failed to set simulation time manually:', error);
-        res.status(500).json({ message: `Failed to set simulation time: ${error.message || 'Unknown error'}` });
+        return res.status(500).json({ message: `Failed to set simulation time: ${error.message || 'Unknown error'}` });
     }
 });
 
@@ -86,10 +86,10 @@ router.post('/sync', async (req, res) => {
             return res.status(400).json({ message: 'Sync endpoint is required.' });
         }
         await timeManager.syncTime(endpoint);
-        res.status(200).json({ message: `Time synced successfully to: ${timeManager.getCurrentTime().toISOString()}` });
+        return res.status(200).json({ message: `Time synced successfully to: ${timeManager.getCurrentTime().toISOString()}` });
     } catch (error: any) {
         logger.error('Failed to manually sync time:', error);
-        res.status(500).json({ message: `Failed to sync time: ${error.message || 'Unknown error'}` });
+        return res.status(500).json({ message: `Failed to sync time: ${error.message || 'Unknown error'}` });
     }
 });
 

@@ -18,44 +18,32 @@ import { KPIAnalytics } from "@/components/dashboard/KPIAnalytics";
 import { ClientOnly } from "@/components/common/ClientOnly";
 
 // Import hooks
-import { useAnalyticsDateRange, useAnalyticsRefresh, useAnalyticsHealth } from "@/lib/hooks/useDashboard";
+import { useDashboardDateRange, useAnalyticsHealth } from "@/lib/hooks/useDashboard";
+import { useDashboardAnalyticsWithRefresh, useKPIAnalyticsWithRefresh } from "@/lib/hooks/useAnalytics";
+import { analyticsRangeOptions } from "@/lib/api/analytics";
 
 export default function AnalyticsPage() {
   const [activeTab, setActiveTab] = useState("dashboard");
 
-  // Date range management
-  const { dateRange, setDateRange } = useAnalyticsDateRange();
+  // Date range management using predefined ranges
+  const { range, setRange, analyticsParams } = useDashboardDateRange();
 
-  // Refresh functionality
-  const { isRefreshing, refresh } = useAnalyticsRefresh();
+  // Analytics data with refresh capability
+  const dashboardAnalytics = useDashboardAnalyticsWithRefresh(analyticsParams);
+  const kpiAnalytics = useKPIAnalyticsWithRefresh(analyticsParams);
 
   // Health monitoring
   const { data: health, error: healthError } = useAnalyticsHealth();
 
-  const handleDateRangeChange = (range: string) => {
-    const now = new Date();
-    let dateFrom: string;
-    const dateTo = now.toISOString().split('T')[0];
-
-    switch (range) {
-      case 'last7Days':
-        dateFrom = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-        break;
-      case 'last30Days':
-        dateFrom = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-        break;
-      case 'currentMonth':
-        dateFrom = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
-        break;
-      case 'currentYear':
-        dateFrom = new Date(now.getFullYear(), 0, 1).toISOString().split('T')[0];
-        break;
-      default:
-        dateFrom = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-    }
-
-    setDateRange({ dateFrom, dateTo });
+  // Combined refresh function
+  const handleRefresh = async () => {
+    await Promise.all([
+      dashboardAnalytics.refresh(),
+      kpiAnalytics.refresh()
+    ]);
   };
+
+  const isRefreshing = dashboardAnalytics.isRefreshing || kpiAnalytics.isRefreshing;
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -87,15 +75,16 @@ export default function AnalyticsPage() {
             
             {/* Date Range Selector */}
             <ClientOnly fallback={<div className="w-40 h-10 bg-slate-200 rounded animate-pulse"></div>}>
-              <Select onValueChange={handleDateRangeChange} defaultValue="last30Days">
+              <Select onValueChange={setRange} defaultValue={range}>
                 <SelectTrigger className="w-40">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="last7Days">Last 7 Days</SelectItem>
-                  <SelectItem value="last30Days">Last 30 Days</SelectItem>
-                  <SelectItem value="currentMonth">Current Month</SelectItem>
-                  <SelectItem value="currentYear">Current Year</SelectItem>
+                  {analyticsRangeOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </ClientOnly>
@@ -104,7 +93,7 @@ export default function AnalyticsPage() {
             <Button
               variant="outline"
               size="sm"
-              onClick={refresh}
+              onClick={handleRefresh}
               disabled={isRefreshing}
               className="flex items-center gap-2"
             >
@@ -130,14 +119,24 @@ export default function AnalyticsPage() {
           {/* Dashboard Tab */}
           <TabsContent value="dashboard" className="space-y-6">
             <ErrorBoundary>
-              <AnalyticsDashboard dateRange={dateRange} />
+              <AnalyticsDashboard
+                dateRange={analyticsParams}
+                data={dashboardAnalytics.data}
+                loading={dashboardAnalytics.loading}
+                error={dashboardAnalytics.error}
+              />
             </ErrorBoundary>
           </TabsContent>
 
           {/* KPIs Tab */}
           <TabsContent value="kpis" className="space-y-6">
             <ErrorBoundary>
-              <KPIAnalytics dateRange={dateRange} />
+              <KPIAnalytics
+                dateRange={analyticsParams}
+                data={kpiAnalytics.data}
+                loading={kpiAnalytics.loading}
+                error={kpiAnalytics.error}
+              />
             </ErrorBoundary>
           </TabsContent>
         </Tabs>
