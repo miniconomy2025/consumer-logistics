@@ -44,6 +44,25 @@ export class TruckRepository implements ITruckRepository {
         }
     }
 
+    async markNTrucksUnavailableByTypeName(truckTypeName: string, count: number): Promise<number> {
+        const truckType = await this.ormTruckTypeRepository.findOneBy({ truck_type_name: truckTypeName });
+        if (!truckType) throw new AppError(`Truck type '${truckTypeName}' not found.`, 404);
+        const availableTrucks = await this.ormTruckRepository.find({
+          where: {
+            truck_type_id: truckType.truck_type_id,
+            is_available: true,
+          },
+          order: { truck_id: 'ASC' },
+          take: count,
+        });
+        if (availableTrucks.length === 0) return 0;
+        for (const truck of availableTrucks) {
+          truck.is_available = false;
+        }
+        await this.ormTruckRepository.save(availableTrucks);
+        return availableTrucks.length;
+      }
+
     async update(id: number, truck: Partial<TruckEntity>): Promise<TruckEntity | null> {
         logger.info(`Attempting to update truck with ID: ${id}.`);
         const existingTruck = await this.ormTruckRepository.findOne({ 
