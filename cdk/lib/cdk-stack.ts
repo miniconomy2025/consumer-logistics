@@ -117,12 +117,12 @@ export class CdkStack extends cdk.Stack {
     });
 
     // -====== SQS ======-
-    const paymentQueueDLQ = new sqs.Queue(this, 'DeliveryQueueDLQ', {
+    const paymentQueueDLQ = new sqs.Queue(this, 'PaymentDLQ', {
       encryption: sqs.QueueEncryption.KMS_MANAGED,
       retentionPeriod: cdk.Duration.days(7),
     });
 
-    const paymentQueue = new sqs.Queue(this, 'DeliveryQueue', {
+    const paymentQueue = new sqs.Queue(this, 'PaymentQueue', {
       encryption: sqs.QueueEncryption.KMS_MANAGED,
       retentionPeriod: cdk.Duration.days(1),
       deadLetterQueue: {
