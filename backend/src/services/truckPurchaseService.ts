@@ -1,18 +1,33 @@
 import { getTrucksForSale } from './truckMarketService';
 import { selectTrucksToBuy, calculateTruckCosts } from '../utils/truckPurchaseUtils';
-import { applyForLoan } from './loanService';
+import { applyForLoanWithFallback } from './loanService';
 import { TruckManagementService } from './truckManagementService';
 import { TruckRepository } from '../repositories/implementations/TruckRepository';
+import { AppDataSource } from '../database/config'; 
+import { TruckEntity } from '../database/models/TruckEntity'; 
 
 export class TruckPurchaseService {
-  async purchaseTrucks(daysToCover: number = 7) {
+  async purchaseTrucks(daysToCover: number = 14) {  // loan for 14 days operating costs by default
+    const truckRepo = AppDataSource.getRepository(TruckEntity);
+    const existingTrucks = await truckRepo.count();
+    if (existingTrucks > 0) {
+      console.log('[TruckPurchaseService] Trucks already exist. Skipping purchase and loan.');
+      return;
+    }
+
     const trucksForSale = await getTrucksForSale();
     const trucksToBuy = selectTrucksToBuy(trucksForSale);
     const { totalPurchase, totalDailyOperating } = calculateTruckCosts(trucksToBuy);
     const loanAmount = totalPurchase + (totalDailyOperating * daysToCover);
 
-    const loanResult = await applyForLoan(loanAmount);
-    if (!loanResult.success) throw new Error('Loan application failed');
+    console.log(`[TruckPurchaseService] Applying for loan. Amount: $${loanAmount}`);
+
+    const { response: loanResult, attemptedAmount } = await applyForLoanWithFallback(loanAmount);
+    if (!loanResult.success) throw new Error('Loan application failed, even after fallback.');
+
+    if (attemptedAmount < loanAmount) {
+      console.warn(`[TruckPurchaseService] Fallback loan used. Original: $${loanAmount}, Approved: $${attemptedAmount}`);
+    }
 
     for (const truck of trucksToBuy) {
       // Order from the hand

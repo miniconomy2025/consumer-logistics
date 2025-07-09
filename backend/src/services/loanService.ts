@@ -18,3 +18,21 @@ export async function applyForLoan(amount: number): Promise<LoanResponse> {
     throw error;
   }
 }
+
+export async function applyForLoanWithFallback(
+  amount: number,
+  minAmount: number = 1000,
+  fallbackRatio: number = 0.8
+): Promise<{ response: LoanResponse; attemptedAmount: number }> {
+  let response = await applyForLoan(amount);
+  if (response.success) {
+    return { response, attemptedAmount: amount };
+  }
+  // Fallback: try with a smaller amount
+  const fallbackAmount = Math.max(Math.floor(amount * fallbackRatio), minAmount);
+  if (fallbackAmount < amount) {
+    response = await applyForLoan(fallbackAmount);
+    return { response, attemptedAmount: fallbackAmount };
+  }
+  return { response, attemptedAmount: amount };
+}
