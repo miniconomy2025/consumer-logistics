@@ -38,6 +38,6 @@ export const AppDataSource = new DataSource({
         TruckAllocationEntity,
         BankAccountEntity
     ],
-    migrations: [path.join(__dirname, 'migrations', '*.ts')],
+    migrations: [path.join(__dirname, 'migrations', '**', '*.{ts,js}')],
     subscribers: [],
 });
