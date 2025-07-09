@@ -16,6 +16,9 @@ import { TruckAllocationRepository } from './repositories/implementations/TruckA
 import { sqsClient } from './config/awsSqs';
 import { TruckPurchaseService } from './services/truckPurchaseService';
 import { BankAccountService } from './services/bankAccountService';
+import { getTrucksForSale } from './services/truckPurchaseService';
+import { selectTrucksToBuy, calculateTruckCosts } from './utils/truckPurchaseUtils';
+import { applyForLoanWithFallback } from './services/loanService';
 
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
@@ -31,14 +34,6 @@ let server: ReturnType<typeof app.listen>;
 AppDataSource.initialize()
   .then(async () => {
     logger.info('Data Source has been initialized successfully.');
-
-    // const bankAccountService = new BankAccountService();
-    // await bankAccountService.ensureBankAccount();
-
-    // const truckPurchaseService = new TruckPurchaseService();
-    // await truckPurchaseService.purchaseTrucks(7);
-
-
     server = app.listen(port, () => {
       logger.info(` Server running on port ${port}`);
       logger.info(` Environment: ${process.env.NODE_ENV}`);
@@ -91,8 +86,12 @@ AppDataSource.initialize()
     sqsWorkerService.startPollingDeliveryQueue();
 
     if (process.env.ENABLE_TIME_MANAGER_CLOCK === 'true') {
-      timeManager.startSimulation(undefined, undefined, 1000); // tick every 1s
+      timeManager.startSimulation(undefined, undefined, 1000);
       logger.info('TimeManager internal clock started.');
+
+      const truckPurchaseService = new TruckPurchaseService();
+      await truckPurchaseService.purchaseTrucksFullFlow(14);
+
     } else {
       logger.warn('TimeManager internal clock is NOT enabled. Time will only advance via API or manual sync.');
     }
