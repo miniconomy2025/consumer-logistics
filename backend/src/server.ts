@@ -86,7 +86,7 @@ AppDataSource.initialize()
     sqsWorkerService.startPollingDeliveryQueue();
 
     if (process.env.ENABLE_TIME_MANAGER_CLOCK === 'true') {
-      timeManager.startSimulation(undefined, undefined, 1000);
+      timeManager.startSimulation(undefined, undefined, 1000); // tick every 1s
       logger.info('TimeManager internal clock started.');
 
       const truckPurchaseService = new TruckPurchaseService();
