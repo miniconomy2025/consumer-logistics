@@ -32,11 +32,12 @@ AppDataSource.initialize()
   .then(async () => {
     logger.info('Data Source has been initialized successfully.');
 
-    const bankAccountService = new BankAccountService();
-    await bankAccountService.ensureBankAccount();
+    // const bankAccountService = new BankAccountService();
+    // await bankAccountService.ensureBankAccount();
 
-    const truckPurchaseService = new TruckPurchaseService();
-    await truckPurchaseService.purchaseTrucks(7);
+    // const truckPurchaseService = new TruckPurchaseService();
+    // await truckPurchaseService.purchaseTrucks(7);
+
 
     server = app.listen(port, () => {
       logger.info(` Server running on port ${port}`);
