@@ -5,6 +5,7 @@ import { TruckManagementService } from './truckManagementService';
 import { TruckRepository } from '../repositories/implementations/TruckRepository';
 import { AppDataSource } from '../database/config'; 
 import { TruckEntity } from '../database/models/TruckEntity'; 
+import { MARKET_API_URL } from '../config/apiConfig';
 
 export class TruckPurchaseService {
   async purchaseTrucks(daysToCover: number = 14) {  // loan for 14 days operating costs by default
@@ -31,7 +32,7 @@ export class TruckPurchaseService {
 
     for (const truck of trucksToBuy) {
       // Order from the hand
-      const orderResponse = await fetch('https://<market-api-domain>/trucks', {  // Replace with actual API domain
+      const orderResponse = await fetch(`${MARKET_API_URL}/trucks`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -44,7 +45,7 @@ export class TruckPurchaseService {
       const orderId = orderData.orderId;
 
       // Pay for the order
-      const paymentResponse = await fetch('https://<market-api-domain>/orders/payments', {  // Replace with actual API domain
+      const paymentResponse = await fetch(`${MARKET_API_URL}/orders/payments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ orderId })

@@ -1,4 +1,5 @@
 import fetch from 'node-fetch';
+import { TRUCKS_API_URL } from '../config/apiConfig';
 
 export interface TruckForSale {
   truckName: string;
@@ -9,7 +10,7 @@ export interface TruckForSale {
 }
 
 export async function getTrucksForSale(): Promise<TruckForSale[]> {
-  const response = await fetch('https://<trucks-api-domain>/simulation/trucks'); // Replace with actual API domain
+  const response = await fetch(`${TRUCKS_API_URL}/simulation/trucks`);
   if (!response.ok) {
     throw new Error(`Failed to fetch trucks: ${response.status} ${response.statusText}`);
   }

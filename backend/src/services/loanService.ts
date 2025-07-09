@@ -1,3 +1,5 @@
+import { BANK_API_URL } from '../config/apiConfig';
+
 export interface LoanResponse {
   success: boolean;
   loan_number?: string;
@@ -5,7 +7,7 @@ export interface LoanResponse {
 
 export async function applyForLoan(amount: number): Promise<LoanResponse> {
   try {
-    const response = await fetch('https://<bank-api-domain>/loan', {
+    const response = await fetch(`${BANK_API_URL}/loan`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ amount })
