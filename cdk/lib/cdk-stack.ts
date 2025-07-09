@@ -209,13 +209,13 @@ export class CdkStack extends cdk.Stack {
       timeout: cdk.Duration.seconds(30),
       memorySize: 128,
       environment: {
-        REGION: props.deployRegion,        
+        REGION: props.deployRegion,
         PICKUP_QUEUE_URL: pickUpQueue.queueUrl,
         DB_SECRET_ID: database.secret?.secretArn || ''
       },
     });
 
-  
+
     if (database.secret) {
       database.secret.grantRead(handlePopLambda);
       database.secret.grantRead(processPayment);
@@ -270,7 +270,8 @@ export class CdkStack extends cdk.Stack {
         'sqs:ReceiveMessage',
         'sqs:DeleteMessage',
         'sqs:GetQueueAttributes',
-        'sqs:ChangeMessageVisibility'
+        'sqs:ChangeMessageVisibility',
+        'sqs:SendMessage'
       ],
       resources: [
         deliveryQueue.queueArn,
@@ -350,19 +351,19 @@ export class CdkStack extends cdk.Stack {
           value: databaseName,
         },
         {
-          namespace: 'aws:elasticbeanstalk:application:environment',        
-          optionName: 'DB_USER',        
-          value: database.secret?.secretValueFromJson('username').unsafeUnwrap() || '',        
-        },        
-        {
-          namespace: 'aws:elasticbeanstalk:application:environment',        
-          optionName: 'DB_PASSWORD',        
-          value: database.secret?.secretValueFromJson('password').unsafeUnwrap() || '',        
+          namespace: 'aws:elasticbeanstalk:application:environment',
+          optionName: 'DB_USER',
+          value: database.secret?.secretValueFromJson('username').unsafeUnwrap() || '',
         },
         {
-          namespace: 'aws:elasticbeanstalk:application:environment',        
-          optionName: 'SQS_DELIVERY_QUEUE_URL',        
-          value: deliveryQueue.queueUrl,        
+          namespace: 'aws:elasticbeanstalk:application:environment',
+          optionName: 'DB_PASSWORD',
+          value: database.secret?.secretValueFromJson('password').unsafeUnwrap() || '',
+        },
+        {
+          namespace: 'aws:elasticbeanstalk:application:environment',
+          optionName: 'SQS_DELIVERY_QUEUE_URL',
+          value: deliveryQueue.queueUrl,
         },
         {
           namespace: 'aws:elasticbeanstalk:application:environment',
@@ -370,10 +371,10 @@ export class CdkStack extends cdk.Stack {
           value: pickUpQueue.queueUrl,
         },
         {
-          namespace: 'aws:elasticbeanstalk:application:environment',        
-          optionName: 'AWS_REGION',        
-          value:  props.deployRegion || '',        
-        }, 
+          namespace: 'aws:elasticbeanstalk:application:environment',
+          optionName: 'AWS_REGION',
+          value: props.deployRegion || '',
+        },
         {
           namespace: 'aws:ec2:vpc',
           optionName: 'VPCId',
@@ -412,8 +413,9 @@ export class CdkStack extends cdk.Stack {
     api.addRoutes({
       path: '/{proxy+}',
       methods: [apigatewayv2.HttpMethod.ANY],
-      integration: new integrations.HttpUrlIntegration('EBAppIntegration', ebAppUrl),
-    })
+      integration: new integrations.HttpUrlIntegration('EBAppIntegration', `${ebAppUrl}/{proxy}`),
+    });
+
 
   }
 }
