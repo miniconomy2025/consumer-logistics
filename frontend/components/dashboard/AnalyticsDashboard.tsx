@@ -20,10 +20,18 @@ import { AnalyticsQueryParams, DashboardAnalyticsResponse, RecentPickupItem, Top
 
 interface AnalyticsDashboardProps {
   dateRange?: AnalyticsQueryParams;
+  data?: DashboardAnalyticsResponse | null;
+  loading?: boolean;
+  error?: string | null;
 }
 
-export function AnalyticsDashboard({ dateRange }: AnalyticsDashboardProps) {
-  const { data: analytics, loading, error } = useDashboardAnalytics(dateRange);
+export function AnalyticsDashboard({ dateRange, data: propData, loading: propLoading, error: propError }: AnalyticsDashboardProps) {
+  // Use prop data if provided, otherwise fetch data
+  const hookResult = useDashboardAnalytics(propData ? undefined : dateRange);
+
+  const analytics = propData ?? hookResult.data;
+  const loading = propLoading ?? hookResult.loading;
+  const error = propError ?? hookResult.error;
 
   if (loading) {
     return <AnalyticsDashboardSkeleton />;

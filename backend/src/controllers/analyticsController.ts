@@ -1,14 +1,17 @@
 import { Request, Response, NextFunction } from 'express';
 import { AnalyticsService } from '../services/analyticsService';
+import { AnalyticsDateRangeService } from '../services/analyticsDateRangeService';
 import {
   AnalyticsQueryParams,
 } from '../types/dtos/analyticsDtos';
 
 export class AnalyticsController {
   private analyticsService: AnalyticsService;
+  private dateRangeService: AnalyticsDateRangeService;
 
   constructor(analyticsService: AnalyticsService = new AnalyticsService()) {
     this.analyticsService = analyticsService;
+    this.dateRangeService = new AnalyticsDateRangeService();
   }
 
   // ============================================================================
@@ -72,9 +75,19 @@ export class AnalyticsController {
   // ============================================================================
 
   private parseQueryParams(query: any): AnalyticsQueryParams {
+    // Validate and parse range parameter
+    const range = query.range as string;
+    const validatedRange = range && this.dateRangeService.isValidRange(range) ? range : undefined;
+
+    // Validate and parse comparison range parameter
+    const comparisonRange = query.comparisonRange as string;
+    const validatedComparisonRange = comparisonRange && this.dateRangeService.isValidRange(comparisonRange) ? comparisonRange : undefined;
+
     return {
+      range: validatedRange,
       dateFrom: query.dateFrom as string,
       dateTo: query.dateTo as string,
+      comparisonRange: validatedComparisonRange,
       comparisonDateFrom: query.comparisonDateFrom as string,
       comparisonDateTo: query.comparisonDateTo as string,
       companyId: query.companyId ? parseInt(query.companyId as string) : undefined,

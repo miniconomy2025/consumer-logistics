@@ -12,6 +12,7 @@ export class PickupService {
     private pickupRepository: IPickupRepository;
     private companyRepository: ICompanyRepository;
     private timeManager: TimeManager;
+    // @ts-ignore - Used for late binding via setter method
     private logisticsPlanningService?: LogisticsPlanningService; // optional to support late binding
 
     constructor(
