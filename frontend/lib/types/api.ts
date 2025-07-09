@@ -477,9 +477,20 @@ export interface DashboardKPIsResponse {
   };
 }
 
+export type AnalyticsDateRange = 'last7days' | 'last30days' | 'currentyear' | 'alltime';
+
 export interface AnalyticsQueryParams extends Record<string, string | number | boolean | undefined> {
+  // Predefined date range (replaces dateFrom/dateTo)
+  range?: AnalyticsDateRange;
+
+  // Legacy date range filters (for backward compatibility)
   dateFrom?: string;
   dateTo?: string;
+
+  // Comparison period
+  comparisonRange?: AnalyticsDateRange;
+
+  // Other filters
   companyId?: number;
   truckTypeId?: number;
   limit?: number;

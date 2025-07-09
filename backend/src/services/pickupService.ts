@@ -6,11 +6,13 @@ import { logger } from '../utils/logger';
 import { TimeManager } from './timeManager';
 import { LogisticsPlanningService } from './logisticsPlanningService';
 import { GetPickupsRequest, CreatePickupRequest, PickupResponse } from '../types/dtos/pickupDtos';
+import { getLogisticsAccountNumber } from '../utils/bankAccountUtils';
 
 export class PickupService {
     private pickupRepository: IPickupRepository;
     private companyRepository: ICompanyRepository;
     private timeManager: TimeManager;
+    // @ts-ignore - Used for late binding via setter method
     private logisticsPlanningService?: LogisticsPlanningService; // optional to support late binding
 
     constructor(
@@ -74,7 +76,7 @@ export class PickupService {
         return {
             referenceNo: initialInvoice.reference_number,
             amount: amount.toFixed(2),
-            accountNumber: process.env.ACCOUNT_NUMBER || '01001123456789',
+            accountNumber: await getLogisticsAccountNumber(),
         };
     }
 

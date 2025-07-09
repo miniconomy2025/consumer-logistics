@@ -16,8 +16,7 @@
     "typeorm:migration:run": "npm run typeorm migration:run -- -d src/database/config.ts",
     "typeorm:migration:revert": "npm run typeorm migration:revert -- -d src/database/config.ts",
     "db:sync": "npm run typeorm schema:sync -- -d src/database/config.ts",
-    "db:drop": "npm run typeorm schema:drop -- -d src/database/config.ts",
-    "db:seed": "ts-node scripts/seed-database.ts"
+    "db:drop": "npm run typeorm schema:drop -- -d src/database/config.ts"
   },
   "author": "consumer-logistics",
   "license": "MIT",
@@ -32,6 +31,7 @@
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "helmet": "^7.1.0",
+    "node-fetch": "^3.3.2",
     "pg": "^8.16.3",
     "reflect-metadata": "^0.2.2",
     "typeorm": "^0.3.20",
@@ -44,6 +44,7 @@
     "@types/express": "^4.17.21",
     "@types/jest": "^29.5.12",
     "@types/node": "^20.14.9",
+    "@types/node-fetch": "^2.6.12",
     "@types/supertest": "^6.0.2",
     "@types/winston": "^2.4.4",
     "@typescript-eslint/eslint-plugin": "^7.14.1",

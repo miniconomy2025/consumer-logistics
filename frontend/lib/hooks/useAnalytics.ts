@@ -4,9 +4,11 @@ import {
   getDashboardAnalytics,
   getKPIAnalytics,
   getAnalyticsHealth,
+  createAnalyticsParams,
 } from '../api/analytics';
 import {
   AnalyticsQueryParams,
+  AnalyticsDateRange,
 } from '../types/api';
 
 // ============================================================================
@@ -14,23 +16,95 @@ import {
 // ============================================================================
 
 /**
- * Hook for dashboard analytics
+ * Hook for dashboard analytics with range support
  */
 export function useDashboardAnalytics(params?: AnalyticsQueryParams) {
   return useApi(
     () => getDashboardAnalytics(params),
-    [params?.dateFrom, params?.dateTo, params?.companyId, params?.truckTypeId]
+    [params?.range, params?.dateFrom, params?.dateTo, params?.companyId, params?.truckTypeId]
   );
 }
 
 /**
- * Hook for KPI analytics
+ * Hook for KPI analytics with range support
  */
 export function useKPIAnalytics(params?: AnalyticsQueryParams) {
   return useApi(
     () => getKPIAnalytics(params),
-    [params?.dateFrom, params?.dateTo, params?.companyId, params?.truckTypeId]
+    [params?.range, params?.dateFrom, params?.dateTo, params?.companyId, params?.truckTypeId]
   );
+}
+
+/**
+ * Hook for dashboard analytics with predefined range
+ */
+export function useDashboardAnalyticsWithRange(range: AnalyticsDateRange, additionalParams?: Partial<AnalyticsQueryParams>) {
+  const params = useMemo(() => createAnalyticsParams(range, additionalParams), [range, additionalParams]);
+  return useDashboardAnalytics(params);
+}
+
+/**
+ * Hook for KPI analytics with predefined range
+ */
+export function useKPIAnalyticsWithRange(range: AnalyticsDateRange, additionalParams?: Partial<AnalyticsQueryParams>) {
+  const params = useMemo(() => createAnalyticsParams(range, additionalParams), [range, additionalParams]);
+  return useKPIAnalytics(params);
+}
+
+/**
+ * Hook for dashboard analytics with refresh capability
+ */
+export function useDashboardAnalyticsWithRefresh(params?: AnalyticsQueryParams) {
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Include refresh trigger in dependencies to force refetch
+  const analytics = useApi(
+    () => getDashboardAnalytics(params),
+    [params?.range, params?.dateFrom, params?.dateTo, params?.companyId, params?.truckTypeId, refreshTrigger]
+  );
+
+  const refresh = useCallback(async () => {
+    setIsRefreshing(true);
+    setRefreshTrigger(prev => prev + 1);
+    // Wait a bit to show loading state
+    await new Promise(resolve => setTimeout(resolve, 300));
+    setIsRefreshing(false);
+  }, []);
+
+  return {
+    ...analytics,
+    refresh,
+    isRefreshing: isRefreshing || analytics.loading,
+  };
+}
+
+/**
+ * Hook for KPI analytics with refresh capability
+ */
+export function useKPIAnalyticsWithRefresh(params?: AnalyticsQueryParams) {
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Include refresh trigger in dependencies to force refetch
+  const kpis = useApi(
+    () => getKPIAnalytics(params),
+    [params?.range, params?.dateFrom, params?.dateTo, params?.companyId, params?.truckTypeId, refreshTrigger]
+  );
+
+  const refresh = useCallback(async () => {
+    setIsRefreshing(true);
+    setRefreshTrigger(prev => prev + 1);
+    // Wait a bit to show loading state
+    await new Promise(resolve => setTimeout(resolve, 300));
+    setIsRefreshing(false);
+  }, []);
+
+  return {
+    ...kpis,
+    refresh,
+    isRefreshing: isRefreshing || kpis.loading,
+  };
 }
 
 /**
@@ -45,61 +119,46 @@ export function useAnalyticsHealth() {
 // ============================================================================
 
 /**
- * Hook for managing analytics date range
+ * Hook for managing analytics date range using predefined ranges
  */
-export function useAnalyticsDateRange(initialRange?: AnalyticsQueryParams) {
-  const [dateRange, setDateRange] = useState<AnalyticsQueryParams>(() => {
-    // Use a static default for SSR to prevent hydration mismatches
-    if (initialRange) {
-      return initialRange;
-    }
-
-    // Static default dates for SSR consistency
-    return {
-      dateFrom: '2025-06-04', // 30 days ago from a fixed date
-      dateTo: '2025-07-04',   // fixed current date
-    };
-  });
-
+export function useAnalyticsDateRange(initialRange: AnalyticsDateRange = 'last30days') {
+  const [range, setRange] = useState<AnalyticsDateRange>(initialRange);
   const [isClient, setIsClient] = useState(false);
 
-  // Set client-side dates after hydration
+  // Set client-side flag after hydration
   useEffect(() => {
     setIsClient(true);
+  }, []);
 
-    // Only update to dynamic dates if no initial range was provided
-    if (!initialRange) {
-      const now = new Date();
-      const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+  const analyticsParams = useMemo(() => createAnalyticsParams(range), [range]);
 
-      setDateRange({
-        dateFrom: thirtyDaysAgo.toISOString().split('T')[0],
-        dateTo: now.toISOString().split('T')[0],
-      });
-    }
-  }, [initialRange]);
-
-  const updateDateRange = useCallback((newRange: Partial<AnalyticsQueryParams>) => {
-    setDateRange(prev => ({ ...prev, ...newRange }));
+  const updateRange = useCallback((newRange: AnalyticsDateRange) => {
+    setRange(newRange);
   }, []);
 
   return {
-    dateRange,
-    setDateRange: updateDateRange,
+    range,
+    setRange: updateRange,
+    analyticsParams,
     isClient, // Expose this so components can handle loading states
   };
 }
 
 /**
  * Hook for analytics refresh functionality
+ * This hook provides a refresh mechanism that can be used with analytics hooks
  */
 export function useAnalyticsRefresh() {
   const [lastRefresh, setLastRefresh] = useState(new Date());
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   const refresh = useCallback(async () => {
     setIsRefreshing(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    // Trigger a refresh by updating the trigger value
+    setRefreshTrigger(prev => prev + 1);
+    // Add a small delay to show loading state
+    await new Promise(resolve => setTimeout(resolve, 500));
     setLastRefresh(new Date());
     setIsRefreshing(false);
   }, []);
@@ -108,6 +167,7 @@ export function useAnalyticsRefresh() {
     lastRefresh,
     isRefreshing,
     refresh,
+    refreshTrigger, // Expose this for other hooks to depend on
   };
 }
 

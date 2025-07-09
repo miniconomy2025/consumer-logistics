@@ -7,6 +7,7 @@ import { PickupStatusEntity } from './models/PickupStatusEntity';
 import { CompanyEntity } from './models/CompanyEntity';
 import { TransactionEntity } from './models/TransactionEntity';
 import { ServiceTypeEntity } from './models/ServiceTypeEntity';
+import { BankAccountEntity } from './models/BankAccountEntity';
 import { LogisticsDetailsEntity } from './models/LogisticsDetailsEntity'; 
 import { TruckAllocationEntity } from './models/TruckAllocationEntity';
 import { TransactionTypeEntity } from './models/TransactionTypeEntity'
@@ -35,6 +36,7 @@ export const AppDataSource = new DataSource({
         LogisticsDetailsEntity,
         ServiceTypeEntity,
         TruckAllocationEntity,
+        BankAccountEntity
     ],
     migrations: [path.join(__dirname, 'migrations', '**', '*.{ts,js}')],
     subscribers: [],

@@ -1,5 +1,7 @@
 import { IAnalyticsRepository } from '../repositories/interfaces/IAnalyticsRepository';
 import { AnalyticsRepository } from '../repositories/implementations/AnalyticsRepository';
+import { AnalyticsDateRangeService } from './analyticsDateRangeService';
+import { TimeManager } from './timeManager';
 import { AppError } from '../shared/errors/ApplicationError';
 import { logger } from '../utils/logger';
 import {
@@ -12,9 +14,56 @@ import {
 
 export class AnalyticsService {
   private analyticsRepository: IAnalyticsRepository;
+  private dateRangeService: AnalyticsDateRangeService;
 
   constructor(analyticsRepository: IAnalyticsRepository = new AnalyticsRepository()) {
     this.analyticsRepository = analyticsRepository;
+    this.dateRangeService = new AnalyticsDateRangeService();
+  }
+
+  // ============================================================================
+  // HELPER METHODS
+  // ============================================================================
+
+  /**
+   * Resolve date range from params, prioritizing range parameter over explicit dates
+   */
+  private resolveDateRange(params?: AnalyticsQueryParams): { dateFrom: string; dateTo: string } {
+    // If range parameter is provided, use it
+    if (params?.range) {
+      return this.dateRangeService.convertRangeToDateStrings(params.range);
+    }
+
+    // Fall back to explicit dates if provided
+    if (params?.dateFrom && params?.dateTo) {
+      return { dateFrom: params.dateFrom, dateTo: params.dateTo };
+    }
+
+    // Default to last 30 days
+    const defaultRange = this.dateRangeService.getDefaultRange();
+    return this.dateRangeService.convertRangeToDateStrings(defaultRange);
+  }
+
+  /**
+   * Resolve comparison date range for growth calculations
+   */
+  private resolveComparisonDateRange(params?: AnalyticsQueryParams): { dateFrom: string; dateTo: string } | null {
+    // If comparison range parameter is provided, use it
+    if (params?.comparisonRange) {
+      return this.dateRangeService.getComparisonRange(params.comparisonRange);
+    }
+
+    // Fall back to explicit comparison dates if provided
+    if (params?.comparisonDateFrom && params?.comparisonDateTo) {
+      return { dateFrom: params.comparisonDateFrom, dateTo: params.comparisonDateTo };
+    }
+
+    // If main range is provided, calculate comparison automatically
+    if (params?.range) {
+      return this.dateRangeService.getComparisonRange(params.range);
+    }
+
+    return null;
   }
 
   // ============================================================================
@@ -25,12 +74,14 @@ export class AnalyticsService {
     logger.info('Generating dashboard analytics');
 
     try {
-      const dateFrom = params?.dateFrom;
-      const dateTo = params?.dateTo;
+      // Resolve date ranges using TimeManager
+      const { dateFrom, dateTo } = this.resolveDateRange(params);
+      const comparisonRange = this.resolveComparisonDateRange(params);
 
-      // Calculate comparison period (previous month/period)
-      const comparisonDateFrom = params?.comparisonDateFrom;
-      const comparisonDateTo = params?.comparisonDateTo;
+      logger.debug(`Dashboard analytics date range: ${dateFrom} to ${dateTo}`);
+      if (comparisonRange) {
+        logger.debug(`Comparison range: ${comparisonRange.dateFrom} to ${comparisonRange.dateTo}`);
+      }
 
       // Get basic metrics
       const [
@@ -54,11 +105,11 @@ export class AnalyticsService {
       let pickupGrowth = 0;
       let companyGrowth = 0;
 
-      if (comparisonDateFrom && comparisonDateTo && dateFrom && dateTo) {
+      if (comparisonRange) {
         const [revenueGrowthData, pickupGrowthData, companyGrowthData] = await Promise.all([
-          this.analyticsRepository.getRevenueGrowth(dateFrom, dateTo, comparisonDateFrom, comparisonDateTo),
-          this.analyticsRepository.getPickupGrowth(dateFrom, dateTo, comparisonDateFrom, comparisonDateTo),
-          this.analyticsRepository.getCompanyGrowth(dateFrom, dateTo, comparisonDateFrom, comparisonDateTo),
+          this.analyticsRepository.getRevenueGrowth(dateFrom, dateTo, comparisonRange.dateFrom, comparisonRange.dateTo),
+          this.analyticsRepository.getPickupGrowth(dateFrom, dateTo, comparisonRange.dateFrom, comparisonRange.dateTo),
+          this.analyticsRepository.getCompanyGrowth(dateFrom, dateTo, comparisonRange.dateFrom, comparisonRange.dateTo),
         ]);
 
         revenueGrowth = revenueGrowthData.growthRate;
@@ -131,10 +182,14 @@ export class AnalyticsService {
     logger.info('Generating KPI analytics');
 
     try {
-      const dateFrom = params?.dateFrom;
-      const dateTo = params?.dateTo;
-      const comparisonDateFrom = params?.comparisonDateFrom;
-      const comparisonDateTo = params?.comparisonDateTo;
+      // Resolve date ranges using TimeManager
+      const { dateFrom, dateTo } = this.resolveDateRange(params);
+      const comparisonRange = this.resolveComparisonDateRange(params);
+
+      logger.debug(`KPI analytics date range: ${dateFrom} to ${dateTo}`);
+      if (comparisonRange) {
+        logger.debug(`Comparison range: ${comparisonRange.dateFrom} to ${comparisonRange.dateTo}`);
+      }
 
       // Get current period metrics
       const [
@@ -157,18 +212,23 @@ export class AnalyticsService {
         this.analyticsRepository.getPendingPickupsRatio(dateFrom, dateTo),
       ]);
 
-      // Calculate monthly metrics (assuming current period is monthly)
-      const monthlyRevenue = totalRevenue;
-      const monthlyPickups = totalPickups;
+      // Calculate current month metrics using TimeManager
+      const timeManager = TimeManager.getInstance();
+      const currentTime = timeManager.getCurrentTime();
+      const currentMonthStart = `${currentTime.getFullYear()}-${String(currentTime.getMonth() + 1).padStart(2, '0')}-01`;
+      const currentMonthEnd = new Date(currentTime.getFullYear(), currentTime.getMonth() + 1, 0).toISOString().split('T')[0];
+
+      const monthlyRevenue = await this.analyticsRepository.getTotalRevenue(currentMonthStart, currentMonthEnd);
+      const monthlyPickups = await this.analyticsRepository.getTotalPickups(currentMonthStart, currentMonthEnd);
 
       // Get growth rates if comparison period provided
       let revenueGrowthRate = 0;
       let pickupGrowthRate = 0;
 
-      if (comparisonDateFrom && comparisonDateTo && dateFrom && dateTo) {
+      if (comparisonRange) {
         const [revenueGrowth, pickupGrowth] = await Promise.all([
-          this.analyticsRepository.getRevenueGrowth(dateFrom, dateTo, comparisonDateFrom, comparisonDateTo),
-          this.analyticsRepository.getPickupGrowth(dateFrom, dateTo, comparisonDateFrom, comparisonDateTo),
+          this.analyticsRepository.getRevenueGrowth(dateFrom, dateTo, comparisonRange.dateFrom, comparisonRange.dateTo),
+          this.analyticsRepository.getPickupGrowth(dateFrom, dateTo, comparisonRange.dateFrom, comparisonRange.dateTo),
         ]);
 
         revenueGrowthRate = revenueGrowth.growthRate;
@@ -198,8 +258,8 @@ export class AnalyticsService {
         pendingPickupsRatio,
         periodStart: dateFrom || '',
         periodEnd: dateTo || '',
-        comparisonPeriodStart: comparisonDateFrom || '',
-        comparisonPeriodEnd: comparisonDateTo || '',
+        comparisonPeriodStart: comparisonRange?.dateFrom || '',
+        comparisonPeriodEnd: comparisonRange?.dateTo || '',
       };
     } catch (error: any) {
       logger.error('Error generating KPI analytics:', error);

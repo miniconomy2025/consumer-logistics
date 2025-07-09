@@ -195,34 +195,40 @@ export interface OperationalAnalyticsResponse {
 // ANALYTICS QUERY PARAMETERS
 // ============================================================================
 
+export type AnalyticsDateRange = 'last7days' | 'last30days' | 'currentyear' | 'alltime';
+
 export interface AnalyticsQueryParams {
-  // Date range filters
+  // Predefined date range (replaces dateFrom/dateTo)
+  range?: AnalyticsDateRange;
+
+  // Legacy date range filters (for backward compatibility during transition)
   dateFrom?: string; // YYYY-MM-DD
   dateTo?: string; // YYYY-MM-DD
-  
+
   // Comparison period (for growth calculations)
+  comparisonRange?: AnalyticsDateRange;
   comparisonDateFrom?: string;
   comparisonDateTo?: string;
-  
+
   // Filters
   companyId?: number;
   companyIds?: number[]; // for multi-company analysis
   statusId?: number;
   statusIds?: number[];
-  
+
   // Grouping options
   groupBy?: 'day' | 'week' | 'month' | 'quarter' | 'year';
-  
+
   // Aggregation options
   includeGrowthRates?: boolean;
   includeComparisons?: boolean;
   includeTrends?: boolean;
   includeForecasts?: boolean;
-  
+
   // Pagination for large datasets
   limit?: number;
   offset?: number;
-  
+
   // Sorting
   sortBy?: 'revenue' | 'pickups' | 'date' | 'company' | 'growth';
   sortOrder?: 'asc' | 'desc';
