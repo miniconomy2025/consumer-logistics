@@ -1,6 +1,6 @@
 import { getTrucksForSale } from './truckMarketService';
 import { selectTrucksToBuy, calculateTruckCosts } from '../utils/truckPurchaseUtils';
-import { applyForLoan } from './loanService';
+import { applyForLoanWithFallback } from './loanService';
 import { TruckManagementService } from './truckManagementService';
 import { TruckRepository } from '../repositories/implementations/TruckRepository';
 import { AppDataSource } from '../database/config'; 
@@ -22,8 +22,12 @@ export class TruckPurchaseService {
 
     console.log(`[TruckPurchaseService] Applying for loan. Amount: $${loanAmount}`);
 
-    const loanResult = await applyForLoan(loanAmount);
-    if (!loanResult.success) throw new Error('Loan application failed');
+    const { response: loanResult, attemptedAmount } = await applyForLoanWithFallback(loanAmount);
+    if (!loanResult.success) throw new Error('Loan application failed, even after fallback.');
+
+    if (attemptedAmount < loanAmount) {
+      console.warn(`[TruckPurchaseService] Fallback loan used. Original: $${loanAmount}, Approved: $${attemptedAmount}`);
+    }
 
     for (const truck of trucksToBuy) {
       // Order from the hand
