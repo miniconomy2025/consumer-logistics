@@ -35,8 +35,6 @@ export function formatCurrency(
   return `Ð${formatted}`;
 }
 
-
-
 // ============================================================================
 // NUMBER FORMATTING
 // ============================================================================
@@ -107,12 +105,6 @@ export function calculateGrowth(current: number, previous: number): number {
   return ((current - previous) / previous) * 100;
 }
 
-
-
-// ============================================================================
-// DATE FORMATTING
-// ============================================================================
-
 /**
  * Format dates for display
  */
@@ -131,18 +123,6 @@ export function formatDate(
   
   return new Intl.DateTimeFormat(locale, { ...defaultOptions, ...options }).format(dateObj);
 }
-
-
-
-
-
-
-
-// ============================================================================
-// STATUS FORMATTING
-// ============================================================================
-
-
 
 /**
  * Get growth color based on value

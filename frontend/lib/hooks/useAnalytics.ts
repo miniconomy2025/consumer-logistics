@@ -9,7 +9,7 @@ import {
 import {
   AnalyticsQueryParams,
   AnalyticsDateRange,
-} from '../types/api';
+} from '../types/analytics';
 
 // ============================================================================
 // ANALYTICS HOOKS
@@ -67,8 +67,6 @@ export function useDashboardAnalyticsWithRefresh(params?: AnalyticsQueryParams) 
   const refresh = useCallback(async () => {
     setIsRefreshing(true);
     setRefreshTrigger(prev => prev + 1);
-    // Wait a bit to show loading state
-    await new Promise(resolve => setTimeout(resolve, 300));
     setIsRefreshing(false);
   }, []);
 
@@ -95,8 +93,6 @@ export function useKPIAnalyticsWithRefresh(params?: AnalyticsQueryParams) {
   const refresh = useCallback(async () => {
     setIsRefreshing(true);
     setRefreshTrigger(prev => prev + 1);
-    // Wait a bit to show loading state
-    await new Promise(resolve => setTimeout(resolve, 300));
     setIsRefreshing(false);
   }, []);
 
@@ -112,6 +108,29 @@ export function useKPIAnalyticsWithRefresh(params?: AnalyticsQueryParams) {
  */
 export function useAnalyticsHealth() {
   return useApi(() => getAnalyticsHealth());
+}
+
+/**
+ * Hook for managing dashboard date range using predefined ranges
+ * Server-side date calculation using TimeManager
+ */
+export function useDashboardDateRange(initialRange: AnalyticsDateRange = 'last30days') {
+  const [range, setRange] = useState<AnalyticsDateRange>(initialRange);
+  const [isClient, setIsClient] = useState(false);
+
+  // Ensure we're on the client side to prevent hydration mismatches
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  const analyticsParams = useMemo(() => createAnalyticsParams(range), [range]);
+
+  return {
+    range,
+    setRange,
+    analyticsParams,
+    isClient, // Expose this so components can show loading states
+  };
 }
 
 // ============================================================================
@@ -157,8 +176,6 @@ export function useAnalyticsRefresh() {
     setIsRefreshing(true);
     // Trigger a refresh by updating the trigger value
     setRefreshTrigger(prev => prev + 1);
-    // Add a small delay to show loading state
-    await new Promise(resolve => setTimeout(resolve, 500));
     setLastRefresh(new Date());
     setIsRefreshing(false);
   }, []);

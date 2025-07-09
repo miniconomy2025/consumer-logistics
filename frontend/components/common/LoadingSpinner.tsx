@@ -1,13 +1,7 @@
-// Loading Spinner and Skeleton Components
-
 "use client";
 
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-
-// ============================================================================
-// LOADING SPINNER
-// ============================================================================
 
 interface LoadingSpinnerProps {
   size?: 'sm' | 'md' | 'lg';

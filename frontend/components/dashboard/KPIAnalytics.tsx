@@ -13,9 +13,9 @@ import {
   BarChart3,
   PieChart,
 } from "lucide-react";
-import { useKPIAnalytics } from "@/lib/hooks/useDashboard";
+import { useKPIAnalytics } from "@/lib/hooks/useAnalytics";
 import { formatCurrency, formatNumber, formatGrowth, getGrowthColor, formatPercentage } from "@/lib/utils/formatters";
-import { AnalyticsQueryParams, KPIAnalyticsResponse } from "@/lib/types/api";
+import { AnalyticsQueryParams, KPIAnalyticsResponse } from "@/lib/types/analytics";
 
 interface KPIAnalyticsProps {
   dateRange?: AnalyticsQueryParams;

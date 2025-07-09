@@ -14,9 +14,9 @@ import {
   CheckCircle,
   AlertCircle,
 } from "lucide-react";
-import { useDashboardAnalytics } from "@/lib/hooks/useDashboard";
+import { useDashboardAnalytics } from "@/lib/hooks/useAnalytics";
 import { formatCurrency, formatNumber, formatGrowth, getGrowthColor } from "@/lib/utils/formatters";
-import { AnalyticsQueryParams, DashboardAnalyticsResponse, RecentPickupItem, TopCompanyItem, StatusDistributionItem } from "@/lib/types/api";
+import { AnalyticsQueryParams, DashboardAnalyticsResponse } from "@/lib/types/analytics";
 
 interface AnalyticsDashboardProps {
   dateRange?: AnalyticsQueryParams;
@@ -73,6 +73,28 @@ export function AnalyticsDashboard({ dateRange, data: propData, loading: propLoa
   );
 }
 
+// Color mappings for KPI cards
+const kpiColorClasses = {
+  green: {
+    background: "bg-green-100",
+    icon: "text-green-600",
+  },
+  blue: {
+    background: "bg-blue-100",
+    icon: "text-blue-600",
+  },
+  purple: {
+    background: "bg-purple-100",
+    icon: "text-purple-600",
+  },
+  orange: {
+    background: "bg-orange-100",
+    icon: "text-orange-600",
+  },
+} as const;
+
+type KpiColor = keyof typeof kpiColorClasses;
+
 // KPI Cards Component
 function AnalyticsKPICards({ analytics }: { analytics: DashboardAnalyticsResponse }) {
   const kpiCards = [
@@ -81,28 +103,28 @@ function AnalyticsKPICards({ analytics }: { analytics: DashboardAnalyticsRespons
       value: formatCurrency(analytics.totalRevenue),
       growth: analytics.revenueGrowth,
       icon: DollarSign,
-      color: "green",
+      color: "green" as KpiColor,
     },
     {
       title: "Total Pickups",
       value: formatNumber(analytics.totalPickups),
       growth: analytics.pickupGrowth,
       icon: Package,
-      color: "blue",
+      color: "blue" as KpiColor,
     },
     {
       title: "Average Order Value",
       value: formatCurrency(analytics.averageOrderValue),
       growth: 0, // Not provided by backend
       icon: Activity,
-      color: "purple",
+      color: "purple" as KpiColor,
     },
     {
       title: "Total Companies",
       value: formatNumber(analytics.totalCompanies),
       growth: analytics.companyGrowth,
       icon: Users,
-      color: "orange",
+      color: "orange" as KpiColor,
     },
   ];
 
@@ -112,6 +134,7 @@ function AnalyticsKPICards({ analytics }: { analytics: DashboardAnalyticsRespons
         const Icon = kpi.icon;
         const growthColor = getGrowthColor(kpi.growth);
         const GrowthIcon = kpi.growth >= 0 ? TrendingUp : TrendingDown;
+        const colorClasses = kpiColorClasses[kpi.color];
 
         return (
           <Card key={index} className="border-slate-200 shadow-sm">
@@ -131,8 +154,8 @@ function AnalyticsKPICards({ analytics }: { analytics: DashboardAnalyticsRespons
                     </div>
                   )}
                 </div>
-                <div className={`p-3 bg-${kpi.color}-100 rounded-lg`}>
-                  <Icon className={`h-6 w-6 text-${kpi.color}-600`} />
+                <div className={`p-3 ${colorClasses.background} rounded-lg`}>
+                  <Icon className={`h-6 w-6 ${colorClasses.icon}`} />
                 </div>
               </div>
             </CardContent>
@@ -143,6 +166,24 @@ function AnalyticsKPICards({ analytics }: { analytics: DashboardAnalyticsRespons
   );
 }
 
+// Color mappings for secondary metrics
+const secondaryMetricColorClasses = {
+  yellow: {
+    background: "bg-yellow-100",
+    icon: "text-yellow-600",
+  },
+  green: {
+    background: "bg-green-100",
+    icon: "text-green-600",
+  },
+  blue: {
+    background: "bg-blue-100",
+    icon: "text-blue-600",
+  },
+} as const;
+
+type SecondaryMetricColor = keyof typeof secondaryMetricColorClasses;
+
 // Secondary Metrics Component
 function AnalyticsSecondaryMetrics({ analytics }: { analytics: DashboardAnalyticsResponse }) {
   const secondaryMetrics = [
@@ -150,19 +191,19 @@ function AnalyticsSecondaryMetrics({ analytics }: { analytics: DashboardAnalytic
       title: "Pending Pickups",
       value: formatNumber(analytics.pendingPickups),
       icon: Clock,
-      color: "yellow",
+      color: "yellow" as SecondaryMetricColor,
     },
     {
       title: "Completed Pickups",
       value: formatNumber(analytics.completedPickups),
       icon: CheckCircle,
-      color: "green",
+      color: "green" as SecondaryMetricColor,
     },
     {
       title: "Active Companies",
       value: formatNumber(analytics.activeCompanies),
       icon: Users,
-      color: "blue",
+      color: "blue" as SecondaryMetricColor,
     },
   ];
 
@@ -170,13 +211,14 @@ function AnalyticsSecondaryMetrics({ analytics }: { analytics: DashboardAnalytic
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
       {secondaryMetrics.map((metric, index) => {
         const Icon = metric.icon;
-        
+        const colorClasses = secondaryMetricColorClasses[metric.color];
+
         return (
           <Card key={index} className="border-slate-200 shadow-sm">
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
-                <div className={`p-2 bg-${metric.color}-100 rounded-lg`}>
-                  <Icon className={`h-5 w-5 text-${metric.color}-600`} />
+                <div className={`p-2 ${colorClasses.background} rounded-lg`}>
+                  <Icon className={`h-5 w-5 ${colorClasses.icon}`} />
                 </div>
                 <div>
                   <p className="text-sm font-medium text-slate-500">
@@ -196,7 +238,7 @@ function AnalyticsSecondaryMetrics({ analytics }: { analytics: DashboardAnalytic
 }
 
 // Recent Pickups Card Component
-function RecentPickupsCard({ pickups }: { pickups: RecentPickupItem[] }) {
+function RecentPickupsCard({ pickups }: { pickups: DashboardAnalyticsResponse['recentPickups'] }) {
   return (
     <Card className="border-slate-200 shadow-sm">
       <CardHeader>
@@ -216,7 +258,7 @@ function RecentPickupsCard({ pickups }: { pickups: RecentPickupItem[] }) {
                 <div className="text-right">
                   <p className="font-medium text-slate-900">{formatCurrency(pickup.amount)}</p>
                   <Badge variant="secondary" className="text-xs">
-                    {pickup.statusName}
+                    {pickup.status}
                   </Badge>
                 </div>
               </div>
@@ -229,7 +271,7 @@ function RecentPickupsCard({ pickups }: { pickups: RecentPickupItem[] }) {
 }
 
 // Top Companies Card Component
-function TopCompaniesCard({ companies }: { companies: TopCompanyItem[] }) {
+function TopCompaniesCard({ companies }: { companies: DashboardAnalyticsResponse['topCompanies'] }) {
   return (
     <Card className="border-slate-200 shadow-sm">
       <CardHeader>
@@ -260,7 +302,7 @@ function TopCompaniesCard({ companies }: { companies: TopCompanyItem[] }) {
 }
 
 // Status Distribution Card Component
-function StatusDistributionCard({ statusData }: { statusData: StatusDistributionItem[] }) {
+function StatusDistributionCard({ statusData }: { statusData: DashboardAnalyticsResponse['statusDistribution'] }) {
   return (
     <Card className="border-slate-200 shadow-sm">
       <CardHeader>

@@ -1,8 +1,10 @@
 export * from './client';
 export * as analyticsApi from './analytics';
 
-export * from '../types/api';
+export * from '../types/analytics';
+export * from '../types/common';
+export * from '../types/api-client';
 
 export {
-  analyticsPresets,
+  analyticsRangeOptions,
 } from './analytics';
