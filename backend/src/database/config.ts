@@ -36,6 +36,6 @@ export const AppDataSource = new DataSource({
         ServiceTypeEntity,
         TruckAllocationEntity,
     ],
-    migrations: [path.join(__dirname, 'migrations', '*.ts')],
+    migrations: [path.join(__dirname, 'migrations', '**', '*.{ts,js}')],
     subscribers: [],
 });
