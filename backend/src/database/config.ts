@@ -14,8 +14,9 @@ import { TransactionTypeEntity } from './models/TransactionTypeEntity'
 import dotenv from 'dotenv';
 import path from 'path';
 
-dotenv.config({ path: path.resolve(__dirname, '../../.env') });
-
+if (process.env.NODE_ENV !== 'production') {
+    dotenv.config({ path: path.resolve(__dirname, '../../.env') });
+}
 export const AppDataSource = new DataSource({
     type: 'postgres',
     host: process.env.DB_HOST,
