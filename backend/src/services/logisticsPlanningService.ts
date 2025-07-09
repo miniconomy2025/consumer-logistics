@@ -1,4 +1,4 @@
-import {  In } from 'typeorm';
+import { In } from 'typeorm';
 import { AppDataSource } from '../database/config';
 import { LogisticsDetailsEntity, LogisticsStatus } from '../database/models/LogisticsDetailsEntity';
 import { TruckEntity } from '../database/models/TruckEntity';
@@ -15,11 +15,13 @@ import { ITruckRepository } from '../repositories/interfaces/ITruckRepository';
 import { ITruckAllocationRepository } from '../repositories/interfaces/ITruckAllocationRepository';
 import { TruckAllocationEntity } from '../database/models/TruckAllocationEntity';
 import { PickupService } from './pickupService'; 
+
 export interface CreateLogisticsDetailsData {
     pickupId: number;
     serviceTypeId: ServiceTypeEnum;
     scheduledSimulationDate: Date;
     quantity: number;
+    modelName?: string; 
 }
 
 export class LogisticsPlanningService {
@@ -288,9 +290,17 @@ export class LogisticsPlanningService {
     }
 
     public async sendDeliveryMessageToSQS(logisticsDetailsId: number, delaySeconds: number): Promise<void> {
+        const logisticsDetail = await this.logisticsDetailsRepository.findById(logisticsDetailsId);
+        if (!logisticsDetail || !logisticsDetail.pickup) {
+            logger.error(`Logistics detail ${logisticsDetailsId} or its pickup not found for SQS delivery message.`);
+            throw new AppError(`Logistics detail ${logisticsDetailsId} or its pickup not found.`, 404);
+        }
+
         const messageBody = JSON.stringify({
             eventType: 'DELIVERY_SCHEDULED',
             logisticsDetailsId: logisticsDetailsId,
+            modelName: logisticsDetail.pickup.model_name, 
+            quantity: logisticsDetail.quantity,
         });
 
         const command = new SendMessageCommand({
