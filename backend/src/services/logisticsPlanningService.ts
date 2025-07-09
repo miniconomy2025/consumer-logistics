@@ -1,4 +1,4 @@
-import {  In } from 'typeorm';
+import { In } from 'typeorm';
 import { AppDataSource } from '../database/config';
 import { LogisticsDetailsEntity, LogisticsStatus } from '../database/models/LogisticsDetailsEntity';
 import { TruckEntity } from '../database/models/TruckEntity';
@@ -14,7 +14,8 @@ import { PickupStatusEnum } from '../database/models/PickupEntity';
 import { ITruckRepository } from '../repositories/interfaces/ITruckRepository';
 import { ITruckAllocationRepository } from '../repositories/interfaces/ITruckAllocationRepository';
 import { TruckAllocationEntity } from '../database/models/TruckAllocationEntity';
-import { PickupService } from './pickupService'; 
+import { PickupService } from './pickupService';
+
 export interface CreateLogisticsDetailsData {
     pickupId: number;
     serviceTypeId: ServiceTypeEnum;
@@ -26,7 +27,7 @@ export class LogisticsPlanningService {
     public logisticsDetailsRepository: ILogisticsDetailsRepository;
     private truckRepository: ITruckRepository;
     private pickupRepository: IPickupRepository;
-    private pickupService: PickupService; 
+    private pickupService: PickupService;
     private truckAllocationRepository: ITruckAllocationRepository;
     private timeManager: TimeManager;
     private sqsClient: SQSClient;
@@ -37,7 +38,7 @@ export class LogisticsPlanningService {
         truckRepository: ITruckRepository,
         pickupRepository: IPickupRepository,
         truckAllocationRepository: ITruckAllocationRepository,
-        pickupService: PickupService, 
+        pickupService: PickupService,
         sqsClientInstance: SQSClient = sqsClient
     ) {
         this.timeManager = timeManager;
@@ -45,7 +46,7 @@ export class LogisticsPlanningService {
         this.truckRepository = truckRepository;
         this.pickupRepository = pickupRepository;
         this.truckAllocationRepository = truckAllocationRepository;
-        this.pickupService = pickupService; 
+        this.pickupService = pickupService;
         this.sqsClient = sqsClientInstance;
     }
 
@@ -81,8 +82,8 @@ export class LogisticsPlanningService {
                 pickupId,
                 quantity,
                 initialInSimPickupDate,
-                undefined, 
-                pickup.logisticsDetails?.logistics_details_id 
+                undefined,
+                pickup.logisticsDetails?.logistics_details_id
             );
         } catch (error: any) {
             logger.error(`Initial logistics assignment failed for pickup ${pickupId}: ${error.message}`, error);
@@ -369,10 +370,26 @@ export class LogisticsPlanningService {
             logger.info(`Logistics detail ${updatedLogisticsDetail.logistics_details_id} marked as COLLECTED.`);
         }
 
-        if (updatedLogisticsDetail.pickup && updatedLogisticsDetail.pickup.pickup_id) {
+        if (updatedLogisticsDetail.pickup && updatedLogisticsDetail.pickup_id) {
             await this.pickupService.updatePickupStatus(updatedLogisticsDetail.pickup.pickup_id, PickupStatusEnum.COLLECTED);
             logger.info(`Related Pickup ${updatedLogisticsDetail.pickup.pickup_id} status updated to COLLECTED.`);
         }
+
+        if (
+          updatedLogisticsDetail.pickup?.invoice?.reference_number &&
+          updatedLogisticsDetail.quantity
+        ) {
+          try {
+            await this.notifyExternalPickup(
+              updatedLogisticsDetail.pickup.invoice.reference_number,
+              updatedLogisticsDetail.quantity
+            );
+            logger.info(`External partner notified for pickup reference ${updatedLogisticsDetail.pickup.invoice.reference_number}.`);
+          } catch (err) {
+            logger.error('Failed to notify external partner for pickup:', err);
+          }
+        }
+
         return updatedLogisticsDetail;
     }
 
@@ -445,7 +462,7 @@ export class LogisticsPlanningService {
             logger.info(`Logistics detail ${updatedLogisticsDetail.logistics_details_id} marked as DELIVERED.`);
         }
 
-        if (updatedLogisticsDetail.pickup && updatedLogisticsDetail.pickup.pickup_id) {
+        if (updatedLogisticsDetail.pickup && updatedLogisticsDetail.pickup_id) {
             await this.pickupService.updatePickupStatus(updatedLogisticsDetail.pickup.pickup_id, PickupStatusEnum.DELIVERED);
             logger.info(`Related Pickup ${updatedLogisticsDetail.pickup.pickup_id} status updated to DELIVERED.`);
         }
@@ -581,14 +598,14 @@ export class LogisticsPlanningService {
             LogisticsStatus.TRUCK_UNAVAILABLE,
             LogisticsStatus.STUCK_IN_TRANSIT,
             LogisticsStatus.ALTERNATIVE_DELIVERY_PLANNED,
-            LogisticsStatus.FAILED 
+            LogisticsStatus.FAILED
         ];
 
         logger.info(`[LogisticsPlanningService] Starting re-planning for logistics with statuses: ${statusesToReplan.join(', ')}`);
 
         const failedLogistics = await this.logisticsDetailsRepository.find({
             where: { logistics_status: In(statusesToReplan) },
-            relations: ['pickup', 'pickup.company'], 
+            relations: ['pickup', 'pickup.company'],
         });
 
         if (failedLogistics.length === 0) {
@@ -612,7 +629,7 @@ export class LogisticsPlanningService {
                     await this.logisticsDetailsRepository.update(detail.logistics_details_id, {
                         logistics_status: LogisticsStatus.PENDING_REPLANNING
                     });
-                    await this.pickupService.updatePickupStatus(detail.pickup.pickup_id, PickupStatusEnum.ORDER_RECEIVED); 
+                    await this.pickupService.updatePickupStatus(detail.pickup.pickup_id, PickupStatusEnum.ORDER_RECEIVED);
                 }
 
                 if (detail.logistics_status === LogisticsStatus.STUCK_IN_TRANSIT ||
@@ -631,5 +648,20 @@ export class LogisticsPlanningService {
         }
 
         logger.info(`Retry process completed. Re-attempted ${failedLogistics.length} failed logistics.`);
+    }
+
+    public async notifyExternalPickup(reference: string, quantity: number): Promise<void> {
+        const response = await fetch('https://shop-api-domain/pickup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            reference,
+            type: 'PICKUP',
+            quantity
+          })
+        });
+        if (!response.ok) {
+          throw new Error(`Failed to notify external pickup API: ${response.statusText}`);
+        }
     }
 }
