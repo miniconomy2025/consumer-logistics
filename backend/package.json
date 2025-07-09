@@ -16,8 +16,7 @@
     "typeorm:migration:run": "npm run typeorm migration:run -- -d src/database/config.ts",
     "typeorm:migration:revert": "npm run typeorm migration:revert -- -d src/database/config.ts",
     "db:sync": "npm run typeorm schema:sync -- -d src/database/config.ts",
-    "db:drop": "npm run typeorm schema:drop -- -d src/database/config.ts",
-    "db:seed": "ts-node scripts/seed-database.ts"
+    "db:drop": "npm run typeorm schema:drop -- -d src/database/config.ts"
   },
   "author": "consumer-logistics",
   "license": "MIT",

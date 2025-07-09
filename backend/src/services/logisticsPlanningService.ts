@@ -2,7 +2,7 @@ import {  In } from 'typeorm';
 import { AppDataSource } from '../database/config';
 import { LogisticsDetailsEntity, LogisticsStatus } from '../database/models/LogisticsDetailsEntity';
 import { TruckEntity } from '../database/models/TruckEntity';
-import { ServiceTypeEnum, ServiceTypeEntity } from '../database/models/ServiceTypeEntity';
+import { ServiceTypeEnum } from '../database/models/ServiceTypeEntity';
 import { AppError } from '../shared/errors/ApplicationError';
 import { logger } from '../utils/logger';
 import { TimeManager } from './timeManager';
@@ -142,11 +142,10 @@ export class LogisticsPlanningService {
             const statusToSet = LogisticsStatus.NO_TRUCKS_AVAILABLE;
             logger.warn(`No *available* trucks in the fleet to assign for pickup ${pickupId}. All ${allTrucks.length} trucks are either busy or marked unavailable. Status set to ${statusToSet}.`);
 
-            let logisticsToReturn: LogisticsDetailsEntity;
             if (logisticsDetailIdToUpdate) {
-                logisticsToReturn = (await this.logisticsDetailsRepository.update(logisticsDetailIdToUpdate, { logistics_status: statusToSet })) as LogisticsDetailsEntity;
+                await this.logisticsDetailsRepository.update(logisticsDetailIdToUpdate, { logistics_status: statusToSet });
             } else {
-                logisticsToReturn = await this.logisticsDetailsRepository.create({
+                await this.logisticsDetailsRepository.create({
                     pickup_id: pickupId,
                     service_type_id: ServiceTypeEnum.COLLECTION,
                     scheduled_time: currentInSimDate,
@@ -248,11 +247,10 @@ export class LogisticsPlanningService {
             const statusToSet = LogisticsStatus.PENDING_REPLANNING;
             logger.warn(`Could not assign pickup ${pickupId} to any truck after ${MAX_ATTEMPTS} attempts. Status set to ${statusToSet}.`);
 
-            let logisticsToReturn: LogisticsDetailsEntity;
             if (logisticsDetailIdToUpdate) {
-                logisticsToReturn = (await this.logisticsDetailsRepository.update(logisticsDetailIdToUpdate, { logistics_status: statusToSet })) as LogisticsDetailsEntity;
+                await this.logisticsDetailsRepository.update(logisticsDetailIdToUpdate, { logistics_status: statusToSet });
             } else {
-                logisticsToReturn = await this.logisticsDetailsRepository.create({
+                await this.logisticsDetailsRepository.create({
                     pickup_id: pickupId,
                     service_type_id: ServiceTypeEnum.COLLECTION,
                     scheduled_time: currentInSimDate,
