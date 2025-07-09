@@ -1,6 +1,7 @@
 import { AppDataSource } from '../database/config';
 import { BankAccountEntity } from '../database/models/BankAccountEntity';
 import { logger } from '../utils/logger';
+import { BANK_API_URL } from '../config/apiConfig';
 
 export class BankAccountService {
   private bankAccountRepo = AppDataSource.getRepository(BankAccountEntity);
@@ -10,7 +11,7 @@ export class BankAccountService {
     let bankAccount = await this.bankAccountRepo.findOneBy({});
     if (!bankAccount) {
       try {
-        const response = await fetch('https://<bank-api-domain>/account', {   // Replace with actual API domain
+        const response = await fetch(`${BANK_API_URL}/account`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({})
