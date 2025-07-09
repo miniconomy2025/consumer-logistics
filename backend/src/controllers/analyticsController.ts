@@ -14,9 +14,6 @@ export class AnalyticsController {
     this.dateRangeService = new AnalyticsDateRangeService();
   }
 
-  // ============================================================================
-  // DASHBOARD ANALYTICS
-  // ============================================================================
 
   public getDashboardAnalytics = async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -91,18 +88,6 @@ export class AnalyticsController {
       comparisonDateFrom: query.comparisonDateFrom as string,
       comparisonDateTo: query.comparisonDateTo as string,
       companyId: query.companyId ? parseInt(query.companyId as string) : undefined,
-      companyIds: query.companyIds ? (query.companyIds as string).split(',').map(id => parseInt(id)) : undefined,
-      statusId: query.statusId ? parseInt(query.statusId as string) : undefined,
-      statusIds: query.statusIds ? (query.statusIds as string).split(',').map(id => parseInt(id)) : undefined,
-      groupBy: query.groupBy as 'day' | 'week' | 'month' | 'quarter' | 'year',
-      includeGrowthRates: query.includeGrowthRates === 'true',
-      includeComparisons: query.includeComparisons === 'true',
-      includeTrends: query.includeTrends === 'true',
-      includeForecasts: query.includeForecasts === 'true',
-      limit: query.limit ? parseInt(query.limit as string) : undefined,
-      offset: query.offset ? parseInt(query.offset as string) : undefined,
-      sortBy: query.sortBy as 'revenue' | 'pickups' | 'date' | 'company' | 'growth',
-      sortOrder: query.sortOrder as 'asc' | 'desc',
     };
   }
 }

@@ -1,8 +1,3 @@
-// ============================================================================
-// ANALYTICS TYPES - ALIGNED WITH BACKEND IMPLEMENTATION
-// ============================================================================
-
-// Dashboard Analytics Response - Main dashboard endpoint
 export interface DashboardAnalyticsResponse {
   // Overview KPIs
   totalRevenue: number;
@@ -112,9 +107,9 @@ export interface AnalyticsQueryParams extends Record<string, string | number | b
 
   // Comparison period
   comparisonRange?: AnalyticsDateRange;
+  comparisonDateFrom?: string;
+  comparisonDateTo?: string;
 
-  // Other filters
+  // Basic filters (keeping only what's actually used)
   companyId?: number;
-  truckTypeId?: number;
-  limit?: number;
 }

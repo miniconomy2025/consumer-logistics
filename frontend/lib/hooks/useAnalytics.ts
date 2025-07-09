@@ -11,17 +11,13 @@ import {
   AnalyticsDateRange,
 } from '../types/analytics';
 
-// ============================================================================
-// ANALYTICS HOOKS
-// ============================================================================
-
 /**
  * Hook for dashboard analytics with range support
  */
 export function useDashboardAnalytics(params?: AnalyticsQueryParams) {
   return useApi(
     () => getDashboardAnalytics(params),
-    [params?.range, params?.dateFrom, params?.dateTo, params?.companyId, params?.truckTypeId]
+    [params?.range, params?.dateFrom, params?.dateTo, params?.companyId]
   );
 }
 
@@ -31,7 +27,7 @@ export function useDashboardAnalytics(params?: AnalyticsQueryParams) {
 export function useKPIAnalytics(params?: AnalyticsQueryParams) {
   return useApi(
     () => getKPIAnalytics(params),
-    [params?.range, params?.dateFrom, params?.dateTo, params?.companyId, params?.truckTypeId]
+    [params?.range, params?.dateFrom, params?.dateTo, params?.companyId]
   );
 }
 
@@ -61,7 +57,7 @@ export function useDashboardAnalyticsWithRefresh(params?: AnalyticsQueryParams) 
   // Include refresh trigger in dependencies to force refetch
   const analytics = useApi(
     () => getDashboardAnalytics(params),
-    [params?.range, params?.dateFrom, params?.dateTo, params?.companyId, params?.truckTypeId, refreshTrigger]
+    [params?.range, params?.dateFrom, params?.dateTo, params?.companyId, refreshTrigger]
   );
 
   const refresh = useCallback(async () => {
@@ -87,7 +83,7 @@ export function useKPIAnalyticsWithRefresh(params?: AnalyticsQueryParams) {
   // Include refresh trigger in dependencies to force refetch
   const kpis = useApi(
     () => getKPIAnalytics(params),
-    [params?.range, params?.dateFrom, params?.dateTo, params?.companyId, params?.truckTypeId, refreshTrigger]
+    [params?.range, params?.dateFrom, params?.dateTo, params?.companyId, refreshTrigger]
   );
 
   const refresh = useCallback(async () => {

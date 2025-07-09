@@ -25,22 +25,7 @@ export interface StatusDistributionData {
   percentage: number;
 }
 
-export interface ProcessingTimeData {
-  fromStatusId: number;
-  fromStatusName: string;
-  toStatusId: number;
-  toStatusName: string;
-  averageDays: number;
-  minDays: number;
-  maxDays: number;
-}
 
-export interface DailyVolumeData {
-  date: string; // YYYY-MM-DD
-  pickupCount: number;
-  revenue: number;
-  averageOrderValue: number;
-}
 
 export interface RecentActivityData {
   pickupId: number;
@@ -60,28 +45,42 @@ export interface GrowthMetrics {
   absoluteChange: number;
 }
 
+/**
+ * Repository interface for analytics data operations
+ * Provides methods for retrieving aggregated analytics data from the database
+ */
 export interface IAnalyticsRepository {
-  // ============================================================================
-  // BASIC METRICS
-  // ============================================================================
-  
+
   /**
-   * Get total revenue for a date range
+   * Get total revenue for a date range from paid invoices
+   * @param dateFrom Optional start date in YYYY-MM-DD format
+   * @param dateTo Optional end date in YYYY-MM-DD format
+   * @returns Total revenue amount
    */
   getTotalRevenue(dateFrom?: string, dateTo?: string): Promise<number>;
   
   /**
    * Get total pickup count for a date range
+   * @param dateFrom Optional start date in YYYY-MM-DD format
+   * @param dateTo Optional end date in YYYY-MM-DD format
+   * @returns Total number of pickups
    */
   getTotalPickups(dateFrom?: string, dateTo?: string): Promise<number>;
-  
+
   /**
    * Get total company count (optionally active only)
+   * @param activeOnly If true, only count companies with pickups in the date range
+   * @param dateFrom Optional start date in YYYY-MM-DD format
+   * @param dateTo Optional end date in YYYY-MM-DD format
+   * @returns Total number of companies
    */
   getTotalCompanies(activeOnly?: boolean, dateFrom?: string, dateTo?: string): Promise<number>;
-  
+
   /**
-   * Get average order value for a date range
+   * Get average order value for a date range from paid invoices
+   * @param dateFrom Optional start date in YYYY-MM-DD format
+   * @param dateTo Optional end date in YYYY-MM-DD format
+   * @returns Average order value
    */
   getAverageOrderValue(dateFrom?: string, dateTo?: string): Promise<number>;
   
@@ -146,19 +145,9 @@ export interface IAnalyticsRepository {
    */
   getStatusDistribution(dateFrom?: string, dateTo?: string): Promise<StatusDistributionData[]>;
   
-  /**
-   * Get daily volume data
-   */
-  getDailyVolume(dateFrom: string, dateTo: string): Promise<DailyVolumeData[]>;
-  
   // ============================================================================
   // OPERATIONAL METRICS
   // ============================================================================
-  
-  /**
-   * Get average processing time between statuses
-   */
-  getProcessingTimes(dateFrom?: string, dateTo?: string): Promise<ProcessingTimeData[]>;
   
   /**
    * Get completion rate (percentage of completed pickups)
@@ -194,39 +183,4 @@ export interface IAnalyticsRepository {
     sortBy?: 'revenue' | 'pickups' | 'averageOrderValue'
   ): Promise<CompanyPerformanceData[]>;
   
-  // ============================================================================
-  // ADVANCED ANALYTICS
-  // ============================================================================
-  
-  /**
-   * Get company distribution by revenue ranges
-   */
-  getCompanyDistributionByRevenue(
-    dateFrom?: string,
-    dateTo?: string
-  ): Promise<Array<{
-    range: string;
-    companyCount: number;
-    totalRevenue: number;
-  }>>;
-  
-  /**
-   * Get company distribution by pickup count ranges
-   */
-  getCompanyDistributionByPickups(
-    dateFrom?: string,
-    dateTo?: string
-  ): Promise<Array<{
-    range: string;
-    companyCount: number;
-    totalPickups: number;
-  }>>;
-  
-
-  
-
-  
-
-  
-
 }
