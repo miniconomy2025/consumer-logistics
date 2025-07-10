@@ -17,11 +17,9 @@ interface SQSMessageBody {
 }
 
 interface WebhookPayload {
+    modelName:string;
     status: string;
-    deliveryFrom: string;
-    deliveryTo: string;
-    units: number;
-    deliveryDate: string;
+    quantity: number;
 }
 
 export class SQSWorkerService {
@@ -277,12 +275,13 @@ export class SQSWorkerService {
         }
 
         const webhookPayload: WebhookPayload = {
-            status: 'delivered',
-            deliveryFrom: pickup.company?.company_name || pickup.pickup_location || 'Unknown Company',
-            deliveryTo: pickup.recipient_name || pickup.delivery_location || 'Unknown Recipient',
-            units: pickup.phone_units ?? 0,
-            deliveryDate: deliveredLogistics.scheduled_real_simulated_delivery_timestamp?.toISOString() || 
-                         this.timeManager.getCurrentTime().toISOString(),
+            status: 'success',
+            modelName: pickup?.model_name,
+           // modelName: pickup.company?.company_name || pickup.pickup_location || 'Unknown Company',
+           // deliveryTo: pickup.recipient_name || pickup.delivery_location || 'Unknown Recipient',
+            quantity: pickup.phone_units ?? 0,
+            // deliveryDate: deliveredLogistics.scheduled_real_simulated_delivery_timestamp?.toISOString() || 
+            //              this.timeManager.getCurrentTime().toISOString(),
         };
 
         logger.info('Sending delivery webhook', { 
