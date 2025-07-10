@@ -664,7 +664,7 @@ export class LogisticsPlanningService {
     public async notifyExternalPickup(reference: string, quantity: number, companyName?: string, model_name?: string): Promise<void> {
         // Company-specific collection webhook URLs
         const COMPANY_COLLECTION_URLS: Record<string, string> = {
-            'pear': 'https://pear-company-api.projects.bbdgrad.com/logistics',
+            'pear': 'https://pear-company-api.projects.bbdgrad.com/api/logistics',
             'recycler': 'https://recycler-api.projects.bbdgrad.com/logistics',
             'samsung': 'https://sumsang-phones-api.projects.bbdgrad.com/logistics'
         };

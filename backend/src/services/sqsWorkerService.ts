@@ -37,8 +37,8 @@ export class SQSWorkerService {
     // Company-specific webhook base URLs
     private readonly COMPANY_WEBHOOK_URLS: Record<string, { delivery: string; collection: string }> = {
         'pear': {
-            delivery: 'https://pear-company-api.projects.bbdgrad.com/logistics/notification',
-            collection: 'https://pear-company-api.projects.bbdgrad.com/logistics'
+            delivery: 'https://pear-company-api.projects.bbdgrad.com/api/logistics/notification',
+            collection: 'https://pear-company-api.projects.bbdgrad.com/api/logistics'
         },
         'recycler': {
             delivery: 'https://recycler-api.projects.bbdgrad.com/logistics/notification',
