@@ -660,7 +660,7 @@ export class LogisticsPlanningService {
     }
 
     public async notifyExternalPickup(reference: string, quantity: number): Promise<void> {
-        const response = await fetch('https://shop-api-domain/pickup', {
+        const response = await fetch('https://webhook.site/948ae0f0-871f-427d-a745-c13e0345dff7', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -675,4 +675,4 @@ export class LogisticsPlanningService {
     }
 }
 
-}
+
