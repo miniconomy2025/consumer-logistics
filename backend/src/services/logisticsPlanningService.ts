@@ -392,7 +392,8 @@ export class LogisticsPlanningService {
             await this.notifyExternalPickup(
               updatedLogisticsDetail.pickup.invoice.reference_number,
               updatedLogisticsDetail.quantity,
-              updatedLogisticsDetail.pickup.company?.company_name
+              updatedLogisticsDetail.pickup.company?.company_name,
+              updatedLogisticsDetail.pickup.model_name
             );
             logger.info(`External partner notified for pickup reference ${updatedLogisticsDetail.pickup.invoice.reference_number}.`);
           } catch (err) {
@@ -660,7 +661,7 @@ export class LogisticsPlanningService {
         logger.info(`Retry process completed. Re-attempted ${failedLogistics.length} failed logistics.`);
     }
 
-    public async notifyExternalPickup(reference: string, quantity: number, companyName?: string): Promise<void> {
+    public async notifyExternalPickup(reference: string, quantity: number, companyName?: string, model_name?: string): Promise<void> {
         // Company-specific collection webhook URLs
         const COMPANY_COLLECTION_URLS: Record<string, string> = {
             'pear': 'https://pear-company-api.projects.bbdgrad.com/logistics',
@@ -684,7 +685,8 @@ export class LogisticsPlanningService {
             reference,
             type: 'PICKUP',
             quantity,
-            companyName: companyName || 'Unknown'
+            companyName: companyName || 'Unknown',
+            modelName: model_name || 'Unknown'
           })
         });
         if (!response.ok) {
