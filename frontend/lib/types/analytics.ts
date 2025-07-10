@@ -49,10 +49,7 @@ export interface DashboardAnalyticsResponse {
   }>;
 }
 
-// ============================================================================
-// KPI ANALYTICS
-// ============================================================================
-
+// KPI Analytics Response - Detailed KPIs
 export interface KPIAnalyticsResponse {
   // Financial KPIs
   totalRevenue: number;
@@ -84,30 +81,35 @@ export interface KPIAnalyticsResponse {
   comparisonPeriodEnd: string;
 }
 
+// Analytics Health Response
+export interface AnalyticsHealthResponse {
+  status: string;
+  timestamp: string;
+  services: {
+    database: string;
+    analytics: string;
+    cache: string;
+  };
+  version: string;
+}
 
-
-
-
-// ============================================================================
-// ANALYTICS QUERY PARAMETERS
-// ============================================================================
-
+// Analytics Date Range Type
 export type AnalyticsDateRange = 'last7days' | 'last30days' | 'currentyear' | 'alltime';
 
-export interface AnalyticsQueryParams {
+// Analytics Query Parameters
+export interface AnalyticsQueryParams extends Record<string, string | number | boolean | undefined> {
   // Predefined date range (replaces dateFrom/dateTo)
   range?: AnalyticsDateRange;
-  
-  // Explicit date range (for custom periods)
-  dateFrom?: string; // YYYY-MM-DD
-  dateTo?: string; // YYYY-MM-DD
 
-  // Comparison period (for growth calculations)
+  // Legacy date range filters (for backward compatibility)
+  dateFrom?: string;
+  dateTo?: string;
+
+  // Comparison period
   comparisonRange?: AnalyticsDateRange;
   comparisonDateFrom?: string;
   comparisonDateTo?: string;
 
-  // Basic filters
+  // Basic filters (keeping only what's actually used)
   companyId?: number;
 }
-

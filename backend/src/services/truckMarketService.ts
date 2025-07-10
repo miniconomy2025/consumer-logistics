@@ -10,7 +10,7 @@ export interface TruckForSale {
 }
 
 export async function getTrucksForSale(): Promise<TruckForSale[]> {
-  const response = await fetch(`${TRUCKS_API_URL}/simulation/trucks`);
+  const response = await fetch(`${TRUCKS_API_URL}/trucks`);
   if (!response.ok) {
     throw new Error(`Failed to fetch trucks: ${response.status} ${response.statusText}`);
   }
