@@ -118,9 +118,9 @@ export class TruckPurchaseService {
         logger.error(`[TruckPurchaseService] Failed to fulfill order: ${orderId}`);
         continue;
       }
-      const fulfillData = await fulfillResponse.json() as { status: string };
-      if (fulfillData.status !== 'completed') {
-        logger.error(`[TruckPurchaseService] Order ${orderId} not completed. Status: ${fulfillData.status}`);
+      const fulfillData = await fulfillResponse.json() as { canFulfill: boolean };
+      if (!fulfillData.canFulfill) {
+        logger.error(`[TruckPurchaseService] Order ${orderId} cannot be fulfilled. canFulfill: ${fulfillData.canFulfill}`);
         continue;
       }
 
