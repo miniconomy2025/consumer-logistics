@@ -47,7 +47,7 @@ export class LogisticsPlanningService {
         this.truckRepository = truckRepository;
         this.pickupRepository = pickupRepository;
         this.truckAllocationRepository = truckAllocationRepository;
-        this.pickupService = pickupService; 
+        this.pickupService = pickupService;
         this.sqsClient = sqsClientInstance;
     }
 
@@ -383,6 +383,22 @@ export class LogisticsPlanningService {
             await this.pickupService.updatePickupStatus(updatedLogisticsDetail.pickup.pickup_id, PickupStatusEnum.COLLECTED);
             logger.info(`Related Pickup ${updatedLogisticsDetail.pickup.pickup_id} status updated to COLLECTED.`);
         }
+
+        if (
+          updatedLogisticsDetail.pickup?.invoice?.reference_number &&
+          updatedLogisticsDetail.quantity
+        ) {
+          try {
+            await this.notifyExternalPickup(
+              updatedLogisticsDetail.pickup.invoice.reference_number,
+              updatedLogisticsDetail.quantity
+            );
+            logger.info(`External partner notified for pickup reference ${updatedLogisticsDetail.pickup.invoice.reference_number}.`);
+          } catch (err) {
+            logger.error('Failed to notify external partner for pickup:', err);
+          }
+        }
+
         return updatedLogisticsDetail;
     }
 
@@ -642,4 +658,21 @@ export class LogisticsPlanningService {
 
         logger.info(`Retry process completed. Re-attempted ${failedLogistics.length} failed logistics.`);
     }
+
+    public async notifyExternalPickup(reference: string, quantity: number): Promise<void> {
+        const response = await fetch('https://shop-api-domain/pickup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            reference,
+            type: 'PICKUP',
+            quantity
+          })
+        });
+        if (!response.ok) {
+          throw new Error(`Failed to notify external pickup API: ${response.statusText}`);
+        }
+    }
+}
+
 }
