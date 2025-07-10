@@ -1,5 +1,5 @@
 import fetch from 'node-fetch';
-import { THOH_API_URL } from '../config/apiConfig';
+import { BANK_API_URL, THOH_API_URL } from '../config/apiConfig';
 import { selectTrucksToBuy, calculateTruckCosts, TruckToBuy } from '../utils/truckPurchaseUtils';
 import { applyForLoanWithFallback } from './loanService';
 import { TruckManagementService } from './truckManagementService';
@@ -78,14 +78,29 @@ export class TruckPurchaseService {
         logger.error(`[TruckPurchaseService] Failed to order truck: ${truck.truckName}`);
         continue;
       }
-      const orderData = await orderResponse.json() as { orderId: number };
-      const orderId = orderData.orderId;
+      const orderData = await orderResponse.json() as {
+        orderId: number;
+        truckName: string;
+        price: number;
+        maximumLoad: number;
+        operatingCostPerDay: string;
+        weight: number;
+        totalWeight: number;
+        quantity: number;
+        bankAccount: string;
+      };
+      const { orderId, price, quantity, bankAccount } = orderData;
 
-      logger.info(`[TruckPurchaseService] Paying for order ${orderId}...`);
-      const paymentResponse = await fetch(`${THOH_API_URL}/orders/payments`, {
+      logger.info(`[TruckPurchaseService] Paying $${price * quantity} to bank account ${bankAccount} for order ${orderId}...`);
+      const paymentResponse = await fetch(`${BANK_API_URL}/transaction`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderId })
+        body: JSON.stringify({
+          to_account_number: bankAccount,
+          to_bank_name: 'commercial-bank',
+          amount: price * quantity,
+          description: orderId.toString(),
+        })
       });
       if (!paymentResponse.ok) {
         logger.error(`[TruckPurchaseService] Failed to pay for order: ${orderId}`);
