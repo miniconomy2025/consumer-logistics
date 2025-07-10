@@ -50,6 +50,34 @@ export class CdkStack extends cdk.Stack {
       autoDeleteObjects: true
     });
 
+    // Bucket to store Root CA and other trusted certs (read-only or restricted access)
+    const certRootCABucket = new s3.Bucket(this, 'CertRootCABucket', {
+      bucketName: 'consumer-logistics-cert-rootca',
+      versioned: true,
+      removalPolicy: cdk.RemovalPolicy.RETAIN,
+      encryption: s3.BucketEncryption.S3_MANAGED,
+      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
+    });
+
+    // Bucket to store server certificates & keys (private)
+    const certServerBucket = new s3.Bucket(this, 'CertServerBucket', {
+      bucketName: 'consumer-logistics-cert-server',
+      versioned: true,
+      removalPolicy: cdk.RemovalPolicy.RETAIN,
+      encryption: s3.BucketEncryption.S3_MANAGED,
+      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
+    });
+
+    // Bucket to store client certificates & keys (private)
+    const certClientBucket = new s3.Bucket(this, 'CertClientBucket', {
+      bucketName: 'consumer-logistics-cert-client',
+      versioned: true,
+      removalPolicy: cdk.RemovalPolicy.RETAIN,
+      encryption: s3.BucketEncryption.S3_MANAGED,
+      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
+    });
+
+
     // -====== CloudFront ======-
     const distribution = new cloudfront.Distribution(this, 'security-levelup-team4-distribution', {
       defaultBehavior: {
@@ -209,13 +237,13 @@ export class CdkStack extends cdk.Stack {
       timeout: cdk.Duration.seconds(30),
       memorySize: 128,
       environment: {
-        REGION: props.deployRegion,        
+        REGION: props.deployRegion,
         PICKUP_QUEUE_URL: pickUpQueue.queueUrl,
         DB_SECRET_ID: database.secret?.secretArn || ''
       },
     });
 
-  
+
     if (database.secret) {
       database.secret.grantRead(handlePopLambda);
       database.secret.grantRead(processPayment);
@@ -270,7 +298,8 @@ export class CdkStack extends cdk.Stack {
         'sqs:ReceiveMessage',
         'sqs:DeleteMessage',
         'sqs:GetQueueAttributes',
-        'sqs:ChangeMessageVisibility'
+        'sqs:ChangeMessageVisibility',
+        'sqs:SendMessage'
       ],
       resources: [
         deliveryQueue.queueArn,
@@ -350,19 +379,19 @@ export class CdkStack extends cdk.Stack {
           value: databaseName,
         },
         {
-          namespace: 'aws:elasticbeanstalk:application:environment',        
-          optionName: 'DB_USER',        
-          value: database.secret?.secretValueFromJson('username').unsafeUnwrap() || '',        
-        },        
-        {
-          namespace: 'aws:elasticbeanstalk:application:environment',        
-          optionName: 'DB_PASSWORD',        
-          value: database.secret?.secretValueFromJson('password').unsafeUnwrap() || '',        
+          namespace: 'aws:elasticbeanstalk:application:environment',
+          optionName: 'DB_USER',
+          value: database.secret?.secretValueFromJson('username').unsafeUnwrap() || '',
         },
         {
-          namespace: 'aws:elasticbeanstalk:application:environment',        
-          optionName: 'SQS_DELIVERY_QUEUE_URL',        
-          value: deliveryQueue.queueUrl,        
+          namespace: 'aws:elasticbeanstalk:application:environment',
+          optionName: 'DB_PASSWORD',
+          value: database.secret?.secretValueFromJson('password').unsafeUnwrap() || '',
+        },
+        {
+          namespace: 'aws:elasticbeanstalk:application:environment',
+          optionName: 'SQS_DELIVERY_QUEUE_URL',
+          value: deliveryQueue.queueUrl,
         },
         {
           namespace: 'aws:elasticbeanstalk:application:environment',
@@ -370,10 +399,10 @@ export class CdkStack extends cdk.Stack {
           value: pickUpQueue.queueUrl,
         },
         {
-          namespace: 'aws:elasticbeanstalk:application:environment',        
-          optionName: 'AWS_REGION',        
-          value:  props.deployRegion || '',        
-        }, 
+          namespace: 'aws:elasticbeanstalk:application:environment',
+          optionName: 'AWS_REGION',
+          value: props.deployRegion || '',
+        },
         {
           namespace: 'aws:ec2:vpc',
           optionName: 'VPCId',
@@ -412,8 +441,9 @@ export class CdkStack extends cdk.Stack {
     api.addRoutes({
       path: '/{proxy+}',
       methods: [apigatewayv2.HttpMethod.ANY],
-      integration: new integrations.HttpUrlIntegration('EBAppIntegration', ebAppUrl),
-    })
+      integration: new integrations.HttpUrlIntegration('EBAppIntegration', `${ebAppUrl}/{proxy}`),
+    });
+
 
   }
 }

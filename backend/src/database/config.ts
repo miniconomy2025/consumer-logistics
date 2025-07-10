@@ -11,8 +11,11 @@ import { BankAccountEntity } from './models/BankAccountEntity';
 import { LogisticsDetailsEntity } from './models/LogisticsDetailsEntity'; 
 import { TruckAllocationEntity } from './models/TruckAllocationEntity';
 import { TransactionTypeEntity } from './models/TransactionTypeEntity'
-
+import * as dotenv from 'dotenv';
 import path from 'path';
+ 
+if (process.env.NODE_ENV !== 'production') {    
+    dotenv.config({ path: path.resolve(__dirname, '../../.env') }); }
 
 export const AppDataSource = new DataSource({
     type: 'postgres',

@@ -18,9 +18,9 @@ import { KPIAnalytics } from "@/components/dashboard/KPIAnalytics";
 import { ClientOnly } from "@/components/common/ClientOnly";
 
 // Import hooks
-import { useDashboardDateRange, useAnalyticsHealth } from "@/lib/hooks/useDashboard";
-import { useDashboardAnalyticsWithRefresh, useKPIAnalyticsWithRefresh } from "@/lib/hooks/useAnalytics";
+import { useDashboardDateRange, useAnalyticsHealth, useDashboardAnalyticsWithRefresh, useKPIAnalyticsWithRefresh } from "@/lib/hooks/useAnalytics";
 import { analyticsRangeOptions } from "@/lib/api/analytics";
+import { AnalyticsDateRange } from "@/lib/types/analytics";
 
 export default function AnalyticsPage() {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -75,7 +75,7 @@ export default function AnalyticsPage() {
             
             {/* Date Range Selector */}
             <ClientOnly fallback={<div className="w-40 h-10 bg-slate-200 rounded animate-pulse"></div>}>
-              <Select onValueChange={setRange} defaultValue={range}>
+              <Select onValueChange={(value) => setRange(value as AnalyticsDateRange)} defaultValue={range}>
                 <SelectTrigger className="w-40">
                   <SelectValue />
                 </SelectTrigger>

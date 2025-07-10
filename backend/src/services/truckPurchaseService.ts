@@ -1,22 +1,72 @@
-import { getTrucksForSale } from './truckMarketService';
-import { selectTrucksToBuy, calculateTruckCosts } from '../utils/truckPurchaseUtils';
-import { applyForLoan } from './loanService';
+import fetch from 'node-fetch';
+import { BANK_API_URL, THOH_API_URL } from '../config/apiConfig';
+import { selectTrucksToBuy, calculateTruckCosts, TruckToBuy } from '../utils/truckPurchaseUtils';
+import { applyForLoanWithFallback } from './loanService';
 import { TruckManagementService } from './truckManagementService';
 import { TruckRepository } from '../repositories/implementations/TruckRepository';
+import { AppDataSource } from '../database/config';
+import { TruckEntity } from '../database/models/TruckEntity';
+import { logger } from '../utils/logger';
+import { BankAccountService } from './bankAccountService';
+
+export interface TruckForSale {
+  truckName: string;
+  price: number;
+  quantity: number;
+  operatingCost: number;
+  maximumLoad: number;
+}
+
+export async function getTrucksForSale(): Promise<TruckForSale[]> {
+  const response = await fetch(`${THOH_API_URL}/trucks`);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch trucks: ${response.status} ${response.statusText}`);
+  }
+  return await response.json() as TruckForSale[];
+}
 
 export class TruckPurchaseService {
-  async purchaseTrucks(daysToCover: number = 7) {
+  async purchaseTrucks(daysToCover: number = 14) {
+    const truckRepo = AppDataSource.getRepository(TruckEntity);
+    const existingTrucks = await truckRepo.count();
+    if (existingTrucks > 0) {
+      logger.info('[TruckPurchaseService] Trucks already exist. Skipping purchase and loan.');
+      return;
+    }
+
+    logger.info('[TruckPurchaseService] Fetching trucks for sale...');
     const trucksForSale = await getTrucksForSale();
     const trucksToBuy = selectTrucksToBuy(trucksForSale);
+
+    if (trucksToBuy.length === 0) {
+      logger.warn('[TruckPurchaseService] No trucks selected for purchase.');
+      return;
+    }
+
     const { totalPurchase, totalDailyOperating } = calculateTruckCosts(trucksToBuy);
     const loanAmount = totalPurchase + (totalDailyOperating * daysToCover);
 
-    const loanResult = await applyForLoan(loanAmount);
-    if (!loanResult.success) throw new Error('Loan application failed');
+    logger.info(`[TruckPurchaseService] Applying for loan. Amount: $${loanAmount}`);
+    const { response: loanResult, attemptedAmount } = await applyForLoanWithFallback(loanAmount);
+
+    if (!loanResult.success) {
+      logger.error('[TruckPurchaseService] Loan application failed, even after fallback.');
+      throw new Error('Loan application failed, even after fallback.');
+    }
+
+    if (attemptedAmount < loanAmount) {
+      logger.warn(`[TruckPurchaseService] Fallback loan used. Original: $${loanAmount}, Approved: $${attemptedAmount}`);
+    }
+
+    await this.orderAndRegisterTrucks(trucksToBuy);
+  }
+
+  private async orderAndRegisterTrucks(trucksToBuy: TruckToBuy[]) {
+    const truckManagementService = new TruckManagementService(new TruckRepository());
 
     for (const truck of trucksToBuy) {
-      // Order from the hand
-      const orderResponse = await fetch('https://<market-api-domain>/trucks', {  // Replace with actual API domain
+      logger.info(`[TruckPurchaseService] Ordering ${truck.quantityToBuy} x ${truck.truckName}...`);
+      const orderResponse = await fetch(`${THOH_API_URL}/trucks`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -24,31 +74,92 @@ export class TruckPurchaseService {
           quantity: truck.quantityToBuy
         })
       });
-      if (!orderResponse.ok) throw new Error(`Order failed for ${truck.truckName}`);
-      const orderData = await orderResponse.json();
-      const orderId = orderData.orderId;
+      if (!orderResponse.ok) {
+        logger.error(`[TruckPurchaseService] Failed to order truck: ${truck.truckName}`);
+        continue;
+      }
+      const orderData = await orderResponse.json() as {
+        orderId: number;
+        truckName: string;
+        price: number;
+        maximumLoad: number;
+        operatingCostPerDay: string;
+        weight: number;
+        totalWeight: number;
+        quantity: number;
+        bankAccount: string;
+      };
+      const { orderId, price, quantity, bankAccount } = orderData;
 
-      // Pay for the order
-      const paymentResponse = await fetch('https://<market-api-domain>/orders/payments', {  // Replace with actual API domain
+      logger.info(`[TruckPurchaseService] Paying $${price * quantity} to bank account ${bankAccount} for order ${orderId}...`);
+      const paymentResponse = await fetch(`${BANK_API_URL}/transaction`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderId })
+        body: JSON.stringify({
+          to_account_number: bankAccount,
+          to_bank_name: 'commercial-bank',
+          amount: price * quantity,
+          description: orderId.toString(),
+        })
       });
-      if (!paymentResponse.ok) throw new Error(`Payment failed for order ${orderId}`);
+      if (!paymentResponse.ok) {
+        logger.error(`[TruckPurchaseService] Failed to pay for order: ${orderId}`);
+        continue;
+      }
 
-      const truckManagementService = new TruckManagementService(new TruckRepository());
       const truckType = await truckManagementService.getTruckTypeByName(truck.truckName);
-      if (!truckType) throw new Error(`Truck type not found: ${truck.truckName}`);
+      if (!truckType) {
+        logger.error(`[TruckPurchaseService] Truck type not found: ${truck.truckName}`);
+        continue;
+      }
+
       for (let i = 0; i < truck.quantityToBuy; i++) {
         await truckManagementService.createTruck({
           truckTypeId: truckType.truck_type_id,
           maxPickups: 250, 
           maxDropoffs: 500, 
           dailyOperatingCost: truck.operatingCost,
-          maxCapacity: 1000, // Set correct value
-          isAvailable: true
+          maxCapacity: truck.maximumLoad,
+          isAvailable: true,
         });
       }
+      logger.info(`[TruckPurchaseService] Successfully purchased and registered ${truck.quantityToBuy} x ${truck.truckName}.`);
     }
+  }
+
+  async purchaseTrucksWithPreselected(trucksToBuy: TruckToBuy[]) {
+    const truckRepo = AppDataSource.getRepository(TruckEntity);
+    const existingTrucks = await truckRepo.count();
+    if (existingTrucks > 0) {
+      logger.info('[TruckPurchaseService] Trucks already exist. Skipping purchase.');
+      return;
+    }
+
+    await this.orderAndRegisterTrucks(trucksToBuy);
+  }
+
+  async purchaseTrucksFullFlow(daysToCover: number = 14) {
+    const trucksForSale = await getTrucksForSale();
+    const trucksToBuy = selectTrucksToBuy(trucksForSale);
+    if (trucksToBuy.length === 0) {
+      logger.warn('[Startup] No trucks selected for purchase.');
+      return;
+    }
+    const { totalPurchase, totalDailyOperating } = calculateTruckCosts(trucksToBuy);
+    const loanAmount = totalPurchase + (totalDailyOperating * daysToCover);
+
+    const bankAccountService = new BankAccountService();
+    await bankAccountService.createBankAccount();
+
+    const { response: loanResult, attemptedAmount } = await applyForLoanWithFallback(loanAmount);
+    if (!loanResult.success) {
+      logger.error('[Startup] Loan application failed, even after fallback.');
+      throw new Error('Loan application failed, even after fallback.');
+    }
+    if (attemptedAmount < loanAmount) {
+      logger.warn(`[Startup] Fallback loan used. Original: $${loanAmount}, Approved: $${attemptedAmount}`);
+    }
+
+    await this.purchaseTrucksWithPreselected(trucksToBuy);
   }
 }

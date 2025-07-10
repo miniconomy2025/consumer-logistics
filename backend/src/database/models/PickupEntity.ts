@@ -43,6 +43,9 @@ export class PickupEntity {
     @Column({ name: 'phone_units', type: 'int' })
     phone_units: number;
 
+    @Column({ name: 'model_name', type: 'varchar', length: 255, nullable: true })
+    model_name: string;
+
     @Column({ name: 'order_date', type: 'date' })
     order_date: Date;
 

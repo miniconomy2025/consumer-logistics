@@ -1,8 +1,10 @@
 export interface CreatePickupRequest {
-    pickupFrom: string; 
+    companyName: string;
     quantity: number;
-    recipientName?: string;
+    recipient?: string | null;
+    modelName?: string | null;
 }
+
 
 export interface PickupResponse {
     referenceNo: string; 
@@ -21,6 +23,7 @@ export interface ListPickupResponse {
     company_name: string;
     status: string;
     recipient_name: string;
+    model_name: string;
     amount_due: number;
     is_paid: boolean;
 }

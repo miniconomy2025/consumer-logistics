@@ -6,14 +6,14 @@ import { TimeManager } from '../services/timeManager'; // Import TimeManager
 const router = Router();
 const timeManager = TimeManager.getInstance(); // Get the singleton instance
 
-router.post('/start', async (req, res) => {
+router.post('', async (req, res) => {
     logger.info('Received request to start simulation environment reset and optionally TimeManager clock.');
     try {
         await SimulationResetService.resetAndMigrateDatabase();
 
         // Optionally restart TimeManager's clock after a full reset
         // This is separate from the `ENABLE_TIME_MANAGER_CLOCK` env var in server.ts
-        // This ensures if you call /api/simulation/start, the clock *also* restarts
+        // This ensures if you call /api/simulation, the clock *also* restarts
         // if you want it to automatically progress after a reset.
         const { startTime, syncEndpoint, checkIntervalMillis } = req.body; // Allow setting these via request body for convenience
         timeManager.reset(); // Ensure TimeManager is clean before starting

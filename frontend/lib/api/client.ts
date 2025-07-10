@@ -1,6 +1,7 @@
-import { ErrorResponse } from '../types/api';
+import { ErrorResponse } from '../types/common';
+import { RequestConfig } from '../types/api-client';
 
-const API_BASE_URL = 'http://consumer-logistics-env.eba-nicq2ju3.af-south-1.elasticbeanstalk.com/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://zck1g2qlc4.execute-api.af-south-1.amazonaws.com/api';
 
 export class ApiError extends Error {
   public status: number;
@@ -24,13 +25,7 @@ export class ApiError extends Error {
   }
 }
 
-// HTTP Client Configuration
-interface RequestConfig {
-  method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
-  headers?: Record<string, string>;
-  body?: Record<string, unknown> | string | FormData;
-  params?: Record<string, string | number | boolean | undefined>;
-}
+
 
 // Helper function to filter out undefined values
 function filterParams(params?: Record<string, string | number | boolean | undefined>): Record<string, string | number | boolean> | undefined {
@@ -157,19 +152,15 @@ export async function checkApiHealth(): Promise<{ status: string; message: strin
   return api.get('/health');
 }
 
-export function handleApiResponse<T>(response: T): T {
-  return response;
-}
-
 export function getErrorMessage(error: unknown): string {
   if (error instanceof ApiError) {
     return error.message;
   }
-  
+
   if (error instanceof Error) {
     return error.message;
   }
-  
+
   return 'An unexpected error occurred';
 }
 
@@ -179,16 +170,4 @@ export function isApiError(error: unknown): error is ApiError {
 
 export function isNetworkError(error: unknown): boolean {
   return isApiError(error) && error.code === 'NETWORK_ERROR';
-}
-
-export function isValidationError(error: unknown): boolean {
-  return isApiError(error) && error.status === 400;
-}
-
-export function isNotFoundError(error: unknown): boolean {
-  return isApiError(error) && error.status === 404;
-}
-
-export function isServerError(error: unknown): boolean {
-  return isApiError(error) && error.status >= 500;
 }

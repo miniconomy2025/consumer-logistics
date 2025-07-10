@@ -32,15 +32,15 @@ export class PickupService {
     }
 
     public async createPickupRequest(data: CreatePickupRequest): Promise<PickupResponse> {
-        logger.info(`Creating new pickup request for company: ${data.pickupFrom} with quantity: ${data.quantity}`);
+        logger.info(`Creating new pickup request for company: ${data.companyName} with quantity: ${data.quantity} of model: ${data.modelName}`);
 
         const unit_price = 10.0;
         const amount = data.quantity * unit_price;
 
-        let company = await this.companyRepository.findByName(data.pickupFrom);
+        let company = await this.companyRepository.findByName(data.companyName);
         if (!company) {
-            logger.info(`Company '${data.pickupFrom}' not found. Registering new company.`);
-            company = await this.companyRepository.create(data.pickupFrom, null);
+            logger.info(`Company '${data.companyName}' not found. Registering new company.`);
+            company = await this.companyRepository.create(data.companyName, null);
             logger.info(`Company '${company.company_name}' registered with ID: ${company.company_id}.`);
         }
 
@@ -63,13 +63,14 @@ export class PickupService {
             company_id: company.company_id,
             pickup_status_id: pickupStatusId,
             phone_units: data.quantity,
+            model_name: data.modelName || 'Unkown',
             order_date: orderDateOnly,
             unit_price: unit_price,
-            recipient_name: data.recipientName || 'Not Specified',
+            recipient_name: data.recipient || 'Not Specified',
             order_timestamp_simulated: currentInSimDate,
         });
 
-        logger.info(`Pickup ${newPickup.pickup_id} created. Invoice ${initialInvoice.reference_number} generated.`);
+        logger.info(`Pickup ${newPickup.pickup_id} created for model ${newPickup.model_name}. Invoice ${initialInvoice.reference_number} generated.`);
         logger.warn(`Pickup ${newPickup.pickup_id} requires payment before logistics can be planned.`);
         logger.warn(`Please simulate payment via webhook POST to ${process.env.MY_WEBHOOK_URL || '/api/webhook/payment-updates'} with reference '${initialInvoice.reference_number}'.`);
 

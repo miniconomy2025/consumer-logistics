@@ -5,7 +5,7 @@ import {
   AnalyticsHealthResponse,
   AnalyticsQueryParams,
   AnalyticsDateRange,
-} from '../types/api';
+} from '../types/analytics';
 
 // ============================================================================
 // MAIN ANALYTICS ENDPOINTS

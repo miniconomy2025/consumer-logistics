@@ -4,13 +4,28 @@ import { PickupEntity } from '../../database/models/PickupEntity';
 import { CompanyEntity } from '../../database/models/CompanyEntity';
 
 import { logger } from '../../utils/logger';
+
+// Type definitions for raw query results
+interface RawRevenueResult {
+  totalRevenue: string;
+}
+
+interface RawPickupCountResult {
+  totalPickups: string;
+}
+
+interface RawCompanyCountResult {
+  totalActiveCompanies: string;
+}
+
+interface RawAverageOrderValueResult {
+  averageOrderValue: string;
+}
 import {
   IAnalyticsRepository,
   RevenueByPeriod,
   CompanyPerformanceData,
   StatusDistributionData,
-  ProcessingTimeData,
-  DailyVolumeData,
   RecentActivityData,
   GrowthMetrics,
 } from '../interfaces/IAnalyticsRepository';
@@ -31,79 +46,106 @@ export class AnalyticsRepository implements IAnalyticsRepository {
   async getTotalRevenue(dateFrom?: string, dateTo?: string): Promise<number> {
     logger.debug('Calculating total revenue', { dateFrom, dateTo });
 
-    let query = this.pickupRepository
-      .createQueryBuilder('pickup')
-      .leftJoin('pickup.invoice', 'invoice')
-      .select('SUM(invoice.total_amount)', 'totalRevenue')
-      .where('invoice.paid = :paid', { paid: true }); // Only include paid invoices
+    try {
+      let query = `
+        SELECT SUM(CASE WHEN invoice.paid = true THEN invoice.total_amount ELSE 0 END) AS "totalRevenue"
+        FROM pickup pickup
+        LEFT JOIN invoice invoice ON pickup.invoice_id = invoice.invoice_id
+        WHERE invoice.paid = true
+      `;
+      const params: any[] = [];
 
-    if (dateFrom) {
-      query = query.andWhere('pickup.order_date >= :dateFrom', { dateFrom });
-    }
-    if (dateTo) {
-      query = query.andWhere('pickup.order_date <= :dateTo', { dateTo });
-    }
+      if (dateFrom) {
+        query += ` AND pickup.order_date >= $${params.length + 1}`;
+        params.push(dateFrom);
+      }
+      if (dateTo) {
+        query += ` AND pickup.order_date <= $${params.length + 1}`;
+        params.push(dateTo);
+      }
 
-    const result = await query.getRawOne();
-    return parseFloat(result.totalRevenue) || 0;
+      const result: RawRevenueResult[] = await this.pickupRepository.query(query, params);
+      return parseFloat(result[0]?.totalRevenue) || 0;
+    } catch (error) {
+      logger.error('Error calculating total revenue:', error);
+      throw new Error('Failed to calculate total revenue');
+    }
   }
 
   async getTotalPickups(dateFrom?: string, dateTo?: string): Promise<number> {
     logger.debug('Calculating total pickups', { dateFrom, dateTo });
 
-    let query = this.pickupRepository.createQueryBuilder('pickup');
+    let query = `
+      SELECT COUNT(pickup_id) AS "totalPickups"
+      FROM pickup
+      WHERE 1=1
+    `;
+    const params: any[] = [];
 
     if (dateFrom) {
-      query = query.andWhere('pickup.order_date >= :dateFrom', { dateFrom });
+      query += ` AND order_date >= $${params.length + 1}`;
+      params.push(dateFrom);
     }
     if (dateTo) {
-      query = query.andWhere('pickup.order_date <= :dateTo', { dateTo });
+      query += ` AND order_date <= $${params.length + 1}`;
+      params.push(dateTo);
     }
 
-    return await query.getCount();
+    const result = await this.pickupRepository.query(query, params);
+    return parseInt(result[0]?.totalPickups) || 0;
   }
 
   async getTotalCompanies(activeOnly?: boolean, dateFrom?: string, dateTo?: string): Promise<number> {
     logger.debug('Calculating total companies', { activeOnly, dateFrom, dateTo });
-    
+
     if (!activeOnly) {
       return await this.companyRepository.count();
     }
 
     // Count companies with pickups in the date range
-    let query = this.companyRepository
-      .createQueryBuilder('company')
-      .leftJoin('company.pickups', 'pickup')
-      .where('pickup.pickup_id IS NOT NULL');
+    let query = `
+      SELECT COUNT(DISTINCT company.company_id) AS "totalActiveCompanies"
+      FROM company company
+      INNER JOIN pickup pickup ON company.company_id = pickup.company_id
+      WHERE 1=1
+    `;
+    const params: any[] = [];
 
     if (dateFrom) {
-      query = query.andWhere('pickup.order_date >= :dateFrom', { dateFrom });
+      query += ` AND pickup.order_date >= $${params.length + 1}`;
+      params.push(dateFrom);
     }
     if (dateTo) {
-      query = query.andWhere('pickup.order_date <= :dateTo', { dateTo });
+      query += ` AND pickup.order_date <= $${params.length + 1}`;
+      params.push(dateTo);
     }
 
-    return await query.getCount();
+    const result = await this.companyRepository.query(query, params);
+    return parseInt(result[0]?.totalActiveCompanies) || 0;
   }
 
   async getAverageOrderValue(dateFrom?: string, dateTo?: string): Promise<number> {
     logger.debug('Calculating average order value', { dateFrom, dateTo });
 
-    let query = this.pickupRepository
-      .createQueryBuilder('pickup')
-      .leftJoin('pickup.invoice', 'invoice')
-      .select('AVG(invoice.total_amount)', 'averageOrderValue')
-      .where('invoice.paid = :paid', { paid: true }); // Only include paid invoices
+    let query = `
+      SELECT AVG(CASE WHEN invoice.paid = true THEN invoice.total_amount ELSE NULL END) AS "averageOrderValue"
+      FROM pickup pickup
+      LEFT JOIN invoice invoice ON pickup.invoice_id = invoice.invoice_id
+      WHERE invoice.paid = true
+    `;
+    const params: any[] = [];
 
     if (dateFrom) {
-      query = query.andWhere('pickup.order_date >= :dateFrom', { dateFrom });
+      query += ` AND pickup.order_date >= $${params.length + 1}`;
+      params.push(dateFrom);
     }
     if (dateTo) {
-      query = query.andWhere('pickup.order_date <= :dateTo', { dateTo });
+      query += ` AND pickup.order_date <= $${params.length + 1}`;
+      params.push(dateTo);
     }
 
-    const result = await query.getRawOne();
-    return parseFloat(result.averageOrderValue) || 0;
+    const result = await this.pickupRepository.query(query, params);
+    return parseFloat(result[0]?.averageOrderValue) || 0;
   }
 
   // ============================================================================
@@ -186,43 +228,43 @@ export class AnalyticsRepository implements IAnalyticsRepository {
     groupBy: 'day' | 'week' | 'month' | 'quarter' | 'year'
   ): Promise<RevenueByPeriod[]> {
     logger.debug('Getting revenue trends', { dateFrom, dateTo, groupBy });
-    
-    let dateFormat: string;
+
+    let periodFormat: string;
     switch (groupBy) {
       case 'day':
-        dateFormat = 'YYYY-MM-DD';
+        periodFormat = 'YYYY-MM-DD';
         break;
       case 'week':
-        dateFormat = 'YYYY-"W"WW';
+        periodFormat = 'YYYY-"W"WW';
         break;
       case 'month':
-        dateFormat = 'YYYY-MM';
+        periodFormat = 'YYYY-MM';
         break;
       case 'quarter':
-        dateFormat = 'YYYY-"Q"Q';
+        periodFormat = 'YYYY-"Q"Q';
         break;
       case 'year':
-        dateFormat = 'YYYY';
+        periodFormat = 'YYYY';
         break;
       default:
-        dateFormat = 'YYYY-MM';
+        periodFormat = 'YYYY-MM';
     }
 
-    const query = this.pickupRepository
-      .createQueryBuilder('pickup')
-      .leftJoin('pickup.invoice', 'invoice')
-      .select(`TO_CHAR(pickup.order_date, '${dateFormat}')`, 'period')
-      .addSelect('SUM(CASE WHEN invoice.paid = true THEN invoice.total_amount ELSE 0 END)', 'revenue')
-      .addSelect('COUNT(pickup.pickup_id)', 'pickupCount')
-      .addSelect('AVG(CASE WHEN invoice.paid = true THEN invoice.total_amount ELSE NULL END)', 'averageOrderValue')
-      .where('pickup.order_date >= :dateFrom', { dateFrom })
-      .andWhere('pickup.order_date <= :dateTo', { dateTo })
-      .groupBy('period')
-      .orderBy('period', 'ASC');
+    const query = `
+      SELECT
+        TO_CHAR(pickup.order_date, '${periodFormat}') AS period,
+        SUM(CASE WHEN invoice.paid = true THEN invoice.total_amount ELSE 0 END) AS revenue,
+        COUNT(pickup.pickup_id) AS "pickupCount",
+        AVG(CASE WHEN invoice.paid = true THEN invoice.total_amount ELSE NULL END) AS "averageOrderValue"
+      FROM pickup pickup
+      LEFT JOIN invoice invoice ON pickup.invoice_id = invoice.invoice_id
+      WHERE pickup.order_date >= $1 AND pickup.order_date <= $2
+      GROUP BY TO_CHAR(pickup.order_date, '${periodFormat}')
+      ORDER BY period ASC;
+    `;
+    const results = await this.pickupRepository.query(query, [dateFrom, dateTo]);
 
-    const results = await query.getRawMany();
-    
-    return results.map(row => ({
+    return results.map((row: any) => ({
       period: row.period,
       revenue: parseFloat(row.revenue) || 0,
       pickupCount: parseInt(row.pickupCount) || 0,
@@ -236,38 +278,43 @@ export class AnalyticsRepository implements IAnalyticsRepository {
     limit?: number
   ): Promise<CompanyPerformanceData[]> {
     logger.debug('Getting company performance', { dateFrom, dateTo, limit });
-    
-    let query = this.companyRepository
-      .createQueryBuilder('company')
-      .leftJoin('company.pickups', 'pickup')
-      .leftJoin('pickup.invoice', 'invoice')
-      .select('company.company_id', 'companyId')
-      .addSelect('company.company_name', 'companyName')
-      .addSelect('COALESCE(SUM(CASE WHEN invoice.paid = true THEN invoice.total_amount ELSE 0 END), 0)', 'totalRevenue')
-      .addSelect('COUNT(pickup.pickup_id)', 'totalPickups')
-      .addSelect('COALESCE(AVG(CASE WHEN invoice.paid = true THEN invoice.total_amount ELSE NULL END), 0)', 'averageOrderValue')
-      .addSelect('MIN(pickup.order_date)', 'firstPickupDate')
-      .addSelect('MAX(pickup.order_date)', 'lastPickupDate');
 
+    let query = `
+      SELECT
+        company.company_id AS "companyId",
+        company.company_name AS "companyName",
+        COALESCE(SUM(CASE WHEN invoice.paid = true THEN invoice.total_amount ELSE 0 END), 0) AS "totalRevenue",
+        COUNT(pickup.pickup_id) AS "totalPickups",
+        COALESCE(AVG(CASE WHEN invoice.paid = true THEN invoice.total_amount ELSE NULL END), 0) AS "averageOrderValue",
+        MIN(pickup.order_date) AS "firstPickupDate",
+        MAX(pickup.order_date) AS "lastPickupDate"
+      FROM company company
+      LEFT JOIN pickup pickup ON company.company_id = pickup.company_id
+      LEFT JOIN invoice invoice ON pickup.invoice_id = invoice.invoice_id
+      WHERE 1=1
+    `;
+    const params: any[] = [];
+
+    // Add date filtering if provided
     if (dateFrom) {
-      query = query.andWhere('pickup.order_date >= :dateFrom', { dateFrom });
+      query += ` AND pickup.order_date >= $${params.length + 1}`;
+      params.push(dateFrom);
     }
     if (dateTo) {
-      query = query.andWhere('pickup.order_date <= :dateTo', { dateTo });
+      query += ` AND pickup.order_date <= $${params.length + 1}`;
+      params.push(dateTo);
     }
 
-    query = query
-      .groupBy('company.company_id')
-      .addGroupBy('company.company_name')
-      .orderBy('"totalRevenue"', 'DESC');
+    query += ` GROUP BY company.company_id, company.company_name ORDER BY "totalRevenue" DESC`;
 
     if (limit) {
-      query = query.limit(limit);
+      query += ` LIMIT $${params.length + 1}`;
+      params.push(limit);
     }
 
-    const results = await query.getRawMany();
-    
-    return results.map(row => ({
+    const results = await this.companyRepository.query(query, params);
+
+    return results.map((row: any) => ({
       companyId: parseInt(row.companyId),
       companyName: row.companyName,
       totalRevenue: parseFloat(row.totalRevenue) || 0,
@@ -280,29 +327,35 @@ export class AnalyticsRepository implements IAnalyticsRepository {
 
   async getStatusDistribution(dateFrom?: string, dateTo?: string): Promise<StatusDistributionData[]> {
     logger.debug('Getting status distribution', { dateFrom, dateTo });
-    
-    let query = this.pickupRepository
-      .createQueryBuilder('pickup')
-      .leftJoin('pickup.pickup_status', 'status')
-      .select('status.pickup_status_id', 'statusId')
-      .addSelect('status.status_name', 'statusName')
-      .addSelect('COUNT(pickup.pickup_id)', 'count');
 
+    let query = `
+      SELECT
+        status.pickup_status_id AS "statusId",
+        status.status_name AS "statusName",
+        COUNT(pickup.pickup_id) AS count
+      FROM pickup_status status
+      LEFT JOIN pickup pickup ON status.pickup_status_id = pickup.pickup_status_id
+      WHERE 1=1
+    `;
+    const params: any[] = [];
+
+    // Add date filtering if provided
     if (dateFrom) {
-      query = query.andWhere('pickup.order_date >= :dateFrom', { dateFrom });
+      query += ` AND pickup.order_date >= $${params.length + 1}`;
+      params.push(dateFrom);
     }
     if (dateTo) {
-      query = query.andWhere('pickup.order_date <= :dateTo', { dateTo });
+      query += ` AND pickup.order_date <= $${params.length + 1}`;
+      params.push(dateTo);
     }
 
-    const results = await query
-      .groupBy('status.pickup_status_id')
-      .addGroupBy('status.status_name')
-      .getRawMany();
+    query += ` GROUP BY status.pickup_status_id, status.status_name ORDER BY count DESC`;
 
-    const totalCount = results.reduce((sum, row) => sum + parseInt(row.count), 0);
-    
-    return results.map(row => ({
+    const results = await this.pickupRepository.query(query, params);
+
+    const totalCount = results.reduce((sum: number, row: any) => sum + parseInt(row.count), 0);
+
+    return results.map((row: any) => ({
       statusId: parseInt(row.statusId),
       statusName: row.statusName,
       count: parseInt(row.count),
@@ -310,42 +363,9 @@ export class AnalyticsRepository implements IAnalyticsRepository {
     }));
   }
 
-  async getDailyVolume(dateFrom: string, dateTo: string): Promise<DailyVolumeData[]> {
-    logger.debug('Getting daily volume', { dateFrom, dateTo });
-
-    const query = this.pickupRepository
-      .createQueryBuilder('pickup')
-      .leftJoin('pickup.invoice', 'invoice')
-      .select('pickup.order_date::date', 'date')
-      .addSelect('COUNT(pickup.pickup_id)', 'pickupCount')
-      .addSelect('COALESCE(SUM(CASE WHEN invoice.paid = true THEN invoice.total_amount ELSE 0 END), 0)', 'revenue')
-      .addSelect('COALESCE(AVG(CASE WHEN invoice.paid = true THEN invoice.total_amount ELSE NULL END), 0)', 'averageOrderValue')
-      .where('pickup.order_date >= :dateFrom', { dateFrom })
-      .andWhere('pickup.order_date <= :dateTo', { dateTo })
-      .groupBy('pickup.order_date::date')
-      .orderBy('pickup.order_date::date', 'ASC');
-
-    const results = await query.getRawMany();
-
-    return results.map(row => ({
-      date: row.date,
-      pickupCount: parseInt(row.pickupCount) || 0,
-      revenue: parseFloat(row.revenue) || 0,
-      averageOrderValue: parseFloat(row.averageOrderValue) || 0,
-    }));
-  }
-
   // ============================================================================
   // OPERATIONAL METRICS
   // ============================================================================
-
-  async getProcessingTimes(dateFrom?: string, dateTo?: string): Promise<ProcessingTimeData[]> {
-    logger.debug('Getting processing times', { dateFrom, dateTo });
-
-    // This is a simplified implementation - in a real system, you'd track status changes
-    // For now, we'll return mock data structure
-    return [];
-  }
 
   async getCompletionRate(dateFrom?: string, dateTo?: string): Promise<number> {
     logger.debug('Calculating completion rate', { dateFrom, dateTo });
@@ -387,6 +407,7 @@ export class AnalyticsRepository implements IAnalyticsRepository {
     const totalPickups = await baseQuery.getCount();
 
     // Create a fresh query for pending pickups to avoid query builder conflicts
+    // Pending = not yet delivered, cancelled, or failed
     let pendingQuery = this.pickupRepository
       .createQueryBuilder('pickup')
       .leftJoin('pickup.pickup_status', 'status')
@@ -493,66 +514,5 @@ export class AnalyticsRepository implements IAnalyticsRepository {
 
     return companies.slice(0, limit);
   }
-
-  // ============================================================================
-  // ADVANCED ANALYTICS (Simplified implementations)
-  // ============================================================================
-
-  async getCompanyDistributionByRevenue(
-    dateFrom?: string,
-    dateTo?: string
-  ): Promise<Array<{ range: string; companyCount: number; totalRevenue: number }>> {
-    logger.debug('Getting company distribution by revenue', { dateFrom, dateTo });
-
-    const companies = await this.getCompanyPerformance(dateFrom, dateTo);
-
-    const ranges = [
-      { min: 0, max: 1000, label: '0-1000' },
-      { min: 1000, max: 5000, label: '1000-5000' },
-      { min: 5000, max: 10000, label: '5000-10000' },
-      { min: 10000, max: Infinity, label: '10000+' },
-    ];
-
-    return ranges.map(range => {
-      const companiesInRange = companies.filter(
-        c => c.totalRevenue >= range.min && c.totalRevenue < range.max
-      );
-
-      return {
-        range: range.label,
-        companyCount: companiesInRange.length,
-        totalRevenue: companiesInRange.reduce((sum, c) => sum + c.totalRevenue, 0),
-      };
-    });
-  }
-
-  async getCompanyDistributionByPickups(
-    dateFrom?: string,
-    dateTo?: string
-  ): Promise<Array<{ range: string; companyCount: number; totalPickups: number }>> {
-    logger.debug('Getting company distribution by pickups', { dateFrom, dateTo });
-
-    const companies = await this.getCompanyPerformance(dateFrom, dateTo);
-
-    const ranges = [
-      { min: 0, max: 10, label: '1-10' },
-      { min: 10, max: 50, label: '11-50' },
-      { min: 50, max: 100, label: '51-100' },
-      { min: 100, max: Infinity, label: '100+' },
-    ];
-
-    return ranges.map(range => {
-      const companiesInRange = companies.filter(
-        c => c.totalPickups >= range.min && c.totalPickups < range.max
-      );
-
-      return {
-        range: range.label,
-        companyCount: companiesInRange.length,
-        totalPickups: companiesInRange.reduce((sum, c) => sum + c.totalPickups, 0),
-      };
-    });
-  }
-
 
 }
