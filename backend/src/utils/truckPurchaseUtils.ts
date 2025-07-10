@@ -2,6 +2,7 @@ export interface TruckToBuy {
   truckName: string;
   price: number;
   operatingCost: number;
+  maximumLoad: number; 
   quantityToBuy: number;
 }
 
@@ -14,7 +15,8 @@ export function selectTrucksToBuy(trucksForSale: any[]): TruckToBuy[] {
       truckName: smallTruck.truckName,
       price: smallTruck.price,
       operatingCost: smallTruck.operatingCost,
-      quantityToBuy: 3 // <-- Only 3 small trucks initially
+      maximumLoad: smallTruck.maximumLoad,
+      quantityToBuy: 3
     });
   }
   return trucksToBuy;
