@@ -150,7 +150,7 @@ export class AnalyticsService {
         statusDistribution,
         revenueTrend,
       ] = await Promise.all([
-        this.analyticsRepository.getRecentActivity(10),
+        this.analyticsRepository.getRecentActivity(5),
         this.analyticsRepository.getTopCompanies(5, dateFrom, dateTo),
         this.analyticsRepository.getStatusDistribution(dateFrom, dateTo),
         this.getRevenueTrendForDashboard(dateFrom, dateTo),
