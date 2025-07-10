@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { TruckManagementService } from '../services/truckManagementService';
 import { AppError } from '../shared/errors/ApplicationError';
+import { logger } from '../utils/logger';
 import {
     CreateTruckRequest,
     UpdateTruckRequest,
@@ -10,6 +11,7 @@ import {
     TruckTypeResponse,
     TruckTypesListResponse,
 } from '../types/dtos/TruckDtos';
+import { TimeManager } from '../services/timeManager';
 
 
 export class TruckController {
@@ -80,6 +82,33 @@ export class TruckController {
         }
     
         const affected = await this.truckManagementService.breakdownTrucksByType(truckName, failureQuantity);
+
+        const timeManager = TimeManager.getInstance();
+        
+        // Get current simulation time
+        const currentSimTime = timeManager.getCurrentTime();
+        
+        // Calculate restoration time 
+        const restorationTime = new Date(currentSimTime.getTime() + (24 *60 * 60 * 1000));
+        
+        // Log the scheduled restoration
+        logger.info(`Scheduling restoration of ${truckName} trucks at simulation time: ${restorationTime.toISOString()}`);
+        
+        // Set an interval to check if the simulation time has reached the restoration time
+        const checkInterval = setInterval(() => {
+            const now = timeManager.getCurrentTime();
+            if (now.getTime() >= restorationTime.getTime()) {
+                clearInterval(checkInterval);
+                // Restore the trucks
+                this.truckManagementService.restoreTrucksByType(truckName)
+                    .then(restoredCount => {
+                        logger.info(`Restored ${restoredCount} truck(s) of type '${truckName}' after 2 minutes of simulation time.`);
+                    })
+                    .catch(error => {
+                        logger.error(`Failed to restore trucks of type '${truckName}':`, error);
+                    });
+            }
+        }, 1000); // Check every second
     
         res.status(200).json({
             message: `${affected} truck(s) of type '${truckName}' marked as unavailable.`,

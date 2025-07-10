@@ -148,4 +148,9 @@ export class TruckManagementService {
     logger.info(`Breaking down ${count} '${truckTypeName}' truck(s).`);
     return this.truckRepository.markNTrucksUnavailableByTypeName(truckTypeName, count);
   }
+
+  public async restoreTrucksByType(truckTypeName: string): Promise<number> {
+    logger.info(`Restoring unavailable '${truckTypeName}' trucks.`);
+    return this.truckRepository.restoreUnavailableTrucksByTypeName(truckTypeName);
+  }
 }
