@@ -20,7 +20,7 @@ interface WebhookPayload {
     modelName:string;
     status: string;
     quantity: number;
-    referenceNo: string;
+    delivery_reference: string;
 }
 
 export class SQSWorkerService {
@@ -284,7 +284,7 @@ export class SQSWorkerService {
             status: 'success',
             modelName: pickup?.model_name,
             quantity: pickup.phone_units ?? 0,
-            referenceNo: pickup.invoice.reference_number,
+            delivery_reference: pickup.invoice.reference_number,
         };
 
         logger.info('Sending delivery webhook', { 
