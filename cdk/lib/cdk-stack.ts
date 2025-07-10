@@ -206,18 +206,16 @@ export class CdkStack extends cdk.Stack {
       bundling: {
         externalModules: ['@aws-sdk/*'],
       },
-      vpc: defaultVpc,
-      vpcSubnets: {
-        subnetType: SubnetType.PUBLIC,
-      },
-      securityGroups: [dbSecurityGroup],
       timeout: cdk.Duration.seconds(30),
-      memorySize: 128,
       allowPublicSubnet: true,
       environment: {
         REGION: props.deployRegion,
         PAYMENT_PROCESSING_QUEUE_URL: paymentQueue.queueUrl,
-        DB_SECRET_ID: database.secret?.secretArn || ''
+        DB_HOST: database.dbInstanceEndpointAddress,
+        DB_PORT: database.dbInstanceEndpointPort,
+        DB_NAME: databaseName,
+        DB_USERNAME: database.secret?.secretValueFromJson('username').unsafeUnwrap() || '',
+        DB_PASSWORD: database.secret?.secretValueFromJson('password').unsafeUnwrap() || '',
       },
     });
 
@@ -228,20 +226,22 @@ export class CdkStack extends cdk.Stack {
       bundling: {
         externalModules: ['@aws-sdk/*'],
       },
-      vpc: defaultVpc,
-      vpcSubnets: {
-        subnetType: SubnetType.PUBLIC,
-      },
-      allowPublicSubnet: true,
-      securityGroups: [dbSecurityGroup],
       timeout: cdk.Duration.seconds(30),
       memorySize: 128,
       environment: {
         REGION: props.deployRegion,
         PICKUP_QUEUE_URL: pickUpQueue.queueUrl,
-        DB_SECRET_ID: database.secret?.secretArn || ''
+        DB_HOST: database.dbInstanceEndpointAddress,
+        DB_PORT: database.dbInstanceEndpointPort,
+        DB_NAME: databaseName,
+        DB_USERNAME: database.secret?.secretValueFromJson('username').unsafeUnwrap() || '',
+        DB_PASSWORD: database.secret?.secretValueFromJson('password').unsafeUnwrap() || '',
       },
     });
+
+    // Grant the Lambda functions permissions to access the sqs queues
+    paymentQueue.grantSendMessages(handlePopLambda);
+    pickUpQueue.grantSendMessages(processPayment);
 
 
     if (database.secret) {
@@ -430,7 +430,7 @@ export class CdkStack extends cdk.Stack {
 
     // POST /payment/webhook
     api.addRoutes({
-      path: '/payment/webhook',
+      path: '/api/webhook/payment-updates',
       methods: [apigatewayv2.HttpMethod.POST],
       integration: new integrations.HttpLambdaIntegration('PaymentWebhookIntegration', handlePopLambda),
     });

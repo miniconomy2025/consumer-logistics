@@ -70,7 +70,7 @@ export const lambdaHandler: SQSHandler = async (event: SQSEvent) => {
 
             await txRepo.save(transaction);
 
-            const paidStatus = await statusRepo.findOne({ where: { orderStatusName: OrderStatus.Paid } });
+            const paidStatus = await statusRepo.findOne({ where: { statusName: OrderStatus.Paid } });
             if (!paidStatus) throw new Error(`Missing ${OrderStatus.Paid} pickup status`);
 
             pickup.pickupStatus = paidStatus;

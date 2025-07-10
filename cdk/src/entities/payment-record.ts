@@ -1,32 +1,32 @@
 import { Entity, PrimaryGeneratedColumn, Column, Unique } from 'typeorm';
 
-@Entity('Payment_Record')
+@Entity('payment_record') 
 @Unique(['transaction_number'])
 export class PaymentRecord {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column()
+  @Column({ type: 'varchar' })
   transaction_number: string;
 
-  @Column()
+  @Column({ type: 'varchar' })
   status: string;
 
-  @Column('decimal', { precision: 10, scale: 2 })
+  @Column({ type: 'decimal', precision: 10, scale: 2 })
   amount: number;
 
   @Column({ type: 'timestamp' })
   timestamp: Date;
 
-  @Column()
+  @Column({ type: 'text' })
   description: string;
 
-  @Column()
+  @Column({ type: 'varchar' })
   from: string;
 
-  @Column()
+  @Column({ type: 'varchar' })
   to: string;
 
-  @Column()
+  @Column({ type: 'varchar' })
   reference: string;
 }
