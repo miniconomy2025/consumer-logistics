@@ -70,13 +70,13 @@ export const lambdaHandler: SQSHandler = async (event: SQSEvent) => {
 
             await txRepo.save(transaction);
 
-            const paidStatus = await statusRepo.findOne({ where: { statusName: OrderStatus.Paid } });
-            if (!paidStatus) throw new Error(`Missing ${OrderStatus.Paid} pickup status`);
+            const paidStatus = await statusRepo.findOne({ where: { statusName: OrderStatus.ReadyForCollection } });
+            if (!paidStatus) throw new Error(`Missing ${OrderStatus.ReadyForCollection} pickup status`);
 
             pickup.pickupStatus = paidStatus;
             await pickupRepo.save(pickup);
 
-            await sendToSQS(JSON.stringify(pickup), pickupQueueUrl);
+            // await sendToSQS(JSON.stringify(pickup), pickupQueueUrl);
 
             await queryRunner.commitTransaction();
             console.log(`Processed invoice ${invoice.referenceNumber}, pickup ${pickup.id}`);
