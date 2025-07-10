@@ -107,7 +107,7 @@ export class TruckPurchaseService {
         continue;
       }
 
-      // NEW: Confirm payment and fulfillment with THOH
+      // Confirm payment and fulfillment with THOH
       logger.info(`[TruckPurchaseService] Confirming payment and fulfillment for order ${orderId}...`);
       const fulfillResponse = await fetch(`${THOH_API_URL}/orders/payments`, {
         method: 'POST',
