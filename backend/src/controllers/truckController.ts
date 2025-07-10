@@ -9,6 +9,7 @@ import {
     CreateTruckTypeRequest,
     TruckTypeResponse,
     TruckTypesListResponse,
+    CreateTrucksResponse,
 } from '../types/dtos/TruckDtos';
 
 
@@ -108,20 +109,32 @@ export class TruckController {
     public createTruck = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const data: CreateTruckRequest = req.body;
-            const newTruck = await this.truckManagementService.createTruck(data);
-            const response: TruckResponse = {
-                truckId: newTruck.truck_id,
-                truckTypeId: newTruck.truck_type_id,
-                truckType: {
-                    truckTypeId: newTruck.truckType.truck_type_id,
-                    truckTypeName: newTruck.truckType.truck_type_name,
-                },
-                maxPickups: newTruck.max_pickups,
-                maxDropoffs: newTruck.max_dropoffs,
-                dailyOperatingCost: newTruck.daily_operating_cost,
-                maxCapacity: newTruck.max_capacity,
-                isAvailable: newTruck.is_available, 
+            const quantity = data.quantity ?? 1;
+
+            if (quantity <= 0) {
+                throw new AppError('Quantity must be a positive number', 400);
+            }
+
+            const createdTrucks = await this.truckManagementService.createTruck(data);
+
+            const response: CreateTrucksResponse = {
+                message: `Successfully created ${createdTrucks.length} truck(s).`,
+                quantityCreated: createdTrucks.length,
+                trucks: createdTrucks.map(truck => ({
+                    truckId: truck.truck_id,
+                    truckTypeId: truck.truck_type_id,
+                    truckType: {
+                        truckTypeId: truck.truckType.truck_type_id,
+                        truckTypeName: truck.truckType.truck_type_name,
+                    },
+                    maxPickups: truck.max_pickups,
+                    maxDropoffs: truck.max_dropoffs,
+                    dailyOperatingCost: truck.daily_operating_cost,
+                    maxCapacity: truck.max_capacity,
+                    isAvailable: truck.is_available,
+                }))
             };
+
             res.status(201).json(response);
         } catch (error) {
             next(error);

@@ -14,6 +14,7 @@ export interface CreateTruckRequest {
   dailyOperatingCost: number;
   maxCapacity: number;
   isAvailable?: boolean;
+  quantity?: number;
 }
 
 export interface UpdateTruckRequest extends Partial<CreateTruckRequest> {}
@@ -36,6 +37,12 @@ export interface TruckResponse {
 export interface TrucksListResponse {
   message: string;
   totalCount: number;
+  trucks: TruckResponse[];
+}
+
+export interface CreateTrucksResponse {
+  message: string;
+  quantityCreated: number;
   trucks: TruckResponse[];
 }
 

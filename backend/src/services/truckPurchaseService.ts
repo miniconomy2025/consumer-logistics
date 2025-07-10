@@ -113,16 +113,16 @@ export class TruckPurchaseService {
         continue;
       }
 
-      for (let i = 0; i < truck.quantityToBuy; i++) {
-        await truckManagementService.createTruck({
-          truckTypeId: truckType.truck_type_id,
-          maxPickups: 250, 
-          maxDropoffs: 500, 
-          dailyOperatingCost: truck.operatingCost,
-          maxCapacity: truck.maximumLoad,
-          isAvailable: true,
-        });
-      }
+      await truckManagementService.createTruck({
+        truckTypeId: truckType.truck_type_id,
+        maxPickups: 250, 
+        maxDropoffs: 500, 
+        dailyOperatingCost: truck.operatingCost,
+        maxCapacity: truck.maximumLoad,
+        isAvailable: true,
+        quantity: truck.quantityToBuy,
+      });
+
       logger.info(`[TruckPurchaseService] Successfully purchased and registered ${truck.quantityToBuy} x ${truck.truckName}.`);
     }
   }
