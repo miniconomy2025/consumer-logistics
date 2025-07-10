@@ -106,41 +106,6 @@ export class TruckPurchaseService {
         logger.error(`[TruckPurchaseService] Failed to pay for order: ${orderId}`);
         continue;
       }
-
-      // Confirm payment and fulfillment with THOH
-      logger.info(`[TruckPurchaseService] Confirming payment and fulfillment for order ${orderId}...`);
-      const fulfillResponse = await fetch(`${THOH_API_URL}/orders/payments`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderId }),
-      });
-      if (!fulfillResponse.ok) {
-        logger.error(`[TruckPurchaseService] Failed to fulfill order: ${orderId}`);
-        continue;
-      }
-      const fulfillData = await fulfillResponse.json() as { canFulfill: boolean };
-      if (!fulfillData.canFulfill) {
-        logger.error(`[TruckPurchaseService] Order ${orderId} cannot be fulfilled. canFulfill: ${fulfillData.canFulfill}`);
-        continue;
-      }
-
-      const truckType = await truckManagementService.getTruckTypeByName(truck.truckName);
-      if (!truckType) {
-        logger.error(`[TruckPurchaseService] Truck type not found: ${truck.truckName}`);
-        continue;
-      }
-
-      await truckManagementService.createTruck({
-        truckTypeId: truckType.truck_type_id,
-        maxPickups: 250, 
-        maxDropoffs: 500, 
-        dailyOperatingCost: truck.operatingCost,
-        maxCapacity: truck.maximumLoad,
-        isAvailable: true,
-        quantity: truck.quantityToBuy,
-      });
-
-      logger.info(`[TruckPurchaseService] Successfully purchased and registered ${truck.quantityToBuy} x ${truck.truckName}.`);
     }
   }
 
