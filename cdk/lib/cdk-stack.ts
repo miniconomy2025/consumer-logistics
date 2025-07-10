@@ -429,11 +429,11 @@ export class CdkStack extends cdk.Stack {
     });
 
     // POST /payment/webhook
-    api.addRoutes({
-      path: '/api/webhook/payment-updates',
-      methods: [apigatewayv2.HttpMethod.POST],
-      integration: new integrations.HttpLambdaIntegration('PaymentWebhookIntegration', handlePopLambda),
-    });
+    // api.addRoutes({
+    //   path: '/api/webhook/payment-updates',
+    //   methods: [apigatewayv2.HttpMethod.POST],
+    //   integration: new integrations.HttpLambdaIntegration('PaymentWebhookIntegration', handlePopLambda),
+    // });
 
     // Elastic Beanstalk Application URL
     const ebAppUrl = `http://${environment.attrEndpointUrl}`;
