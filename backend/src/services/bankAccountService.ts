@@ -7,10 +7,12 @@ export class BankAccountService {
   private bankAccountRepo = AppDataSource.getRepository(BankAccountEntity);
 
   async createBankAccount(): Promise<BankAccountEntity> {
-    const response = await fetch(`${BANK_API_URL}/account`, {
+    const response = await fetch(`${BANK_API_URL}/accounts`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({})
+      body: JSON.stringify({
+        notificationUrl: `/api/webhook/payment-updates`
+      })
     });
     if (!response.ok) {
       logger.error(`Bank API error: ${response.status} ${response.statusText}`);
