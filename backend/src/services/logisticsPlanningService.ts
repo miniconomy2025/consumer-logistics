@@ -391,7 +391,8 @@ export class LogisticsPlanningService {
           try {
             await this.notifyExternalPickup(
               updatedLogisticsDetail.pickup.invoice.reference_number,
-              updatedLogisticsDetail.quantity
+              updatedLogisticsDetail.quantity,
+              updatedLogisticsDetail.pickup.company?.company_name
             );
             logger.info(`External partner notified for pickup reference ${updatedLogisticsDetail.pickup.invoice.reference_number}.`);
           } catch (err) {
@@ -659,19 +660,38 @@ export class LogisticsPlanningService {
         logger.info(`Retry process completed. Re-attempted ${failedLogistics.length} failed logistics.`);
     }
 
-    public async notifyExternalPickup(reference: string, quantity: number): Promise<void> {
-        const response = await fetch('https://webhook.site/948ae0f0-871f-427d-a745-c13e0345dff7', {
+    public async notifyExternalPickup(reference: string, quantity: number, companyName?: string): Promise<void> {
+        // Company-specific collection webhook URLs
+        const COMPANY_COLLECTION_URLS: Record<string, string> = {
+            'pear': 'https://pear-company-api.projects.bbdgrad.com/logistics',
+            'recycler': 'https://recycler-api.projects.bbdgrad.com/logistics',
+            'samsung': 'https://sumsang-phones-api.projects.bbdgrad.com/logistics'
+        };
+
+        // Determine webhook URL based on company name
+        let webhookUrl = 'https://webhook.site/948ae0f0-871f-427d-a745-c13e0345dff7'; // Default fallback
+        if (companyName && COMPANY_COLLECTION_URLS[companyName]) {
+            webhookUrl = COMPANY_COLLECTION_URLS[companyName];
+            logger.debug(`Using company-specific collection webhook URL for ${companyName}: ${webhookUrl}`);
+        } else {
+            logger.debug(`Using default collection webhook URL for company: ${companyName || 'Unknown'}`);
+        }
+
+        const response = await fetch(webhookUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             reference,
             type: 'PICKUP',
-            quantity
+            quantity,
+            companyName: companyName || 'Unknown'
           })
         });
         if (!response.ok) {
-          throw new Error(`Failed to notify external pickup API: ${response.statusText}`);
+          throw new Error(`Failed to notify external pickup API for ${companyName || 'Unknown'}: ${response.statusText}`);
         }
+
+        logger.info(`Collection notification sent successfully to ${companyName || 'Unknown'} via ${webhookUrl}`);
     }
 }
 
