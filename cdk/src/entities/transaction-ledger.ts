@@ -1,21 +1,23 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
 import { Invoice } from './invoice';
 import { TransactionType } from './transaction-type';
 
-@Entity()
+@Entity('transaction_ledger')
 export class TransactionLedger {
-  @PrimaryGeneratedColumn()
+  @PrimaryGeneratedColumn({ name: 'transaction_ledger_id' })
   id: number;
 
   @ManyToOne(() => Invoice, (invoice) => invoice.transactions)
+  @JoinColumn({ name: 'invoice_id' })
   invoice: Invoice;
 
   @ManyToOne(() => TransactionType, (type) => type.transactions)
+  @JoinColumn({ name: 'transaction_type_id' })
   transactionType: TransactionType;
 
-  @Column('decimal')
+  @Column({ name: 'amount', type: 'numeric', precision: 10, scale: 2 })
   amount: number;
 
-  @Column('date')
+  @Column({ name: 'transaction_date', type: 'date' })
   transactionDate: Date;
 }
