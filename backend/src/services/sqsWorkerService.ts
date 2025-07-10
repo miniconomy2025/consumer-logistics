@@ -275,16 +275,11 @@ export class SQSWorkerService {
             return;
         }
 
-        if (!pickup.invoice?.reference_number) {
-            logger.warn(`No invoice reference number found for logistics detail ${deliveredLogistics.logistics_details_id}`);
-            return;
-        }
-
         const webhookPayload: WebhookPayload = {
             status: 'success',
             modelName: pickup?.model_name,
             quantity: pickup.phone_units ?? 0,
-            delivery_reference: pickup.invoice.reference_number,
+            delivery_reference: pickup.invoice.reference_number ?? 'Unknown',
         };
 
         logger.info('Sending delivery webhook', { 
