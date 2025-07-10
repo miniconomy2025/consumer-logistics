@@ -1,13 +1,7 @@
-// Loading Spinner and Skeleton Components
-
 "use client";
 
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-
-// ============================================================================
-// LOADING SPINNER
-// ============================================================================
 
 interface LoadingSpinnerProps {
   size?: 'sm' | 'md' | 'lg';
@@ -31,10 +25,6 @@ export function LoadingSpinner({ size = 'md', className }: LoadingSpinnerProps) 
     />
   );
 }
-
-// ============================================================================
-// SKELETON COMPONENTS
-// ============================================================================
 
 interface SkeletonProps {
   className?: string;
@@ -121,10 +111,6 @@ export function ChartSkeleton({ height = 'h-64' }: { height?: string }) {
   );
 }
 
-// ============================================================================
-// LOADING STATES
-// ============================================================================
-
 interface LoadingStateProps {
   message?: string;
   size?: 'sm' | 'md' | 'lg';
@@ -170,10 +156,6 @@ export function ButtonLoading({ children }: { children: React.ReactNode }) {
     </div>
   );
 }
-
-// ============================================================================
-// DASHBOARD SKELETONS
-// ============================================================================
 
 export function DashboardKPISkeleton() {
   return (
@@ -224,10 +206,6 @@ export function DashboardSkeleton() {
     </div>
   );
 }
-
-// ============================================================================
-// LOADING WRAPPER
-// ============================================================================
 
 interface LoadingWrapperProps {
   loading: boolean;

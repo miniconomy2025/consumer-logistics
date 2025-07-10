@@ -10,33 +10,30 @@
 export function formatCurrency(
   amount: number,
   decimals?: number,
-  currency: string = 'ZAR',
+  _currency: string = 'Ð',
   locale: string = 'en-ZA'
 ): string {
   // Handle overloaded parameters
   let actualDecimals = 2;
-  let actualCurrency = currency;
   let actualLocale = locale;
 
   if (typeof decimals === 'string') {
     // Old signature: formatCurrency(amount, currency, locale)
-    actualCurrency = decimals;
-    actualLocale = currency;
+    actualLocale = decimals;
     actualDecimals = 2;
   } else if (typeof decimals === 'number') {
     // New signature: formatCurrency(amount, decimals, currency, locale)
     actualDecimals = decimals;
   }
 
-  return new Intl.NumberFormat(actualLocale, {
-    style: 'currency',
-    currency: actualCurrency,
+  // Format as a number and prepend with Ð
+  const formatted = new Intl.NumberFormat(actualLocale, {
     minimumFractionDigits: actualDecimals,
     maximumFractionDigits: actualDecimals,
   }).format(amount);
+
+  return `Ð${formatted}`;
 }
-
-
 
 // ============================================================================
 // NUMBER FORMATTING
@@ -108,12 +105,6 @@ export function calculateGrowth(current: number, previous: number): number {
   return ((current - previous) / previous) * 100;
 }
 
-
-
-// ============================================================================
-// DATE FORMATTING
-// ============================================================================
-
 /**
  * Format dates for display
  */
@@ -133,18 +124,6 @@ export function formatDate(
   return new Intl.DateTimeFormat(locale, { ...defaultOptions, ...options }).format(dateObj);
 }
 
-
-
-
-
-
-
-// ============================================================================
-// STATUS FORMATTING
-// ============================================================================
-
-
-
 /**
  * Get growth color based on value
  */
@@ -156,5 +135,3 @@ export function getGrowthColor(growth: number): string {
   }
   return 'text-gray-600';
 }
-
-

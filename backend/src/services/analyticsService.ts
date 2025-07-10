@@ -7,8 +7,6 @@ import { logger } from '../utils/logger';
 import {
   DashboardAnalyticsResponse,
   KPIAnalyticsResponse,
-  TrendAnalyticsResponse,
-  OperationalAnalyticsResponse,
   AnalyticsQueryParams,
 } from '../types/dtos/analyticsDtos';
 
@@ -27,21 +25,44 @@ export class AnalyticsService {
 
   /**
    * Resolve date range from params, prioritizing range parameter over explicit dates
+   * @param params Optional analytics query parameters
+   * @returns Validated date range with dateFrom and dateTo strings
+   * @throws AppError if date validation fails
    */
   private resolveDateRange(params?: AnalyticsQueryParams): { dateFrom: string; dateTo: string } {
-    // If range parameter is provided, use it
-    if (params?.range) {
-      return this.dateRangeService.convertRangeToDateStrings(params.range);
-    }
+    try {
+      // If range parameter is provided, use it
+      if (params?.range) {
+        return this.dateRangeService.convertRangeToDateStrings(params.range);
+      }
 
-    // Fall back to explicit dates if provided
-    if (params?.dateFrom && params?.dateTo) {
-      return { dateFrom: params.dateFrom, dateTo: params.dateTo };
-    }
+      // Fall back to explicit dates if provided
+      if (params?.dateFrom && params?.dateTo) {
+        // Validate date format
+        const fromDate = new Date(params.dateFrom);
+        const toDate = new Date(params.dateTo);
 
-    // Default to last 30 days
-    const defaultRange = this.dateRangeService.getDefaultRange();
-    return this.dateRangeService.convertRangeToDateStrings(defaultRange);
+        if (isNaN(fromDate.getTime()) || isNaN(toDate.getTime())) {
+          throw new AppError('Invalid date format. Use YYYY-MM-DD format.', 400);
+        }
+
+        if (fromDate > toDate) {
+          throw new AppError('dateFrom cannot be later than dateTo', 400);
+        }
+
+        return { dateFrom: params.dateFrom, dateTo: params.dateTo };
+      }
+
+      // Default to last 30 days
+      const defaultRange = this.dateRangeService.getDefaultRange();
+      return this.dateRangeService.convertRangeToDateStrings(defaultRange);
+    } catch (error) {
+      if (error instanceof AppError) {
+        throw error;
+      }
+      logger.error('Error resolving date range:', error);
+      throw new AppError('Failed to resolve date range', 500);
+    }
   }
 
   /**
@@ -70,6 +91,11 @@ export class AnalyticsService {
   // DASHBOARD ANALYTICS
   // ============================================================================
 
+  /**
+   * Generate comprehensive dashboard analytics including KPIs, trends, and activity data
+   * @param params Optional query parameters for filtering and date ranges
+   * @returns Dashboard analytics with revenue, pickup, and company metrics
+   */
   public async getDashboardAnalytics(params?: AnalyticsQueryParams): Promise<DashboardAnalyticsResponse> {
     logger.info('Generating dashboard analytics');
 
@@ -178,6 +204,11 @@ export class AnalyticsService {
   // KPI ANALYTICS
   // ============================================================================
 
+  /**
+   * Generate detailed Key Performance Indicator analytics
+   * @param params Optional query parameters for filtering and date ranges
+   * @returns Comprehensive KPI metrics including financial, operational, and customer metrics
+   */
   public async getKPIAnalytics(params?: AnalyticsQueryParams): Promise<KPIAnalyticsResponse> {
     logger.info('Generating KPI analytics');
 
@@ -236,9 +267,16 @@ export class AnalyticsService {
       }
 
       // Calculate additional KPIs
-      const newCompanies = 0; // Would need creation date tracking
+      // Estimate new companies by finding companies with first pickup in current period
+      const companyPerformance = await this.analyticsRepository.getCompanyPerformance(dateFrom, dateTo);
+      const newCompanies = companyPerformance.filter(company =>
+        company.firstPickupDate &&
+        company.firstPickupDate >= new Date(dateFrom || '1900-01-01') &&
+        company.firstPickupDate <= new Date(dateTo || '2100-12-31')
+      ).length;
+
       const companyRetentionRate = activeCompanies > 0 ? (activeCompanies / totalCompanies) * 100 : 0;
-      const averageProcessingTime = 0; // Would need status change tracking
+      const averageProcessingTime = 0; // Would need status change tracking - keeping as placeholder
 
       return {
         totalRevenue,
@@ -267,131 +305,7 @@ export class AnalyticsService {
     }
   }
 
-  // ============================================================================
-  // TREND ANALYTICS
-  // ============================================================================
 
-  public async getTrendAnalytics(params?: AnalyticsQueryParams): Promise<TrendAnalyticsResponse> {
-    logger.info('Generating trend analytics');
-
-    try {
-      const dateFrom = params?.dateFrom || this.getDefaultDateFrom();
-      const dateTo = params?.dateTo || this.getDefaultDateTo();
-      const groupBy = params?.groupBy || 'month';
-
-      // Get revenue trends
-      const revenueTrends = await this.analyticsRepository.getRevenueTrends(dateFrom, dateTo, groupBy);
-
-      // Calculate growth rates for revenue trends
-      const revenueByMonth = revenueTrends.map((trend, index) => {
-        const previousTrend = index > 0 ? revenueTrends[index - 1] : null;
-        const growthRate = previousTrend && previousTrend.revenue > 0
-          ? ((trend.revenue - previousTrend.revenue) / previousTrend.revenue) * 100
-          : 0;
-
-        return {
-          month: trend.period,
-          revenue: trend.revenue,
-          pickupCount: trend.pickupCount,
-          averageOrderValue: trend.averageOrderValue,
-          growthRate,
-        };
-      });
-
-      // Get company trends (simplified - top 5 companies)
-      const topCompanies = await this.analyticsRepository.getTopCompanies(5, dateFrom, dateTo);
-      const companyTrends = topCompanies.map(company => ({
-        companyId: company.companyId,
-        companyName: company.companyName,
-        monthlyData: [{
-          month: dateTo.substring(0, 7), // YYYY-MM format
-          revenue: company.totalRevenue,
-          pickupCount: company.totalPickups,
-          averageOrderValue: company.averageOrderValue,
-        }],
-      }));
-
-      // Get status trends (simplified)
-      const statusDistribution = await this.analyticsRepository.getStatusDistribution(dateFrom, dateTo);
-      const statusTrends = statusDistribution.map(status => ({
-        statusName: status.statusName,
-        monthlyData: [{
-          month: dateTo.substring(0, 7),
-          count: status.count,
-          percentage: status.percentage,
-        }],
-      }));
-
-      // Get seasonal patterns (simplified)
-      const seasonalPatterns = {
-        quarterlyRevenue: [],
-        monthlyAverages: [],
-      };
-
-      return {
-        revenueByMonth,
-        companyTrends,
-        statusTrends,
-        seasonalPatterns,
-      };
-    } catch (error: any) {
-      logger.error('Error generating trend analytics:', error);
-      throw new AppError('Failed to generate trend analytics', 500);
-    }
-  }
-
-  // ============================================================================
-  // OPERATIONAL ANALYTICS
-  // ============================================================================
-
-  public async getOperationalAnalytics(params?: AnalyticsQueryParams): Promise<OperationalAnalyticsResponse> {
-    logger.info('Generating operational analytics');
-
-    try {
-      const dateFrom = params?.dateFrom || this.getDefaultDateFrom();
-      const dateTo = params?.dateTo || this.getDefaultDateTo();
-
-      // Get operational metrics
-      const [
-        processingTimes,
-        dailyVolume,
-        companyDistributionByRevenue,
-        companyDistributionByPickups,
-      ] = await Promise.all([
-        this.analyticsRepository.getProcessingTimes(dateFrom, dateTo),
-        this.analyticsRepository.getDailyVolume(dateFrom, dateTo),
-        this.analyticsRepository.getCompanyDistributionByRevenue(dateFrom, dateTo),
-        this.analyticsRepository.getCompanyDistributionByPickups(dateFrom, dateTo),
-      ]);
-
-      return {
-        averageProcessingTime: 0, // Would be calculated from processingTimes
-        processingTimeByStatus: processingTimes.map(pt => ({
-          fromStatus: pt.fromStatusName,
-          toStatus: pt.toStatusName,
-          averageDays: pt.averageDays,
-        })),
-        dailyVolume: dailyVolume.map(dv => ({
-          date: dv.date,
-          pickupCount: dv.pickupCount,
-          revenue: dv.revenue,
-        })),
-        companyDistribution: {
-          byRevenue: companyDistributionByRevenue,
-          byPickupCount: companyDistributionByPickups,
-        },
-        geographicDistribution: [], // Would need location data
-        benchmarks: {
-          industryAverageOrderValue: 250, // Mock industry benchmark
-          industryAverageProcessingTime: 3, // Mock industry benchmark
-          ourPerformanceRating: 'good' as const,
-        },
-      };
-    } catch (error: any) {
-      logger.error('Error generating operational analytics:', error);
-      throw new AppError('Failed to generate operational analytics', 500);
-    }
-  }
 
   // ============================================================================
   // HELPER METHODS
@@ -415,12 +329,34 @@ export class AnalyticsService {
   }
 
   private getDefaultDateFrom(): string {
-    const date = new Date();
+    const timeManager = TimeManager.getInstance();
+    const currentTime = timeManager.getCurrentTime();
+    const date = new Date(currentTime);
     date.setMonth(date.getMonth() - 12); // Last 12 months
     return date.toISOString().split('T')[0];
   }
 
   private getDefaultDateTo(): string {
-    return new Date().toISOString().split('T')[0];
+    const timeManager = TimeManager.getInstance();
+    return timeManager.getCurrentTime().toISOString().split('T')[0];
+  }
+
+  /**
+   * Categorize status for better analytics insights
+   */
+  private categorizeStatus(statusName: string): 'pending' | 'completed' | 'failed' {
+    switch (statusName) {
+      case 'Delivered':
+        return 'completed';
+      case 'Cancelled':
+      case 'Failed':
+        return 'failed';
+      case 'Order Received':
+      case 'Paid To Logistics Co':
+      case 'Ready for Collection':
+      case 'Collected':
+      default:
+        return 'pending';
+    }
   }
 }

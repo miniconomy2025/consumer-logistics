@@ -50,6 +50,34 @@ export class CdkStack extends cdk.Stack {
       autoDeleteObjects: true
     });
 
+    // Bucket to store Root CA and other trusted certs (read-only or restricted access)
+    const certRootCABucket = new s3.Bucket(this, 'CertRootCABucket', {
+      bucketName: 'consumer-logistics-cert-rootca',
+      versioned: true,
+      removalPolicy: cdk.RemovalPolicy.RETAIN,
+      encryption: s3.BucketEncryption.S3_MANAGED,
+      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
+    });
+
+    // Bucket to store server certificates & keys (private)
+    const certServerBucket = new s3.Bucket(this, 'CertServerBucket', {
+      bucketName: 'consumer-logistics-cert-server',
+      versioned: true,
+      removalPolicy: cdk.RemovalPolicy.RETAIN,
+      encryption: s3.BucketEncryption.S3_MANAGED,
+      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
+    });
+
+    // Bucket to store client certificates & keys (private)
+    const certClientBucket = new s3.Bucket(this, 'CertClientBucket', {
+      bucketName: 'consumer-logistics-cert-client',
+      versioned: true,
+      removalPolicy: cdk.RemovalPolicy.RETAIN,
+      encryption: s3.BucketEncryption.S3_MANAGED,
+      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
+    });
+
+
     // -====== CloudFront ======-
     const distribution = new cloudfront.Distribution(this, 'security-levelup-team4-distribution', {
       defaultBehavior: {

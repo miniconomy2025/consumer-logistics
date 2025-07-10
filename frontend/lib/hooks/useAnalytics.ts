@@ -9,11 +9,7 @@ import {
 import {
   AnalyticsQueryParams,
   AnalyticsDateRange,
-} from '../types/api';
-
-// ============================================================================
-// ANALYTICS HOOKS
-// ============================================================================
+} from '../types/analytics';
 
 /**
  * Hook for dashboard analytics with range support
@@ -21,7 +17,7 @@ import {
 export function useDashboardAnalytics(params?: AnalyticsQueryParams) {
   return useApi(
     () => getDashboardAnalytics(params),
-    [params?.range, params?.dateFrom, params?.dateTo, params?.companyId, params?.truckTypeId]
+    [params?.range, params?.dateFrom, params?.dateTo, params?.companyId]
   );
 }
 
@@ -31,7 +27,7 @@ export function useDashboardAnalytics(params?: AnalyticsQueryParams) {
 export function useKPIAnalytics(params?: AnalyticsQueryParams) {
   return useApi(
     () => getKPIAnalytics(params),
-    [params?.range, params?.dateFrom, params?.dateTo, params?.companyId, params?.truckTypeId]
+    [params?.range, params?.dateFrom, params?.dateTo, params?.companyId]
   );
 }
 
@@ -61,14 +57,12 @@ export function useDashboardAnalyticsWithRefresh(params?: AnalyticsQueryParams) 
   // Include refresh trigger in dependencies to force refetch
   const analytics = useApi(
     () => getDashboardAnalytics(params),
-    [params?.range, params?.dateFrom, params?.dateTo, params?.companyId, params?.truckTypeId, refreshTrigger]
+    [params?.range, params?.dateFrom, params?.dateTo, params?.companyId, refreshTrigger]
   );
 
   const refresh = useCallback(async () => {
     setIsRefreshing(true);
     setRefreshTrigger(prev => prev + 1);
-    // Wait a bit to show loading state
-    await new Promise(resolve => setTimeout(resolve, 300));
     setIsRefreshing(false);
   }, []);
 
@@ -89,14 +83,12 @@ export function useKPIAnalyticsWithRefresh(params?: AnalyticsQueryParams) {
   // Include refresh trigger in dependencies to force refetch
   const kpis = useApi(
     () => getKPIAnalytics(params),
-    [params?.range, params?.dateFrom, params?.dateTo, params?.companyId, params?.truckTypeId, refreshTrigger]
+    [params?.range, params?.dateFrom, params?.dateTo, params?.companyId, refreshTrigger]
   );
 
   const refresh = useCallback(async () => {
     setIsRefreshing(true);
     setRefreshTrigger(prev => prev + 1);
-    // Wait a bit to show loading state
-    await new Promise(resolve => setTimeout(resolve, 300));
     setIsRefreshing(false);
   }, []);
 
@@ -112,6 +104,29 @@ export function useKPIAnalyticsWithRefresh(params?: AnalyticsQueryParams) {
  */
 export function useAnalyticsHealth() {
   return useApi(() => getAnalyticsHealth());
+}
+
+/**
+ * Hook for managing dashboard date range using predefined ranges
+ * Server-side date calculation using TimeManager
+ */
+export function useDashboardDateRange(initialRange: AnalyticsDateRange = 'last30days') {
+  const [range, setRange] = useState<AnalyticsDateRange>(initialRange);
+  const [isClient, setIsClient] = useState(false);
+
+  // Ensure we're on the client side to prevent hydration mismatches
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  const analyticsParams = useMemo(() => createAnalyticsParams(range), [range]);
+
+  return {
+    range,
+    setRange,
+    analyticsParams,
+    isClient, // Expose this so components can show loading states
+  };
 }
 
 // ============================================================================
@@ -157,8 +172,6 @@ export function useAnalyticsRefresh() {
     setIsRefreshing(true);
     // Trigger a refresh by updating the trigger value
     setRefreshTrigger(prev => prev + 1);
-    // Add a small delay to show loading state
-    await new Promise(resolve => setTimeout(resolve, 500));
     setLastRefresh(new Date());
     setIsRefreshing(false);
   }, []);
