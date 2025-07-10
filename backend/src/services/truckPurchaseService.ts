@@ -107,6 +107,23 @@ export class TruckPurchaseService {
         continue;
       }
 
+      // NEW: Confirm payment and fulfillment with THOH
+      logger.info(`[TruckPurchaseService] Confirming payment and fulfillment for order ${orderId}...`);
+      const fulfillResponse = await fetch(`${THOH_API_URL}/orders/payments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId }),
+      });
+      if (!fulfillResponse.ok) {
+        logger.error(`[TruckPurchaseService] Failed to fulfill order: ${orderId}`);
+        continue;
+      }
+      const fulfillData = await fulfillResponse.json() as { status: string };
+      if (fulfillData.status !== 'completed') {
+        logger.error(`[TruckPurchaseService] Order ${orderId} not completed. Status: ${fulfillData.status}`);
+        continue;
+      }
+
       const truckType = await truckManagementService.getTruckTypeByName(truck.truckName);
       if (!truckType) {
         logger.error(`[TruckPurchaseService] Truck type not found: ${truck.truckName}`);
