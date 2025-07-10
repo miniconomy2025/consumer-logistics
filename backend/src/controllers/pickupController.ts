@@ -17,17 +17,18 @@ export class PickupController {
             const data: CreatePickupRequest = req.body;
             if (
                 typeof data.quantity !== 'number' ||
-                !data.pickupFrom ||
-                !data.recipientName 
+                !data.companyName
             ) {
-                throw new AppError('Invalid request body: pickupFrom, quantity, deliveryTo, pickupLocation, and recipientName are required.', 400);
+                throw new AppError('Invalid request body: pickupFrom and quantity are required.', 400);
             }
+    
             const result: PickupResponse = await this.pickupService.createPickupRequest(data);
             res.status(201).json(result);
         } catch (error) {
             next(error);
         }
     };
+    
 
     public getPickupsForCompany = async (req: Request, res: Response, next: NextFunction) => {
         try {
@@ -48,6 +49,7 @@ export class PickupController {
                 company_name: p.company ? p.company.company_name : 'Unknown', 
                 status: p.pickup_status ? p.pickup_status.status_name : 'Unknown',
                 recipient_name: p.recipient_name,
+                model_name: p.model_name, // Added model_name to the response mapping
                 amount_due: parseFloat(p.invoice.total_amount.toString()),
                 is_paid: p.invoice?.paid || false,
             }));
