@@ -9,11 +9,7 @@ export interface PaymentNotification {
     transaction_number: string;
     status: string;
     amount: number;
-    timestamp: string;
-    description?: string;
-    from?: string;
-    to?: string;
-    reference?: string;
+    description: string;
 }
 
 export class FinancialNotificationService {
@@ -36,28 +32,28 @@ export class FinancialNotificationService {
         logger.debug('Webhook Body:', notification);
 
         if (notification.status === 'SUCCESS') {
-            if (!notification.reference) {
-                throw new AppError('Payment notification reference is missing. Cannot link to an invoice/pickup.', 400);
+            if (!notification.description) {
+                throw new AppError('Payment notification description is missing. Cannot link to an invoice/pickup.', 400);
             }
 
-            const pickupByInvoice = await this.pickupService.getPickupByInvoiceReference(notification.reference);
+            const pickupByInvoice = await this.pickupService.getPickupByInvoiceReference(notification.description);
 
             if (!pickupByInvoice || !pickupByInvoice.invoice) {
-                logger.warn(`No pickup or invoice found for reference: ${notification.reference}. Skipping processing.`);
-                throw new AppError(`No pickup or invoice found for reference: ${notification.reference}.`, 404);
+                logger.warn(`No pickup or invoice found for reference: ${notification.description}. Skipping processing.`);
+                throw new AppError(`No pickup or invoice found for reference: ${notification.description}.`, 404);
             }
 
             if (pickupByInvoice.invoice && notification.amount < pickupByInvoice.invoice.total_amount) {
-                logger.warn(`Received insufficient payment for invoice ${notification.reference}. Expected: ${pickupByInvoice.invoice.total_amount}, Received: ${notification.amount}`);
+                logger.warn(`Received insufficient payment for invoice ${notification.description}. Expected: ${pickupByInvoice.invoice.total_amount}, Received: ${notification.amount}`);
                 throw new AppError('Insufficient payment received.', 400);
             }
 
             if (pickupByInvoice.invoice && notification.amount > pickupByInvoice.invoice.total_amount) {
-              logger.warn(`Received overpayment for invoice ${notification.reference}. Expected: ${pickupByInvoice.invoice.total_amount}, Received: ${notification.amount}. Processing as successful.`);
+              logger.warn(`Received overpayment for invoice ${notification.description}. Expected: ${pickupByInvoice.invoice.total_amount}, Received: ${notification.amount}. Processing as successful.`);
           }
 
-            const paidPickup = await this.pickupService.markPickupAndInvoiceAsPaid(notification.reference);
-            logger.info(`Invoice ${notification.reference} and Pickup ${paidPickup.pickup_id} marked as PAID_TO_LOGISTICS_CO based on webhook notification.`);
+            const paidPickup = await this.pickupService.markPickupAndInvoiceAsPaid(notification.description);
+            logger.info(`Invoice ${notification.description} and Pickup ${paidPickup.pickup_id} marked as PAID_TO_LOGISTICS_CO based on webhook notification.`);
 
             const currentInSimTime = this.timeManager.getCurrentTime();
             let initialInSimPickupDate: Date;
