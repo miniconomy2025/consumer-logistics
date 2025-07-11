@@ -15,6 +15,7 @@ import { ITruckRepository } from '../repositories/interfaces/ITruckRepository';
 import { ITruckAllocationRepository } from '../repositories/interfaces/ITruckAllocationRepository';
 import { TruckAllocationEntity } from '../database/models/TruckAllocationEntity';
 import { PickupService } from './pickupService'; 
+import { agent } from '../agent';
 
 export interface CreateLogisticsDetailsData {
     pickupId: number;
@@ -681,6 +682,8 @@ export class LogisticsPlanningService {
         const response = await fetch(webhookUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          // @ts-ignore
+          agent,
           body: JSON.stringify({
             reference,
             type: 'PICKUP',

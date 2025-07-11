@@ -8,6 +8,7 @@ import { AppDataSource } from '../database/config';
 import { TruckEntity } from '../database/models/TruckEntity';
 import { logger } from '../utils/logger';
 import { BankAccountService } from './bankAccountService';
+import { agent } from '../agent';
 
 export interface TruckForSale {
   truckName: string;
@@ -18,7 +19,11 @@ export interface TruckForSale {
 }
 
 export async function getTrucksForSale(): Promise<TruckForSale[]> {
-  const response = await fetch(`${THOH_API_URL}/trucks`);
+  const response = await fetch(`${THOH_API_URL}/trucks`, {
+    method: 'GET',
+    // @ts-ignore
+    agent
+  });
   if (!response.ok) {
     throw new Error(`Failed to fetch trucks: ${response.status} ${response.statusText}`);
   }
@@ -69,6 +74,8 @@ export class TruckPurchaseService {
       const orderResponse = await fetch(`${THOH_API_URL}/trucks`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        // @ts-ignore
+        agent,
         body: JSON.stringify({
           truckName: truck.truckName,
           quantity: truck.quantityToBuy
@@ -95,6 +102,8 @@ export class TruckPurchaseService {
       const paymentResponse = await fetch(`${BANK_API_URL}/transaction`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        // @ts-ignore
+        agent,
         body: JSON.stringify({
           to_account_number: bankAccount,
           to_bank_name: 'commercial-bank',

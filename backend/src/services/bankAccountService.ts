@@ -2,6 +2,7 @@ import { AppDataSource } from '../database/config';
 import { BankAccountEntity } from '../database/models/BankAccountEntity';
 import { logger } from '../utils/logger';
 import { BANK_API_URL } from '../config/apiConfig';
+import { agent } from '../agent';
 
 export class BankAccountService {
   private bankAccountRepo = AppDataSource.getRepository(BankAccountEntity);
@@ -10,6 +11,8 @@ export class BankAccountService {
     const response = await fetch(`${BANK_API_URL}/account`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      // @ts-ignore
+      agent,
       body: JSON.stringify({
         notificationUrl: `https://consumer-logistics-api.projects.bbdgrad.com/api/webhook/payment-updates`
       })
