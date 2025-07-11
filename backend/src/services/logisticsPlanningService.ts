@@ -666,7 +666,7 @@ export class LogisticsPlanningService {
         const COMPANY_COLLECTION_URLS: Record<string, string> = {
             'pear': 'https://pear-company-api.projects.bbdgrad.com/api/logistics',
             'recycler': 'https://recycler-api.projects.bbdgrad.com/logistics',
-            'samsung': 'https://sumsang-phones-api.projects.bbdgrad.com/logistics'
+            'sumsang-company': 'https://sumsang-phones-api.projects.bbdgrad.com/logistics'
         };
 
         // Determine webhook URL based on company name
@@ -690,7 +690,7 @@ export class LogisticsPlanningService {
           })
         });
         if (!response.ok) {
-          throw new Error(`Failed to notify external pickup API for ${companyName || 'Unknown'}: ${response.statusText}`);
+          throw new Error(`Failed to notify external pickup API for ${companyName || 'Unknown'} : ${response.statusText} : ${webhookUrl}`);
         }
 
         logger.info(`Collection notification sent successfully to ${companyName || 'Unknown'} via ${webhookUrl}`);

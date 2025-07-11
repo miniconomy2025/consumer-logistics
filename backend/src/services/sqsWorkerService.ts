@@ -41,10 +41,10 @@ export class SQSWorkerService {
             collection: 'https://pear-company-api.projects.bbdgrad.com/api/logistics'
         },
         'recycler': {
-            delivery: 'https://recycler-api.projects.bbdgrad.com/logistics/notification',
+            delivery: 'https://recycler-api.projects.bbdgrad.com/consumer-deliveries',
             collection: 'https://recycler-api.projects.bbdgrad.com/logistics'
         },
-        'samsung': {
+        'sumsang-company': {
             delivery: 'https://sumsang-phones-api.projects.bbdgrad.com/logistics/notification',
             collection: 'https://sumsang-phones-api.projects.bbdgrad.com/logistics'
         }
@@ -333,9 +333,9 @@ export class SQSWorkerService {
 
         try {
             await this.sendWebhookWithRetry(webhookPayload, webhookUrl);
-            logger.info(`Webhook sent successfully for logistics ${deliveredLogistics.logistics_details_id} to ${companyName}`);
+            logger.info(`Webhook sent successfully for logistics ${deliveredLogistics.logistics_details_id} ${webhookPayload} to ${companyName}`);
         } catch (error) {
-            logger.error(`Failed to send webhook for logistics ${deliveredLogistics.logistics_details_id} to ${companyName}:`, error);
+            logger.error(`Failed to send webhook for logistics ${deliveredLogistics.logistics_details_id} ${webhookUrl} to ${webhookPayload} to ${companyName}:`, error);
             // Consider adding to a dead letter queue for failed webhooks
         }
     }
