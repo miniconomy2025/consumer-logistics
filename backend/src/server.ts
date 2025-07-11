@@ -14,7 +14,6 @@ import { CompanyRepository } from './repositories/implementations/CompanyReposit
 import { TruckRepository } from './repositories/implementations/TruckRepository';
 import { TruckAllocationRepository } from './repositories/implementations/TruckAllocationRepository';
 import { sqsClient } from './config/awsSqs';
-import { TruckPurchaseService } from './services/truckPurchaseService';
 import { BankAccountService } from './services/bankAccountService';
 import { getTrucksForSale } from './services/truckPurchaseService';
 import { selectTrucksToBuy, calculateTruckCosts } from './utils/truckPurchaseUtils';
@@ -88,9 +87,6 @@ AppDataSource.initialize()
     if (process.env.ENABLE_TIME_MANAGER_CLOCK === 'true') {
       timeManager.startSimulation(undefined, undefined, 1000); // tick every 1s
       logger.info('TimeManager internal clock started.');
-
-      const truckPurchaseService = new TruckPurchaseService();
-      await truckPurchaseService.purchaseTrucksFullFlow(14);
 
     } else {
       logger.warn('TimeManager internal clock is NOT enabled. Time will only advance via API or manual sync.');

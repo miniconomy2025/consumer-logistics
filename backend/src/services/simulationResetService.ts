@@ -4,6 +4,8 @@ import { PickupStatusEntity } from '../database/models/PickupStatusEntity';
 import { ServiceTypeEntity } from '../database/models/ServiceTypeEntity';
 import { TruckTypeEntity } from '../database/models/TruckTypeEntity';
 import { TimeManager } from './timeManager';
+import { TruckPurchaseService } from './truckPurchaseService';
+
 
 export class SimulationResetService {
 
@@ -88,6 +90,8 @@ export class SimulationResetService {
       throw error;
     } finally {
       await queryRunner.release();
+      const truckPurchaseService = new TruckPurchaseService();
+      await truckPurchaseService.purchaseTrucksFullFlow(14);
     }
   }
 }
