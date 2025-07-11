@@ -7,11 +7,11 @@ export class BankAccountService {
   private bankAccountRepo = AppDataSource.getRepository(BankAccountEntity);
 
   async createBankAccount(): Promise<BankAccountEntity> {
-    const response = await fetch(`${BANK_API_URL}/accounts`, {
+    const response = await fetch(`${BANK_API_URL}/account`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        notificationUrl: `/api/webhook/payment-updates`
+        notificationUrl: `https://consumer-logistics-api.projects.bbdgrad.com/api/webhook/payment-updates`
       })
     });
     if (!response.ok) {
