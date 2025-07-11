@@ -1,12 +1,12 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
 import { TransactionLedger } from './transaction-ledger';
 
-@Entity()
+@Entity('transaction_type')
 export class TransactionType {
-  @PrimaryGeneratedColumn()
+  @PrimaryGeneratedColumn({ name: 'transaction_type_id' })
   id: number;
 
-  @Column({ length: 50 })
+  @Column({ name: 'type_name', type: 'varchar', length: 50 })
   typeName: string;
 
   @OneToMany(() => TransactionLedger, (tx) => tx.transactionType)

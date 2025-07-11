@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { TruckManagementService } from '../services/truckManagementService';
 import { AppError } from '../shared/errors/ApplicationError';
+import { logger } from '../utils/logger';
 import {
     CreateTruckRequest,
     UpdateTruckRequest,
@@ -9,7 +10,9 @@ import {
     CreateTruckTypeRequest,
     TruckTypeResponse,
     TruckTypesListResponse,
+    CreateTrucksResponse,
 } from '../types/dtos/TruckDtos';
+import { TimeManager } from '../services/timeManager';
 
 
 export class TruckController {
@@ -80,6 +83,33 @@ export class TruckController {
         }
     
         const affected = await this.truckManagementService.breakdownTrucksByType(truckName, failureQuantity);
+
+        const timeManager = TimeManager.getInstance();
+        
+        // Get current simulation time
+        const currentSimTime = timeManager.getCurrentTime();
+        
+        // Calculate restoration time 
+        const restorationTime = new Date(currentSimTime.getTime() + (24 *60 * 60 * 1000));
+        
+        // Log the scheduled restoration
+        logger.info(`Scheduling restoration of ${truckName} trucks at simulation time: ${restorationTime.toISOString()}`);
+        
+        // Set an interval to check if the simulation time has reached the restoration time
+        const checkInterval = setInterval(() => {
+            const now = timeManager.getCurrentTime();
+            if (now.getTime() >= restorationTime.getTime()) {
+                clearInterval(checkInterval);
+                // Restore the trucks
+                this.truckManagementService.restoreTrucksByType(truckName)
+                    .then(restoredCount => {
+                        logger.info(`Restored ${restoredCount} truck(s) of type '${truckName}' after 2 minutes of simulation time.`);
+                    })
+                    .catch(error => {
+                        logger.error(`Failed to restore trucks of type '${truckName}':`, error);
+                    });
+            }
+        }, 1000); // Check every second
     
         res.status(200).json({
             message: `${affected} truck(s) of type '${truckName}' marked as unavailable.`,
@@ -108,20 +138,32 @@ export class TruckController {
     public createTruck = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const data: CreateTruckRequest = req.body;
-            const newTruck = await this.truckManagementService.createTruck(data);
-            const response: TruckResponse = {
-                truckId: newTruck.truck_id,
-                truckTypeId: newTruck.truck_type_id,
-                truckType: {
-                    truckTypeId: newTruck.truckType.truck_type_id,
-                    truckTypeName: newTruck.truckType.truck_type_name,
-                },
-                maxPickups: newTruck.max_pickups,
-                maxDropoffs: newTruck.max_dropoffs,
-                dailyOperatingCost: newTruck.daily_operating_cost,
-                maxCapacity: newTruck.max_capacity,
-                isAvailable: newTruck.is_available, 
+            const quantity = data.quantity ?? 1;
+
+            if (quantity <= 0) {
+                throw new AppError('Quantity must be a positive number', 400);
+            }
+
+            const createdTrucks = await this.truckManagementService.createTruck(data);
+
+            const response: CreateTrucksResponse = {
+                message: `Successfully created ${createdTrucks.length} truck(s).`,
+                quantityCreated: createdTrucks.length,
+                trucks: createdTrucks.map(truck => ({
+                    truckId: truck.truck_id,
+                    truckTypeId: truck.truck_type_id,
+                    truckType: {
+                        truckTypeId: truck.truckType.truck_type_id,
+                        truckTypeName: truck.truckType.truck_type_name,
+                    },
+                    maxPickups: truck.max_pickups,
+                    maxDropoffs: truck.max_dropoffs,
+                    dailyOperatingCost: truck.daily_operating_cost,
+                    maxCapacity: truck.max_capacity,
+                    isAvailable: truck.is_available,
+                }))
             };
+
             res.status(201).json(response);
         } catch (error) {
             next(error);

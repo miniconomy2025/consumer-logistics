@@ -20,6 +20,7 @@ interface WebhookPayload {
     modelName:string;
     status: string;
     quantity: number;
+    delivery_reference: string;
 }
 
 export class SQSWorkerService {
@@ -32,6 +33,22 @@ export class SQSWorkerService {
     private readonly DELIVERY_SUCCESS_WEBHOOK_URL: string;
     private readonly MAX_RETRY_ATTEMPTS: number = 3;
     private readonly WEBHOOK_TIMEOUT_MS: number = 10000;
+
+    // Company-specific webhook base URLs
+    private readonly COMPANY_WEBHOOK_URLS: Record<string, { delivery: string; collection: string }> = {
+        'pear': {
+            delivery: 'https://pear-company-api.projects.bbdgrad.com/api/logistics/notification',
+            collection: 'https://pear-company-api.projects.bbdgrad.com/api/logistics'
+        },
+        'recycler': {
+            delivery: 'https://recycler-api.projects.bbdgrad.com/logistics/notification',
+            collection: 'https://recycler-api.projects.bbdgrad.com/logistics'
+        },
+        'samsung': {
+            delivery: 'https://sumsang-phones-api.projects.bbdgrad.com/logistics/notification',
+            collection: 'https://sumsang-phones-api.projects.bbdgrad.com/logistics'
+        }
+    };
 
     // Track shutdown state
     private isShuttingDown: boolean = false;
@@ -73,6 +90,29 @@ export class SQSWorkerService {
         // Handle graceful shutdown
         process.on('SIGTERM', () => this.gracefulShutdown());
         process.on('SIGINT', () => this.gracefulShutdown());
+    }
+
+    /**
+     * Get the appropriate webhook URL based on company name and notification type
+     */
+    private getWebhookUrl(companyName: string, notificationType: 'delivery' | 'collection'): string {
+        const companyConfig = this.COMPANY_WEBHOOK_URLS[companyName];
+
+        if (companyConfig) {
+            logger.debug(`Using company-specific webhook URL for ${companyName}: ${companyConfig[notificationType]}`);
+            return companyConfig[notificationType];
+        }
+
+        // Fallback to default webhook URL for delivery notifications
+        if (notificationType === 'delivery') {
+            logger.debug(`Using default delivery webhook URL for company: ${companyName}`);
+            return this.DELIVERY_SUCCESS_WEBHOOK_URL;
+        }
+
+        // For collection notifications, use a default collection URL or the same delivery URL
+        const defaultCollectionUrl = process.env.COLLECTION_WEBHOOK_URL || this.DELIVERY_SUCCESS_WEBHOOK_URL;
+        logger.debug(`Using default collection webhook URL for company: ${companyName}`);
+        return defaultCollectionUrl;
     }
 
     public startPollingPickupQueue(): void {
@@ -274,29 +314,35 @@ export class SQSWorkerService {
             return;
         }
 
+        const companyName = pickup.company.company_name || 'Unknown';
+        const webhookUrl = this.getWebhookUrl(companyName, 'delivery');
+
         const webhookPayload: WebhookPayload = {
             status: 'success',
             modelName: pickup?.model_name,
             quantity: pickup.phone_units ?? 0,
+            delivery_reference: pickup.invoice.reference_number ?? 'Unknown',
         };
 
-        logger.info('Sending delivery webhook', { 
+        logger.info('Sending delivery webhook', {
             logisticsId: deliveredLogistics.logistics_details_id,
-            payload: webhookPayload 
+            companyName: companyName,
+            webhookUrl: webhookUrl,
+            payload: webhookPayload
         });
 
         try {
-            await this.sendWebhookWithRetry(webhookPayload);
-            logger.info(`Webhook sent successfully for logistics ${deliveredLogistics.logistics_details_id}`);
+            await this.sendWebhookWithRetry(webhookPayload, webhookUrl);
+            logger.info(`Webhook sent successfully for logistics ${deliveredLogistics.logistics_details_id} to ${companyName}`);
         } catch (error) {
-            logger.error(`Failed to send webhook for logistics ${deliveredLogistics.logistics_details_id}:`, error);
+            logger.error(`Failed to send webhook for logistics ${deliveredLogistics.logistics_details_id} to ${companyName}:`, error);
             // Consider adding to a dead letter queue for failed webhooks
         }
     }
 
-    private async sendWebhookWithRetry(payload: WebhookPayload, attempt: number = 1): Promise<void> {
+    private async sendWebhookWithRetry(payload: WebhookPayload, webhookUrlString?: string, attempt: number = 1): Promise<void> {
         return new Promise((resolve, reject) => {
-            const webhookUrl = new URL(this.DELIVERY_SUCCESS_WEBHOOK_URL);
+            const webhookUrl = new URL(webhookUrlString || this.DELIVERY_SUCCESS_WEBHOOK_URL);
             const postData = JSON.stringify(payload);
 
             const options = {
@@ -323,7 +369,7 @@ export class SQSWorkerService {
                         if (attempt < this.MAX_RETRY_ATTEMPTS) {
                             logger.warn(`Webhook attempt ${attempt} failed, retrying...`, error);
                             setTimeout(() => {
-                                this.sendWebhookWithRetry(payload, attempt + 1).then(resolve).catch(reject);
+                                this.sendWebhookWithRetry(payload, webhookUrlString, attempt + 1).then(resolve).catch(reject);
                             }, 1000 * Math.pow(2, attempt)); // Exponential backoff
                         } else {
                             reject(error);
@@ -336,7 +382,7 @@ export class SQSWorkerService {
                 if (attempt < this.MAX_RETRY_ATTEMPTS) {
                     logger.warn(`Webhook attempt ${attempt} failed, retrying...`, error);
                     setTimeout(() => {
-                        this.sendWebhookWithRetry(payload, attempt + 1).then(resolve).catch(reject);
+                        this.sendWebhookWithRetry(payload, webhookUrlString, attempt + 1).then(resolve).catch(reject);
                     }, 1000 * Math.pow(2, attempt));
                 } else {
                     reject(error);
@@ -349,7 +395,7 @@ export class SQSWorkerService {
                 if (attempt < this.MAX_RETRY_ATTEMPTS) {
                     logger.warn(`Webhook attempt ${attempt} timed out, retrying...`);
                     setTimeout(() => {
-                        this.sendWebhookWithRetry(payload, attempt + 1).then(resolve).catch(reject);
+                        this.sendWebhookWithRetry(payload, webhookUrlString, attempt + 1).then(resolve).catch(reject);
                     }, 1000 * Math.pow(2, attempt));
                 } else {
                     reject(error);

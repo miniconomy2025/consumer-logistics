@@ -12,7 +12,7 @@ export interface CreateTruckData {
   dailyOperatingCost: number;
   maxCapacity: number;
   isAvailable?: boolean;
-
+  quantity?: number;
 }
 
 export interface UpdateTruckData extends Partial<CreateTruckData> {}
@@ -32,24 +32,38 @@ export class TruckManagementService {
     this.truckRepository = truckRepository;
   }
 
-  public async createTruck(data: CreateTruckData): Promise<TruckEntity> {
-    logger.info('Attempting to create a new truck.');
+  public async createTruck(data: CreateTruckData): Promise<TruckEntity[]> {
+    logger.info(`Attempting to create ${data.quantity ?? 1} truck(s).`);
 
     const truckType = await this.truckRepository.findTruckTypeById(data.truckTypeId);
     if (!truckType) {
       throw new AppError(`Truck Type with ID ${data.truckTypeId} not found.`, 404);
     }
 
-    const newTruck = await this.truckRepository.create({
-      truck_type_id: data.truckTypeId,
-      max_pickups: data.maxPickups,
-      max_dropoffs: data.maxDropoffs,
-      daily_operating_cost: data.dailyOperatingCost,
-      max_capacity: data.maxCapacity,
-      is_available: data.isAvailable ?? true,
-    });
-    logger.info(`Truck created with ID: ${newTruck.truck_id}`);
-    return newTruck;
+    const quantity = data.quantity ?? 1;
+
+    if (quantity <= 0) {
+      throw new AppError('Quantity must be a positive number.', 400);
+    }
+
+    const createdTrucks: TruckEntity[] = [];
+
+    // Create all trucks
+    for (let i = 0; i < quantity; i++) {
+      const truck = await this.truckRepository.create({
+        truck_type_id: data.truckTypeId,
+        max_pickups: data.maxPickups,
+        max_dropoffs: data.maxDropoffs,
+        daily_operating_cost: data.dailyOperatingCost,
+        max_capacity: data.maxCapacity,
+        is_available: data.isAvailable ?? true,
+      });
+      createdTrucks.push(truck);
+      logger.info(`Truck created with ID: ${truck.truck_id}`);
+    }
+
+    logger.info(`Total of ${quantity} trucks created for truck type ID: ${data.truckTypeId}`);
+    return createdTrucks;
   }
 
   public async getTruckById(id: number): Promise<TruckEntity | null> {
@@ -147,5 +161,10 @@ export class TruckManagementService {
   public async breakdownTrucksByType(truckTypeName: string, count: number): Promise<number> {
     logger.info(`Breaking down ${count} '${truckTypeName}' truck(s).`);
     return this.truckRepository.markNTrucksUnavailableByTypeName(truckTypeName, count);
+  }
+
+  public async restoreTrucksByType(truckTypeName: string): Promise<number> {
+    logger.info(`Restoring unavailable '${truckTypeName}' trucks.`);
+    return this.truckRepository.restoreUnavailableTrucksByTypeName(truckTypeName);
   }
 }

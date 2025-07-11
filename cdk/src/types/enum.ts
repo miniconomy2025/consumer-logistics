@@ -1,8 +1,8 @@
 export enum OrderStatus {
   AwaitingPayment = 'Awaiting Payment',
   PartiallyPaid = 'Partially Paid',
-  Paid = 'Paid',
-  ReadyForPickup = 'Ready For Pickup',
+  Paid = 'Paid To Logistics Co',
+  ReadyForCollection = 'Ready for Collection',
   OutForDelivery = 'Out For Delivery',
   Delivered = 'Delivered',
   Cancelled = 'Cancelled',

@@ -7,7 +7,6 @@ import { PickupStatus } from '../entities/pickup-status';
 import { TransactionLedger } from '../entities/transaction-ledger';
 import { TransactionType } from '../entities/transaction-type';
 import { PhoneCompany } from '../entities/phone-company';
-import { getDbCredentials } from './aws-client';
 
 
 let AppDataSource: DataSource;
@@ -17,17 +16,18 @@ export async function getDataSource(): Promise<DataSource> {
     return AppDataSource;
   }
 
-  const creds = await getDbCredentials();
+  console.log('Initializing database connection...');
 
   AppDataSource = new DataSource({
     type: 'postgres',
-    host: creds.host,
-    port: creds.port,
-    username: creds.username,
-    password: creds.password,
-    database: creds.database,
+    host: process.env.DB_HOST || '',
+    port: process.env.DB_PORT ? parseInt(process.env.DB_PORT) : 5432,
+    username: process.env.DB_USERNAME || '',
+    password: process.env.DB_PASSWORD || '',
+    database: process.env.DB_NAME || '',
     synchronize: false,
     logging: false,
+    ssl: { rejectUnauthorized: false },
     entities: [
       PaymentRecord,
       Invoice,
@@ -39,7 +39,11 @@ export async function getDataSource(): Promise<DataSource> {
     ],
   });
 
+  console.log('Connecting to the database...');
+
   await AppDataSource.initialize();
+
+  console.log('Database connection established successfully.');
   return AppDataSource;
 }
 

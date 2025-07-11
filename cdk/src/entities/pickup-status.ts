@@ -1,13 +1,13 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
 import { Pickup } from './pickup';
 
-@Entity()
+@Entity('pickup_status')
 export class PickupStatus {
-  @PrimaryGeneratedColumn()
+  @PrimaryGeneratedColumn({ name: 'pickup_status_id' })
   id: number;
 
-  @Column({ length: 50 })
-  orderStatusName: string;
+  @Column({ name: 'status_name', type: 'varchar', length: 50 })
+  statusName: string;
 
   @OneToMany(() => Pickup, (pickup) => pickup.pickupStatus)
   pickups: Pickup[];

@@ -14,6 +14,9 @@ export const lambdaHandler: APIGatewayProxyHandler = async (event, context): Pro
         const payload = JSON.parse(event.body || '{}');
         const validation = isValidPayment(payload);
 
+        console.log('Received payment payload:', payload);
+        console.log('Validation result:', validation);
+
         if (!validation) {
             return {
                 statusCode: 400,
@@ -24,11 +27,15 @@ export const lambdaHandler: APIGatewayProxyHandler = async (event, context): Pro
         await queryRunner.connect();
         await queryRunner.startTransaction();
 
+        console.log('Connected to the database and started transaction');
+
         const paymentRepo = queryRunner.manager.getRepository(PaymentRecord);
 
         const existingPayment = await paymentRepo.findOne({
             where: { transaction_number: payload.transaction_number }
         });
+
+        console.log('Checking for existing payment:', existingPayment);
 
         if (existingPayment) {
             return {
@@ -39,6 +46,8 @@ export const lambdaHandler: APIGatewayProxyHandler = async (event, context): Pro
                 })
             };
         }
+
+        console.log('Creating new payment record with transaction number:', payload.transaction_number);
 
         const newPayment = paymentRepo.create({
             transaction_number: payload.transaction_number,
@@ -51,11 +60,19 @@ export const lambdaHandler: APIGatewayProxyHandler = async (event, context): Pro
             reference: payload.reference
         });
 
+        console.log('New payment record created:', newPayment);
+
         await paymentRepo.save(newPayment);
+
+        console.log('New payment record saved to the database');
 
         await sendToSQS(JSON.stringify(payload), paymentProcessingQueueUrl);
 
+        console.log('Payment payload sent to SQS queue:', paymentProcessingQueueUrl);
+
         await queryRunner.commitTransaction();
+
+        console.log('Transaction committed successfully');
 
         return {
             statusCode: 200,

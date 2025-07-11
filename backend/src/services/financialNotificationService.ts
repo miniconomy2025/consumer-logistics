@@ -4,6 +4,8 @@ import { LogisticsPlanningService } from './logisticsPlanningService';
 import { AppError } from '../shared/errors/ApplicationError';
 import { TimeManager } from './timeManager'; 
 import { PickupStatusEnum } from '../database/models/PickupEntity';
+import { TruckManagementService } from './truckManagementService';
+import { TruckRepository } from '../repositories/implementations/TruckRepository';
 
 export interface PaymentNotification {
     transaction_number: string;
@@ -78,6 +80,37 @@ export class FinancialNotificationService {
                 await this.pickupService.updatePickupStatus(paidPickup.pickup_id, PickupStatusEnum.FAILED);
                 throw new AppError(`Failed to schedule logistics for pickup after payment: ${error instanceof AppError ? error.message : 'Unknown error'}`, 500);
             }
+        }
+
+        // truck fulfillment notifications
+        if (
+          notification.canFulfill === true &&
+          notification.truckName &&
+          notification.quantity &&
+          notification.operatingCostPerDay !== undefined &&
+          notification.maximumLoad !== undefined
+        ) {
+            const truckManagementService = new TruckManagementService(new TruckRepository());
+            const truckType = await truckManagementService.getTruckTypeByName(notification.truckName);
+
+            if (!truckType) {
+                logger.error(`[Webhook] Truck type not found: ${notification.truckName}`);
+                throw new AppError('Truck type not found', 404);
+            }
+
+            await truckManagementService.createTruck({
+                truckTypeId: truckType.truck_type_id,
+                maxPickups: 250,
+                maxDropoffs: 500,
+                dailyOperatingCost: notification.operatingCostPerDay,
+                maxCapacity: notification.maximumLoad,
+                isAvailable: true,
+                quantity: notification.quantity,
+            });
+
+            logger.info(`[Webhook] Registered ${notification.quantity} x ${notification.truckName} from fulfillment webhook.`);
+        } else if (notification.canFulfill === true) {
+            throw new AppError('Missing required truck fulfillment fields in webhook payload.', 400);
         }
     }
 }

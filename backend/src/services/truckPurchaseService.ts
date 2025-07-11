@@ -106,24 +106,6 @@ export class TruckPurchaseService {
         logger.error(`[TruckPurchaseService] Failed to pay for order: ${orderId}`);
         continue;
       }
-
-      const truckType = await truckManagementService.getTruckTypeByName(truck.truckName);
-      if (!truckType) {
-        logger.error(`[TruckPurchaseService] Truck type not found: ${truck.truckName}`);
-        continue;
-      }
-
-      for (let i = 0; i < truck.quantityToBuy; i++) {
-        await truckManagementService.createTruck({
-          truckTypeId: truckType.truck_type_id,
-          maxPickups: 250, 
-          maxDropoffs: 500, 
-          dailyOperatingCost: truck.operatingCost,
-          maxCapacity: truck.maximumLoad,
-          isAvailable: true,
-        });
-      }
-      logger.info(`[TruckPurchaseService] Successfully purchased and registered ${truck.quantityToBuy} x ${truck.truckName}.`);
     }
   }
 
