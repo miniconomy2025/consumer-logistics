@@ -11,7 +11,16 @@ export interface PaymentNotification {
     transaction_number: string;
     status: string;
     amount: number;
-    description: string;
+    timestamp: string;
+    description?: string;
+    from?: string;
+    to?: string;
+    reference?: string;
+    canFulfill?: boolean;
+    truckName?: string;
+    quantity?: number;
+    operatingCostPerDay?: number;
+    maximumLoad?: number;
 }
 
 export class FinancialNotificationService {
