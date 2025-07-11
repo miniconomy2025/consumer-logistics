@@ -90,8 +90,8 @@ export class SimulationResetService {
       throw error;
     } finally {
       await queryRunner.release();
-      const truckPurchaseService = new TruckPurchaseService();
-      await truckPurchaseService.purchaseTrucksFullFlow(14);
+      // const truckPurchaseService = new TruckPurchaseService();
+      // await truckPurchaseService.purchaseTrucksFullFlow(14);
     }
   }
 }
