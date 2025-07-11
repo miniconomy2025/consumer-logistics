@@ -89,8 +89,8 @@ AppDataSource.initialize()
       timeManager.startSimulation(undefined, undefined, 1000); // tick every 1s
       logger.info('TimeManager internal clock started.');
 
-      // const truckPurchaseService = new TruckPurchaseService();
-      //await truckPurchaseService.purchaseTrucksFullFlow(14);
+      const truckPurchaseService = new TruckPurchaseService();
+      await truckPurchaseService.purchaseTrucksFullFlow(14);
 
     } else {
       logger.warn('TimeManager internal clock is NOT enabled. Time will only advance via API or manual sync.');
