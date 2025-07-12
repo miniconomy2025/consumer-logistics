@@ -7,7 +7,6 @@ import { TruckRepository } from '../repositories/implementations/TruckRepository
 import { AppDataSource } from '../database/config';
 import { TruckEntity } from '../database/models/TruckEntity';
 import { logger } from '../utils/logger';
-import { BankAccountService } from './bankAccountService';
 import { agent } from '../agent';
 
 export interface TruckForSale {
@@ -30,37 +29,38 @@ export async function getTrucksForSale(): Promise<TruckForSale[]> {
   return await response.json() as TruckForSale[];
 }
 
+export async function getTrucksForSaleWithRetries(maxRetries: number = 3): Promise<TruckForSale[] | null> {
+  let lastError: Error | null = null;
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const response = await fetch(`${THOH_API_URL}/trucks`, {
+        method: 'GET',
+        // @ts-ignore
+        agent
+      });
+      if (!response.ok) {
+        throw new Error(`Failed to fetch trucks: ${response.status} ${response.statusText}`);
+      }
+      return await response.json() as TruckForSale[];
+    } catch (error) {
+      lastError = error as Error;
+      logger.error(`[getTrucksForSale] Attempt ${attempt} failed: ${lastError.message}`);
+      if (attempt < maxRetries) {
+        logger.info(`[getTrucksForSale] Retrying (attempt ${attempt + 1} of ${maxRetries})...`);
+      }
+    }
+  }
+  logger.warn('[getTrucksForSale] All attempts failed. Proceeding with default trucks.');
+  return null;
+}
+
 export class TruckPurchaseService {
-  async purchaseTrucks(daysToCover: number = 14) {
+  async purchaseTrucksWithPreselected(trucksToBuy: TruckToBuy[]) {
     const truckRepo = AppDataSource.getRepository(TruckEntity);
     const existingTrucks = await truckRepo.count();
     if (existingTrucks > 0) {
-      logger.info('[TruckPurchaseService] Trucks already exist. Skipping purchase and loan.');
+      logger.info('[TruckPurchaseService] Trucks already exist. Skipping purchase.');
       return;
-    }
-
-    logger.info('[TruckPurchaseService] Fetching trucks for sale...');
-    const trucksForSale = await getTrucksForSale();
-    const trucksToBuy = selectTrucksToBuy(trucksForSale);
-
-    if (trucksToBuy.length === 0) {
-      logger.warn('[TruckPurchaseService] No trucks selected for purchase.');
-      return;
-    }
-
-    const { totalPurchase, totalDailyOperating } = calculateTruckCosts(trucksToBuy);
-    const loanAmount = totalPurchase + (totalDailyOperating * daysToCover);
-
-    logger.info(`[TruckPurchaseService] Applying for loan. Amount: $${loanAmount}`);
-    const { response: loanResult, attemptedAmount } = await applyForLoanWithFallback(loanAmount);
-
-    if (!loanResult.success) {
-      logger.error('[TruckPurchaseService] Loan application failed, even after fallback.');
-      throw new Error('Loan application failed, even after fallback.');
-    }
-
-    if (attemptedAmount < loanAmount) {
-      logger.warn(`[TruckPurchaseService] Fallback loan used. Original: $${loanAmount}, Approved: $${attemptedAmount}`);
     }
 
     await this.orderAndRegisterTrucks(trucksToBuy);
@@ -116,41 +116,5 @@ export class TruckPurchaseService {
         continue;
       }
     }
-  }
-
-  async purchaseTrucksWithPreselected(trucksToBuy: TruckToBuy[]) {
-    const truckRepo = AppDataSource.getRepository(TruckEntity);
-    const existingTrucks = await truckRepo.count();
-    if (existingTrucks > 0) {
-      logger.info('[TruckPurchaseService] Trucks already exist. Skipping purchase.');
-      return;
-    }
-
-    await this.orderAndRegisterTrucks(trucksToBuy);
-  }
-
-  async purchaseTrucksFullFlow(daysToCover: number = 14) {
-    const trucksForSale = await getTrucksForSale();
-    const trucksToBuy = selectTrucksToBuy(trucksForSale);
-    if (trucksToBuy.length === 0) {
-      logger.warn('[Startup] No trucks selected for purchase.');
-      return;
-    }
-    const { totalPurchase, totalDailyOperating } = calculateTruckCosts(trucksToBuy);
-    const loanAmount = totalPurchase + (totalDailyOperating * daysToCover);
-
-    const bankAccountService = new BankAccountService();
-    await bankAccountService.createBankAccount();
-
-    const { response: loanResult, attemptedAmount } = await applyForLoanWithFallback(loanAmount);
-    if (!loanResult.success) {
-      logger.error('[Startup] Loan application failed, even after fallback.');
-      throw new Error('Loan application failed, even after fallback.');
-    }
-    if (attemptedAmount < loanAmount) {
-      logger.warn(`[Startup] Fallback loan used. Original: $${loanAmount}, Approved: $${attemptedAmount}`);
-    }
-
-    await this.purchaseTrucksWithPreselected(trucksToBuy);
   }
 }
