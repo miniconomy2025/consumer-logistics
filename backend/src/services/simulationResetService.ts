@@ -4,7 +4,10 @@ import { PickupStatusEntity } from '../database/models/PickupStatusEntity';
 import { ServiceTypeEntity } from '../database/models/ServiceTypeEntity';
 import { TruckTypeEntity } from '../database/models/TruckTypeEntity';
 import { TimeManager } from './timeManager';
+import { BankAccountService } from './bankAccountService';
 import { TruckPurchaseService } from './truckPurchaseService';
+import { getTrucksForSaleWithRetries } from './truckPurchaseService';
+import { selectTrucksToBuy, calculateTruckCosts, TruckToBuy } from '../utils/truckPurchaseUtils';
 
 
 export class SimulationResetService {
@@ -90,8 +93,39 @@ export class SimulationResetService {
       throw error;
     } finally {
       await queryRunner.release();
-      // const truckPurchaseService = new TruckPurchaseService();
-      // await truckPurchaseService.purchaseTrucksFullFlow(14);
+
+      // 1. Create bank account
+      const bankAccountService = new BankAccountService();
+      await bankAccountService.createBankAccount();
+
+      // 2. Get trucks for sale and select what to buy (with retries)
+      const trucksForSale = await getTrucksForSaleWithRetries(3);
+      let trucksToBuy: TruckToBuy[];
+      let loanAmount: number;
+
+      if (trucksForSale && trucksForSale.length > 0) {
+        trucksToBuy = selectTrucksToBuy(trucksForSale);
+        const { totalPurchase, totalDailyOperating } = calculateTruckCosts(trucksToBuy);
+        loanAmount = totalPurchase + (totalDailyOperating * 14);
+      } else {
+        const fallbackTruckName = 'Small Truck';
+        trucksToBuy = [
+          { truckName: fallbackTruckName, quantityToBuy: 3, price: 10000, operatingCost: 500, maximumLoad: 2000 }
+        ];
+        loanAmount = 51000;
+      }
+
+      // 3. Apply for loan (with fallback)
+      const { response: loanResult, attemptedAmount } =
+        await bankAccountService.applyForLoanWithFallback(loanAmount);
+
+      if (!loanResult.success) {
+        logger.warn('[SimulationResetService] Loan application failed, even after fallback. Proceeding with truck creation using default values.');
+      }
+
+      // 4. Purchase trucks (always proceed)
+      const truckPurchaseService = new TruckPurchaseService();
+      await truckPurchaseService.purchaseTrucksWithPreselected(trucksToBuy);
     }
   }
 }
