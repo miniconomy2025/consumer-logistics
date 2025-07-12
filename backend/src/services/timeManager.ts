@@ -289,35 +289,15 @@ export class TimeManager {
             const { currentSimTime } = response.data;
 
             if (currentSimTime) {
-                const newSimTime = new Date(currentSimTime);
-                // When syncing, we set the simulationStart to the synced time
-                // and reset the realStart to "now", effectively aligning the simulation clock
-                // with the synced time from this real-world moment.
-                this.simulationStart = newSimTime;
-                this.realStart = new Date();
-                this.simTime = newSimTime; // Update current simTime immediately
-                this.lastSimDateString = newSimTime.toISOString().split('T')[0]; // Update for event tracking
-
-                // Reset failed sync count on successful sync
-                this.failedSyncCount = 0;
+                this.simTime = currentSimTime;
                 this.lastSuccessfulSyncTime = new Date();
-                logger.info(`[TimeManager] Sync successful. Simulation time updated to ${newSimTime.toISOString()}`);
+                logger.info(`[TimeManager] Sync successful. Simulation time updated to ${currentSimTime.toISOString()}`);
             } else {
                 throw new Error('Invalid response data from simulation time endpoint');
             }
         } catch (error: any) {
             this.failedSyncCount++;
             logger.error(`[TimeManager] Failed to sync time (attempt ${this.failedSyncCount}/${this.maxFailedSyncs}):`, error.message || error);
-
-            if (this.failedSyncCount >= this.maxFailedSyncs) {
-                logger.warn(`[TimeManager] Max sync failures reached (${this.maxFailedSyncs}). Disabling auto-sync.`);
-                if (this.syncIntervalId) {
-                    clearInterval(this.syncIntervalId);
-                    this.syncIntervalId = null;
-                }
-                this.syncEndpoint = null; // Clear endpoint to prevent re-enabling without explicit action
-            }
-            throw new Error(`Failed to sync simulation time: ${error.message || 'Unknown error'}`);
         }
     }
 
