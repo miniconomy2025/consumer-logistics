@@ -20,7 +20,7 @@ export class BankAccountService {
           // @ts-ignore
           agent,
           body: JSON.stringify({
-            notificationUrl: `https://consumer-logistics-api.projects.bbdgrad.com/api/webhook/payment-updates`
+            notification_url: `https://consumer-logistics-api.projects.bbdgrad.com/api/webhook/payment-updates`
           })
         });
         if (!response.ok) {
