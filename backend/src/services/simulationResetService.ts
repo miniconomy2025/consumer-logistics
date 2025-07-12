@@ -58,6 +58,14 @@ export class SimulationResetService {
   }
 
   private static async seedRequiredData(): Promise<void> {
+    // Step 1: Seed core database entities (critical - must succeed)
+    await this.seedCoreEntities();
+
+    // Step 2: Initialize business services (resilient - can fail gracefully)
+    await this.initializeBusinessServices();
+  }
+
+  private static async seedCoreEntities(): Promise<void> {
     const queryRunner = AppDataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -87,45 +95,153 @@ export class SimulationResetService {
       logger.info('Seeded default truck type.');
 
       await queryRunner.commitTransaction();
+      logger.info('Core entities seeded successfully.');
     } catch (error) {
       await queryRunner.rollbackTransaction();
-      logger.error('Error seeding data, rolling back transaction:', error);
-      throw error;
+      logger.error('Error seeding core entities, rolling back transaction:', error);
+      throw error; 
     } finally {
       await queryRunner.release();
+    }
+  }
 
-      // 1. Create bank account
-      const bankAccountService = new BankAccountService();
-      await bankAccountService.createBankAccount();
+  private static async initializeBusinessServices(): Promise<void> {
+    logger.info('[SimulationResetService] Initializing business services...');
 
-      // 2. Get trucks for sale and select what to buy (with retries)
+    // Step 1: Create bank account with retries
+    await this.createBankAccountWithRetries();
+
+    // Step 2: Initialize truck fleet with fallbacks
+    await this.initializeTruckFleetWithFallbacks();
+  }
+
+  private static async createBankAccountWithRetries(maxRetries: number = 3): Promise<void> {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        logger.info(`[SimulationResetService] Creating bank account (attempt ${attempt}/${maxRetries})...`);
+        const bankAccountService = new BankAccountService();
+        await bankAccountService.createBankAccount();
+        logger.info('Bank account created successfully.');
+        return;
+      } catch (error) {
+        logger.warn(`[SimulationResetService] Bank account creation failed (attempt ${attempt}/${maxRetries}):`, error);
+        if (attempt === maxRetries) {
+          logger.error('[SimulationResetService] Bank account creation failed after all retries. Proceeding without bank account.');
+          return; // Continue without bank account
+        }
+        // Wait before retry (exponential backoff)
+        await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
+      }
+    }
+  }
+
+  private static async initializeTruckFleetWithFallbacks(): Promise<void> {
+    try {
+      // Step 1: Try to get trucks for sale from external service
+      const trucksForSale = await this.getTrucksForSaleWithResilience();
+      
+      // Step 2: Select trucks to buy and calculate costs
+      const { trucksToBuy, loanAmount } = this.calculateTruckRequirements(trucksForSale);
+
+      // Step 3: Apply for loan with fallbacks
+      await this.applyForLoanWithResilience(loanAmount);
+
+      // Step 4: Purchase trucks
+      await this.purchaseTrucksWithResilience(trucksToBuy);
+
+    } catch (error) {
+      logger.error('[SimulationResetService] Truck fleet initialization failed:', error);
+      logger.warn('[SimulationResetService] Proceeding with minimal truck setup...');
+      
+      // Fallback: Create minimal truck setup
+      await this.createMinimalTruckSetup();
+    }
+  }
+
+  private static async getTrucksForSaleWithResilience(): Promise<any[]> {
+    try {
+      logger.info('[SimulationResetService] Attempting to get trucks for sale...');
       const trucksForSale = await getTrucksForSaleWithRetries(3);
-      let trucksToBuy: TruckToBuy[];
-      let loanAmount: number;
-
+      
       if (trucksForSale && trucksForSale.length > 0) {
-        trucksToBuy = selectTrucksToBuy(trucksForSale);
-        const { totalPurchase, totalDailyOperating } = calculateTruckCosts(trucksToBuy);
-        loanAmount = totalPurchase + (totalDailyOperating * 14);
+        logger.info(`[SimulationResetService] Retrieved ${trucksForSale.length} trucks for sale.`);
+        return trucksForSale;
       } else {
-        const fallbackTruckName = 'Small Truck';
-        trucksToBuy = [
-          { truckName: fallbackTruckName, quantityToBuy: 3, price: 10000, operatingCost: 500, maximumLoad: 2000 }
-        ];
-        loanAmount = 51000;
+        logger.warn('[SimulationResetService] No trucks available for sale from external service.');
+        return [];
       }
+    } catch (error) {
+      logger.warn('[SimulationResetService] Failed to get trucks for sale from external service:', error);
+      return [];
+    }
+  }
 
-      // 3. Apply for loan (with fallback)
-      const { response: loanResult, attemptedAmount } =
-        await bankAccountService.applyForLoanWithFallback(loanAmount);
+  private static calculateTruckRequirements(trucksForSale: any[]): { trucksToBuy: TruckToBuy[], loanAmount: number } {
+    let trucksToBuy: TruckToBuy[];
+    let loanAmount: number;
 
-      if (!loanResult.success) {
-        logger.warn('[SimulationResetService] Loan application failed, even after fallback. Proceeding with truck creation using default values.');
+    if (trucksForSale && trucksForSale.length > 0) {
+      trucksToBuy = selectTrucksToBuy(trucksForSale);
+      const { totalPurchase, totalDailyOperating } = calculateTruckCosts(trucksToBuy);
+      loanAmount = totalPurchase + (totalDailyOperating * 14);
+      logger.info(`[SimulationResetService] Calculated loan amount: ${loanAmount} for ${trucksToBuy.length} trucks.`);
+    } else {
+      // Fallback truck configuration
+      const fallbackTruckName = 'Small Truck';
+      trucksToBuy = [
+        { truckName: fallbackTruckName, quantityToBuy: 3, price: 10000, operatingCost: 500, maximumLoad: 2000 }
+      ];
+      loanAmount = 51000;
+      logger.info('[SimulationResetService] Using fallback truck configuration.');
+    }
+
+    return { trucksToBuy, loanAmount };
+  }
+
+  private static async applyForLoanWithResilience(loanAmount: number): Promise<void> {
+    try {
+      logger.info(`[SimulationResetService] Applying for loan of ${loanAmount}...`);
+      const bankAccountService = new BankAccountService();
+      const { response: loanResult, attemptedAmount } = await bankAccountService.applyForLoanWithFallback(loanAmount);
+
+      if (loanResult.success) {
+        logger.info(`[SimulationResetService] Loan application successful for ${attemptedAmount}.`);
+      } else {
+        logger.warn(`[SimulationResetService] Loan application failed for ${attemptedAmount}. Proceeding without loan.`);
       }
+    } catch (error) {
+      logger.warn('[SimulationResetService] Loan application failed with error:', error);
+      logger.info('[SimulationResetService] Proceeding without loan.');
+    }
+  }
 
-      // 4. Purchase trucks (always proceed)
+  private static async purchaseTrucksWithResilience(trucksToBuy: TruckToBuy[]): Promise<void> {
+    try {
+      logger.info(`[SimulationResetService] Purchasing ${trucksToBuy.length} trucks...`);
       const truckPurchaseService = new TruckPurchaseService();
       await truckPurchaseService.purchaseTrucksWithPreselected(trucksToBuy);
+      logger.info('[SimulationResetService] Trucks purchased successfully.');
+    } catch (error) {
+      logger.error('[SimulationResetService] Truck purchase failed:', error);
+      throw error; // Re-throw to trigger fallback
+    }
+  }
+
+  private static async createMinimalTruckSetup(): Promise<void> {
+    try {
+      logger.info('[SimulationResetService] Creating minimal truck setup...');
+      const truckPurchaseService = new TruckPurchaseService();
+      
+      // Create basic trucks without external dependencies
+      const minimalTrucks: TruckToBuy[] = [
+        { truckName: 'Small Truck', quantityToBuy: 2, price: 8000, operatingCost: 400, maximumLoad: 1500 }
+      ];
+      
+      await truckPurchaseService.purchaseTrucksWithPreselected(minimalTrucks);
+      logger.info('[SimulationResetService] Minimal truck setup created successfully.');
+    } catch (error) {
+      logger.error('[SimulationResetService] Minimal truck setup failed:', error);
+      logger.warn('[SimulationResetService] Simulation will proceed without trucks.');
     }
   }
 }
