@@ -4,6 +4,7 @@ import { logger } from '../utils/logger';
 import { BANK_API_URL } from '../config/apiConfig';
 import { agent } from '../agent';
 import { applyForLoanWithFallback, LoanResponse } from './loanService';
+import fetch from 'node-fetch';
 
 export class BankAccountService {
   private bankAccountRepo = AppDataSource.getRepository(BankAccountEntity);
@@ -17,16 +18,16 @@ export class BankAccountService {
         const response = await fetch(`${BANK_API_URL}/account`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          // @ts-ignore
-          agent,
+          agent: agent,
           body: JSON.stringify({
-            notificationUrl: `https://consumer-logistics-api.projects.bbdgrad.com/api/webhook/payment-updates`
+            notification_url: `https://consumer-logistics-api.projects.bbdgrad.com/api/webhook/payment-updates-test`
           })
         });
         if (!response.ok) {
           throw new Error(`Bank API error: ${response.status} ${response.statusText}`);
         }
-        const data = await response.json();
+
+        const data: any = await response.json();
         const accountNumber = data.account_number;
         logger.info(`Bank account created: ${accountNumber}`);
 
