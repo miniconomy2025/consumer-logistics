@@ -2,9 +2,11 @@ export interface PaymentWebhookPayload {
   transaction_number: string;
   status: 'SUCCESS' | 'FAILED';
   amount: number;
-  timestamp: string;
+  // timestamp: string;
   description: string;
-  from: string;
-  to: string;
-  reference: string; 
+  // from: string;
+  // to: string;
+  // reference: string; 
 }
+
+

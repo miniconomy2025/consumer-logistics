@@ -15,7 +15,6 @@ export const lambdaHandler: APIGatewayProxyHandler = async (event, context): Pro
         const validation = isValidPayment(payload);
 
         console.log('Received payment payload:', payload);
-        console.log('Validation result:', validation);
 
         if (!validation) {
             return {
@@ -53,11 +52,11 @@ export const lambdaHandler: APIGatewayProxyHandler = async (event, context): Pro
             transaction_number: payload.transaction_number,
             status: payload.status,
             amount: payload.amount,
-            timestamp: new Date(payload.timestamp),
-            description: payload.description,
-            from: payload.from,
-            to: payload.to,
-            reference: payload.reference
+            timestamp: new Date().toISOString(),
+            description: `Payment for  ${payload.description}`,
+            from: 'consumer',
+            to: 'logistics',
+            reference: payload.description
         });
 
         console.log('New payment record created:', newPayment);
@@ -83,6 +82,7 @@ export const lambdaHandler: APIGatewayProxyHandler = async (event, context): Pro
         };
 
     } catch (error) {
+        console.error('Error processing payment:', error);
         await queryRunner.rollbackTransaction();
         return {
             statusCode: 500,

@@ -180,7 +180,7 @@ export class CdkStack extends cdk.Stack {
         queue: pickUpDLQ,
         maxReceiveCount: MAX_RECEIVE_COUNT,
       },
-      visibilityTimeout: cdk.Duration.seconds(60),
+      visibilityTimeout: cdk.Duration.seconds(30),
     });
 
     const deliveryDLQ = new sqs.Queue(this, 'DeliveryDLQ', {
@@ -195,7 +195,7 @@ export class CdkStack extends cdk.Stack {
         queue: deliveryDLQ,
         maxReceiveCount: MAX_RECEIVE_COUNT,
       },
-      visibilityTimeout: cdk.Duration.seconds(60),
+      visibilityTimeout: cdk.Duration.seconds(30),
     });
 
     // -===== Lambda =====-
@@ -396,7 +396,7 @@ export class CdkStack extends cdk.Stack {
         {
           namespace: 'aws:elasticbeanstalk:application:environment',
           optionName: 'SQS_PICKUP_QUEUE_URL',
-          value: pickUpQueue.queueUrl,
+          value: deliveryQueue.queueUrl,
         },
         {
           namespace: 'aws:elasticbeanstalk:application:environment',
@@ -429,11 +429,11 @@ export class CdkStack extends cdk.Stack {
     });
 
     // POST /payment/webhook
-    // api.addRoutes({
-    //   path: '/api/webhook/payment-updates',
-    //   methods: [apigatewayv2.HttpMethod.POST],
-    //   integration: new integrations.HttpLambdaIntegration('PaymentWebhookIntegration', handlePopLambda),
-    // });
+    api.addRoutes({
+      path: '/api/webhook/payment-updates',
+      methods: [apigatewayv2.HttpMethod.POST],
+      integration: new integrations.HttpLambdaIntegration('PaymentWebhookIntegration', handlePopLambda),
+    });
 
     // Elastic Beanstalk Application URL
     const ebAppUrl = `http://${environment.attrEndpointUrl}`;

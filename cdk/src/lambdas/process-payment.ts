@@ -31,12 +31,12 @@ export const lambdaHandler: SQSHandler = async (event: SQSEvent) => {
             const paymentRepo = queryRunner.manager.getRepository(PaymentRecord);
 
             const invoice = await invoiceRepo.findOne({
-                where: { referenceNumber: payload.reference },
+                where: { referenceNumber: payload.description },
                 relations: ['pickup']
             });
 
             if (!invoice || !invoice.pickup) {
-                throw new Error(`Invoice not found or pickup missing for reference: ${payload.reference}`);
+                throw new Error(`Invoice not found or pickup missing for reference: ${payload.description}`);
             }
 
             const pickup = invoice.pickup;
@@ -65,7 +65,7 @@ export const lambdaHandler: SQSHandler = async (event: SQSEvent) => {
                 invoice,
                 transactionType: txType,
                 amount: totalPaid,
-                transactionDate: new Date(payload.timestamp)
+                transactionDate: new Date().toISOString(),
             });
 
             await txRepo.save(transaction);
@@ -76,7 +76,7 @@ export const lambdaHandler: SQSHandler = async (event: SQSEvent) => {
             pickup.pickupStatus = paidStatus;
             await pickupRepo.save(pickup);
 
-            // await sendToSQS(JSON.stringify(pickup), pickupQueueUrl);
+            await sendToSQS(JSON.stringify(pickup), pickupQueueUrl);
 
             await queryRunner.commitTransaction();
             console.log(`Processed invoice ${invoice.referenceNumber}, pickup ${pickup.id}`);
