@@ -26,7 +26,7 @@ export const AppDataSource = new DataSource({
     database: process.env.DB_DATABASE,
     synchronize: false,
     logging: process.env.NODE_ENV === 'development' ? ['query', 'error'] : ['error'],
-    // ssl: { rejectUnauthorized: false },
+    ssl: { rejectUnauthorized: false },
     entities: [
         TruckEntity,
         TruckTypeEntity,
