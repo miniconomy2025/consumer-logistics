@@ -11,16 +11,24 @@ router.post('', async (req, res) => {
     try {
         await SimulationResetService.resetAndMigrateDatabase();
 
-        // Optionally restart TimeManager's clock after a full reset
-        // This is separate from the `ENABLE_TIME_MANAGER_CLOCK` env var in server.ts
-        // This ensures if you call /api/simulation, the clock *also* restarts
-        // if you want it to automatically progress after a reset.
-        const startTime = new Date();
-        const syncEndpoint = 'https://thoh-api.projects.bbdgrad.com/current-simulation-time';
+        const { epochStartTime } = req.body;
+        let startTime: Date | undefined;
+        
+        if (epochStartTime) {
+            // Convert epoch timestamp (seconds) to milliseconds and create Date object
+            startTime = new Date(epochStartTime * 1000);
+            logger.info(`Using epoch start time: ${epochStartTime} -> ${startTime.toISOString()}`);
+        } else {
+            logger.info('No epoch start time provided, using current time');
+            startTime = new Date();
+        }
+
+        // const syncEndpoint = 'https://thoh-api.projects.bbdgrad.com/current-simulation-time';
+        const syncEndpoint = undefined;
         const checkIntervalMillis = 1000; // 1 second
         timeManager.reset(); // Ensure TimeManager is clean before starting
         timeManager.startSimulation(
-            startTime ? new Date(startTime) : undefined,
+            startTime,
             syncEndpoint || undefined,
             checkIntervalMillis || 1000
         );
