@@ -87,7 +87,7 @@ export class TruckPurchaseService {
       const orderData = await orderResponse.json() as {
         orderId: number;
         truckName: string;
-        price: number;
+        totalPrice: number;
         maximumLoad: number;
         operatingCostPerDay: string;
         weight: number;
@@ -95,22 +95,29 @@ export class TruckPurchaseService {
         quantity: number;
         bankAccount: string;
       };
-      const { orderId, price, quantity, bankAccount } = orderData;
+      const { orderId, totalPrice, bankAccount } = orderData;
 
-      logger.info(`[TruckPurchaseService] Paying $${price * quantity} to bank account ${bankAccount} for order ${orderId}...`);
+      logger.info(`[TruckPurchaseService] Paying $${totalPrice} to bank account ${bankAccount} for order ${orderId}...`);
+      logger.info(`[TruckPurchaseService] Payload: ${JSON.stringify({
+        to_account_number: bankAccount === "TREASURY_ACCOUNT" ? "" : bankAccount,
+        to_bank_name: 'commercial-bank',
+        amount: totalPrice,
+        description: orderId.toString(),
+      })}`);
       const paymentResponse = await fetch(`${BANK_API_URL}/transaction`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         agent: agent,
         body: JSON.stringify({
           to_account_number: bankAccount === "TREASURY_ACCOUNT" ? "" : bankAccount,
-          to_bank_name: 'commercial-bank',
-          amount: price * quantity,
+          to_bank_name: 'thoh',
+          amount: totalPrice,
           description: orderId.toString(),
         })
       });
       if (!paymentResponse.ok) {
         logger.error(`[TruckPurchaseService] Failed to pay for order: ${orderId}`);
+        logger.error(`[TruckPurchaseService] Body: ${await paymentResponse.text()}`);
         continue;
       }
     }
