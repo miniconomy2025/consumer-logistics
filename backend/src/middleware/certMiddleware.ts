@@ -3,12 +3,7 @@ import { Request, Response, NextFunction } from 'express';
 export function certInfoMiddleware(req: Request, res: Response, next: NextFunction): void {
   console.log('=== Incoming Request ===');
   console.log({
-    method: req.method,
-    url: req.url,
     headers: req.headers,
-    body: req.body,
-    query: req.query,
-    params: req.params,
   });
 
   const subjectHeader = req.headers['x-client-cert-subject'];
