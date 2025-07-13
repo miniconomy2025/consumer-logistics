@@ -103,7 +103,7 @@ export class TruckPurchaseService {
         headers: { 'Content-Type': 'application/json' },
         agent: agent,
         body: JSON.stringify({
-          to_account_number: bankAccount,
+          to_account_number: bankAccount === "TREASURY_ACCOUNT" ? "" : bankAccount,
           to_bank_name: 'commercial-bank',
           amount: price * quantity,
           description: orderId.toString(),
