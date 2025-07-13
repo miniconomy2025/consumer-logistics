@@ -1,5 +1,6 @@
 import { agent } from '../agent';
 import { BANK_API_URL } from '../config/apiConfig';
+import fetch from 'node-fetch';
 
 export interface LoanResponse {
   success: boolean;
@@ -11,9 +12,8 @@ export async function applyForLoan(amount: number): Promise<LoanResponse> {
     const response = await fetch(`${BANK_API_URL}/loan`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      agent: agent,
       body: JSON.stringify({ amount }),
-      // @ts-ignore
-      agent
     });
     if (!response.ok) {
       throw new Error(`Bank loan API error: ${response.status} ${response.statusText}`);
