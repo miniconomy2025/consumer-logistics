@@ -14,10 +14,8 @@ import { CompanyRepository } from './repositories/implementations/CompanyReposit
 import { TruckRepository } from './repositories/implementations/TruckRepository';
 import { TruckAllocationRepository } from './repositories/implementations/TruckAllocationRepository';
 import { sqsClient } from './config/awsSqs';
-import { BankAccountService } from './services/bankAccountService';
-import { getTrucksForSale } from './services/truckPurchaseService';
-import { selectTrucksToBuy, calculateTruckCosts } from './utils/truckPurchaseUtils';
-import { applyForLoanWithFallback } from './services/loanService';
+import { PickupQueueWorker } from './services/sqsFinanceService'
+
 
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
@@ -83,6 +81,9 @@ AppDataSource.initialize()
 
     sqsWorkerService.startPollingPickupQueue();
     sqsWorkerService.startPollingDeliveryQueue();
+    const pickupQueueWorker = new PickupQueueWorker(logisticsPlanningService, timeManager);
+    pickupQueueWorker.startPolling();
+    
 
     if (process.env.ENABLE_TIME_MANAGER_CLOCK === 'true') {
       timeManager.startSimulation(undefined, undefined, 1000); // tick every 1s
