@@ -749,7 +749,7 @@ export class LogisticsPlanningService {
             logger.debug(`Using default collection webhook URL for company: ${companyName || 'Unknown'}`);
         }
         logger.debug("notifyExternalPickup : ", JSON.stringify({
-            delivery_reference,
+            id: delivery_reference,
             type: 'PICKUP',
             quantity,
             companyName: companyName || 'Unknown',
@@ -761,7 +761,7 @@ export class LogisticsPlanningService {
             headers: { 'Content-Type': 'application/json' },
             agent: agent,
             body: JSON.stringify({
-                delivery_reference,
+                id: delivery_reference,
                 type: 'PICKUP',
                 quantity,
                 companyName: companyName || 'Unknown',
