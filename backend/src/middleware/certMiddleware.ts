@@ -1,10 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 
 export function certInfoMiddleware(req: Request, res: Response, next: NextFunction): void {
-  console.log('=== Incoming Request ===');
-  console.log({
-    headers: req.headers,
-  });
 
   const subjectHeader = req.headers['x-client-cert-subject'];
   const subjectString = Array.isArray(subjectHeader) ? subjectHeader[0] : subjectHeader;
@@ -26,7 +22,7 @@ export function certInfoMiddleware(req: Request, res: Response, next: NextFuncti
 
   const clientOU = ouMatch[1];
   console.log(`✔️ Client certificate OU: ${clientOU}`);
-  (req as any).teamName = clientOU;
+  (req as any).clientName = clientOU;
 
   next();
 }
