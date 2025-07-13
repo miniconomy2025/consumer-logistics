@@ -12,6 +12,7 @@ import simulationRoutes from './routes/simulationRoutes';
 
 
 import { errorMiddleware } from './middleware/errorMiddleware';
+import { certInfoMiddleware } from './middleware/certMiddleware';
 
 const app = express();
 
@@ -26,7 +27,7 @@ app.use('/api/webhook', webhookRoutes);
 app.use('/api/simulation', simulationRoutes); 
 app.use('/api/analytics', analyticsRoutes);
 
-app.get('/health', (req, res) => {
+app.get('/health', certInfoMiddleware, (req, res) => {
   res.status(200).json({ status: 'ok', message: 'Service is healthy' });
 });
 
