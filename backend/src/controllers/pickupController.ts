@@ -16,8 +16,8 @@ export class PickupController {
         try {
             const companyName = (req as any).clientName as string;
             const quantity = req.body.quantity;
-            const modelName = req.body.model_name;
-            const recipient = req.body.recipient_name;
+            const modelName = req.body.modelName;
+            const recipient = req.body.recipient;
 
             if (!companyName || typeof quantity !== 'number') {
                 throw new AppError('Invalid request: companyName and a numeric quantity are required.', 400);
