@@ -28,7 +28,7 @@ app.use('/api/simulation', simulationRoutes);
 app.use('/api/analytics', analyticsRoutes);
 
 app.get('/health', certInfoMiddleware, (req, res) => {
-  res.status(200).json({ status: 'ok', message: 'Service is healthy' });
+  res.status(200).json({ status: 'ok', message: 'Service is healthy', clientName: (req as any).clientName || 'unknown' });
 });
 
 app.use(errorMiddleware);
