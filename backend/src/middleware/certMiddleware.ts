@@ -1,21 +1,16 @@
 import { Request, Response, NextFunction } from 'express';
-import { TLSSocket } from 'tls'; // Import TLSSocket for type checking
 
 export function certInfoMiddleware(req: Request, res: Response, next: NextFunction) {
-    if (req.socket instanceof TLSSocket) {
-        const tlsSocket = req.socket as TLSSocket;
-        const cert = tlsSocket.getPeerCertificate();
+    // API Gateway forwards client cert OU in X-Client-Cert-OU header
+    const clientOuHeader = req.headers['x-client-cert-ou'];
 
-        if (cert && Object.keys(cert).length > 0) {
-            const ou = cert.subject?.OU || 'Unknown';
-            console.log(`Client certificate OU: ${ou}`);
-            (req as any).clientOU = ou;
-        } else {
-            console.warn('TLS connection, but no client certificate provided or certificate is empty.');
-        }
+    if (clientOuHeader) {
+        const ou = Array.isArray(clientOuHeader) ? clientOuHeader[0] : clientOuHeader;
+        console.log(`Client certificate OU (from API Gateway header): ${ou}`);
+        (req as any).clientOU = ou;
     } else {
-        console.warn('Request received over non-TLS (HTTP) connection. Skipping client certificate check.');
+        console.warn('No X-Client-Cert-OU header found. Client certificate information not available via API Gateway.');
     }
 
-    next(); 
+    next();
 }
