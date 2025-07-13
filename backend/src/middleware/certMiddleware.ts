@@ -1,6 +1,18 @@
 import { Request, Response, NextFunction } from 'express';
 
 export function certInfoMiddleware(req: Request, res: Response, next: NextFunction) {
+     console.log('=== Request Object ===');
+    console.log({
+        method: req.method,
+        url: req.url,
+        headers: req.headers,
+        body: req.body,
+        query: req.query,
+        params: req.params,
+        // Add more fields if needed
+    });
+
+    console.log(JSON.stringify(req.headers, null, 2));
     // API Gateway forwards client cert OU in X-Client-Cert-OU header
     const clientOuHeader = req.headers['x-client-cert-ou'];
 
