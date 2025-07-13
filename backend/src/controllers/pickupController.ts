@@ -16,6 +16,8 @@ export class PickupController {
         try {
             const companyName = (req as any).clientName as string;
             const quantity = req.body.quantity;
+            const modelName = req.body.model_name;
+            const recipient = req.body.recipient_name;
 
             if (!companyName || typeof quantity !== 'number') {
                 throw new AppError('Invalid request: companyName and a numeric quantity are required.', 400);
@@ -24,6 +26,8 @@ export class PickupController {
             const pickupRequest: CreatePickupRequest = {
                 companyName,
                 quantity,
+                modelName,
+                recipient
             };
 
             const result: PickupResponse = await this.pickupService.createPickupRequest(pickupRequest);
@@ -53,7 +57,7 @@ export class PickupController {
                 company_name: p.company ? p.company.company_name : 'Unknown', 
                 status: p.pickup_status ? p.pickup_status.status_name : 'Unknown',
                 recipient_name: p.recipient_name,
-                model_name: p.model_name, // Added model_name to the response mapping
+                model_name: p.model_name, 
                 amount_due: parseFloat(p.invoice.total_amount.toString()),
                 is_paid: p.invoice?.paid || false,
             }));
