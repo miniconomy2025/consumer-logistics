@@ -1,28 +1,37 @@
 import { Request, Response, NextFunction } from 'express';
 
-export function certInfoMiddleware(req: Request, res: Response, next: NextFunction) {
-     console.log('=== Request Object ===');
-    console.log({
-        method: req.method,
-        url: req.url,
-        headers: req.headers,
-        body: req.body,
-        query: req.query,
-        params: req.params,
-        // Add more fields if needed
+export function certInfoMiddleware(req: Request, res: Response, next: NextFunction): void {
+  console.log('=== Incoming Request ===');
+  console.log({
+    method: req.method,
+    url: req.url,
+    headers: req.headers,
+    body: req.body,
+    query: req.query,
+    params: req.params,
+  });
+
+  const subjectHeader = req.headers['x-client-cert-subject'];
+  const subjectString = Array.isArray(subjectHeader) ? subjectHeader[0] : subjectHeader;
+
+  if (!subjectString || typeof subjectString !== 'string') {
+    res.status(403).json({
+      error: 'Missing client certificate subject. Organizational Unit (OU) is required.',
     });
+    return
+  }
 
-    console.log(JSON.stringify(req.headers, null, 2));
-    // API Gateway forwards client cert OU in X-Client-Cert-OU header
-    const clientOuHeader = req.headers['x-client-cert-ou'];
+  const ouMatch = subjectString.match(/OU=([^,]+)/);
+  if (!ouMatch || !ouMatch[1]) {
+    res.status(403).json({
+      error: 'Organizational Unit (OU) not found in client certificate subject.',
+    });
+    return
+  }
 
-    if (clientOuHeader) {
-        const ou = Array.isArray(clientOuHeader) ? clientOuHeader[0] : clientOuHeader;
-        console.log(`Client certificate OU (from API Gateway header): ${ou}`);
-        (req as any).clientOU = ou;
-    } else {
-        console.warn('No X-Client-Cert-OU header found. Client certificate information not available via API Gateway.');
-    }
+  const clientOU = ouMatch[1];
+  console.log(`✔️ Client certificate OU: ${clientOU}`);
+  (req as any).teamName = clientOU;
 
-    next();
+  next();
 }
