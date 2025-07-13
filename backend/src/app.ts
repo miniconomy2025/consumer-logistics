@@ -22,7 +22,7 @@ app.use(bodyParser.json());
 
 app.use('/api/companies', certInfoMiddleware, companyRoutes);
 app.use('/api/trucks', truckRoutes);
-app.use('/api/pickups', pickupRoutes);
+app.use('/api/pickups', certInfoMiddleware, pickupRoutes);
 app.use('/api/webhook', webhookRoutes);
 app.use('/api/simulation', simulationRoutes); 
 app.use('/api/analytics', analyticsRoutes);

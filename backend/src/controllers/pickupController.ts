@@ -12,17 +12,21 @@ export class PickupController {
         this.pickupService = pickupService;
     }
 
-    public createPickup = async (req: Request, res: Response, next: NextFunction) => {
+    public createPickup = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
-            const data: CreatePickupRequest = req.body;
-            if (
-                typeof data.quantity !== 'number' ||
-                !data.companyName
-            ) {
-                throw new AppError('Invalid request body: pickupFrom and quantity are required.', 400);
+            const companyName = (req as any).clientName as string;
+            const quantity = req.body.quantity;
+
+            if (!companyName || typeof quantity !== 'number') {
+                throw new AppError('Invalid request: companyName and a numeric quantity are required.', 400);
             }
-    
-            const result: PickupResponse = await this.pickupService.createPickupRequest(data);
+
+            const pickupRequest: CreatePickupRequest = {
+                companyName,
+                quantity,
+            };
+
+            const result: PickupResponse = await this.pickupService.createPickupRequest(pickupRequest);
             res.status(201).json(result);
         } catch (error) {
             next(error);
