@@ -69,6 +69,13 @@ export class TruckPurchaseService {
   private async orderAndRegisterTrucks(trucksToBuy: TruckToBuy[]) {
     const truckManagementService = new TruckManagementService(new TruckRepository());
 
+    // Map to translate THOH truck names to our database truck type names
+    const truckNameMap: Record<string, string> = {
+      'small_truck': 'Small Truck',
+      'medium_truck': 'Medium Truck',
+      'large_truck': 'Large Truck'
+    };
+
     for (const truck of trucksToBuy) {
       logger.info(`[TruckPurchaseService] Ordering ${truck.quantityToBuy} x ${truck.truckName}...`);
       const orderResponse = await fetch(`${THOH_API_URL}/trucks`, {
@@ -95,7 +102,7 @@ export class TruckPurchaseService {
         quantity: number;
         bankAccount: string;
       };
-      const { orderId, totalPrice, bankAccount } = orderData;
+      const { orderId, totalPrice, bankAccount, maximumLoad, operatingCostPerDay, quantity } = orderData;
 
       logger.info(`[TruckPurchaseService] Paying $${totalPrice} to bank account ${bankAccount} for order ${orderId}...`);
       logger.info(`[TruckPurchaseService] Payload: ${JSON.stringify({
@@ -119,6 +126,30 @@ export class TruckPurchaseService {
         logger.error(`[TruckPurchaseService] Failed to pay for order: ${orderId}`);
         logger.error(`[TruckPurchaseService] Body: ${await paymentResponse.text()}`);
         continue;
+      }
+
+      try {
+        const dbTruckTypeName = truckNameMap[truck.truckName];
+        
+        const truckType = await truckManagementService.getTruckTypeByName(dbTruckTypeName);
+        
+        if (!truckType) {
+          throw new Error(`Truck type "${dbTruckTypeName}" not found in database. Please ensure it is seeded correctly.`);
+        }
+        
+        const createdTrucks = await truckManagementService.createTruck({
+          truckTypeId: truckType.truck_type_id,
+          maxPickups: 250,
+          maxDropoffs: 500,
+          dailyOperatingCost: parseFloat(operatingCostPerDay),
+          maxCapacity: maximumLoad,
+          isAvailable: true,
+          quantity: quantity
+        });
+        
+        logger.info(`[TruckPurchaseService] Registered ${quantity} x ${dbTruckTypeName} (type ID: ${truckType.truck_type_id}) in database after payment.`);
+      } catch (error) {
+        logger.error(`[TruckPurchaseService] Failed to register trucks in database: ${error instanceof Error ? error.message : String(error)}`);
       }
     }
   }
