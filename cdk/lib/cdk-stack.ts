@@ -198,6 +198,21 @@ export class CdkStack extends cdk.Stack {
       visibilityTimeout: cdk.Duration.seconds(30),
     });
 
+    const collectionDLQ = new sqs.Queue(this, 'CollectionDLQ', {
+      encryption: sqs.QueueEncryption.KMS_MANAGED,
+      retentionPeriod: cdk.Duration.days(7),
+    });
+
+    const collectionQueue = new sqs.Queue(this, 'CollectionQueue', {
+      encryption: sqs.QueueEncryption.KMS_MANAGED,
+      retentionPeriod: cdk.Duration.days(1),
+      deadLetterQueue: {
+        queue: collectionDLQ,
+        maxReceiveCount: MAX_RECEIVE_COUNT,
+      },
+      visibilityTimeout: cdk.Duration.seconds(30),
+    });
+
     // -===== Lambda =====-
     const handlePopLambda = new NodejsFunction(this, 'HandlePopLambda', {
       runtime: lambda.Runtime.NODEJS_22_X,
@@ -305,7 +320,9 @@ export class CdkStack extends cdk.Stack {
         deliveryQueue.queueArn,
         pickUpQueue.queueArn,
         deliveryDLQ.queueArn,
-        pickUpDLQ.queueArn
+        pickUpDLQ.queueArn,
+        collectionQueue.queueArn,
+        collectionDLQ.queueArn,
       ],
     }));
 
@@ -395,8 +412,13 @@ export class CdkStack extends cdk.Stack {
         },
         {
           namespace: 'aws:elasticbeanstalk:application:environment',
+          optionName: 'FINANCIAL_NOTIFICATION_QUEUE_URL',
+          value: pickUpQueue.queueUrl,
+        },
+        {
+          namespace: 'aws:elasticbeanstalk:application:environment',
           optionName: 'SQS_PICKUP_QUEUE_URL',
-          value: deliveryQueue.queueUrl,
+          value: collectionQueue.queueUrl,
         },
         {
           namespace: 'aws:elasticbeanstalk:application:environment',
