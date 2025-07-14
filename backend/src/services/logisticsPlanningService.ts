@@ -732,7 +732,7 @@ export class LogisticsPlanningService {
     }    
     public async notifyExternalDelivery(delivery_reference: string, quantity: number, companyName?: string, model_name?: string, recipient_name?: string): Promise<void> {
         const COMPANY_DELIVERY_URLS: Record<string, string> = {
-            'pear': 'https://pear-company-api.projects.bbdgrad.com/public-api/logistics/notification',
+            'pear-company': 'https://pear-company-api.projects.bbdgrad.com/public-api/logistics/notification',
             'recycler': 'https://recycler-api.projects.bbdgrad.com/logistics/consumer-deliveries',
             'sumsang-company': 'https://sumsang-phones-api.projects.bbdgrad.com/public-api/logistics/notification'
         };
@@ -779,7 +779,7 @@ export class LogisticsPlanningService {
 
     public async notifyExternalPickup(delivery_reference: string, quantity: number, companyName?: string, model_name?: string, recipient_name?: string): Promise<void> {
         const COMPANY_COLLECTION_URLS: Record<string, string> = {
-            'pear': 'https://pear-company-api.projects.bbdgrad.com/public-api/logistics',
+            'pear-company': 'https://pear-company-api.projects.bbdgrad.com/public-api/logistics',
             'recycler': 'https://thoh-api.projects.bbdgrad.com/recycled-phones-collect',
             'sumsang-company': 'https://sumsang-phones-api.projects.bbdgrad.com/public-api/logistics'
         };
