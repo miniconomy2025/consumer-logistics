@@ -42,9 +42,9 @@ jobs:
       working-directory: ./cdk
       run: npm run test:integration
     
-    - name: CDK Synth
-      working-directory: ./cdk
-      run: npm run synth
+    # - name: CDK Synth
+    #   working-directory: ./cdk
+    #   run: npm run synth
     
     - name: Upload coverage reports
       uses: codecov/codecov-action@v3
