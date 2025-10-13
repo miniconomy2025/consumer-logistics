@@ -1,0 +1,80 @@
+name: CDK Tests
+
+on:
+  push:
+    branches: [ main ]
+    paths: [ 'cdk/**' ]
+  pull_request:
+    branches: [ main ]
+    paths: [ 'cdk/**' ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+        cache: 'npm'
+        cache-dependency-path: cdk/package-lock.json
+    
+    - name: Install dependencies
+      working-directory: ./cdk
+      run: npm ci
+    
+    - name: Run linting
+      working-directory: ./cdk
+      run: npm run build
+    
+    - name: Run unit tests
+      working-directory: ./cdk
+      run: npm run test:ci
+    
+    - name: Run security tests
+      working-directory: ./cdk
+      run: npm run test:security
+    
+    - name: Run integration tests
+      working-directory: ./cdk
+      run: npm run test:integration
+    
+    - name: CDK Synth
+      working-directory: ./cdk
+      run: npm run synth
+    
+    - name: Upload coverage reports
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./cdk/coverage/lcov.info
+        flags: cdk
+        name: cdk-coverage
+    
+    - name: Comment PR with test results
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          if (fs.existsSync('./cdk/coverage/coverage-summary.json')) {
+            const coverage = JSON.parse(fs.readFileSync('./cdk/coverage/coverage-summary.json'));
+            const comment = `## CDK Test Results 🧪
+            
+            | Metric | Coverage |
+            |--------|----------|
+            | Lines | ${coverage.total.lines.pct}% |
+            | Functions | ${coverage.total.functions.pct}% |
+            | Branches | ${coverage.total.branches.pct}% |
+            | Statements | ${coverage.total.statements.pct}% |
+            `;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+          }

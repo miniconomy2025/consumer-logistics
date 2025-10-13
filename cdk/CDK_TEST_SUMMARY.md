@@ -12,7 +12,7 @@ test/
 ├── integration.test.ts      # Cross-service integration tests
 ├── deployment-scenarios.test.ts # Different deployment configurations
 ├── test-utils.ts           # Shared test utilities
-└── TEST_README.md          # This file
+└── CDK_TEST_SUMMARY.md          # This file
 ```
 
 ## Test Categories
