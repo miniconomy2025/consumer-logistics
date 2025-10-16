@@ -59,11 +59,4 @@ describe('BankAccountService', () => {
     expect(result).toEqual(mockResponse);
   });
 
-  //it('calls requestTruckPurchaseLoan with correct calculation', async () => {
-    //service.applyForLoanWithFallback = jest.fn().mockResolvedValue({ response: { success: true }, attemptedAmount: 15000 });
-    //const result = await service.requestTruckPurchaseLoan(10000, 500, 10);
-    //expect(service.applyForLoanWithFallback).toHaveBeenCalledWith(10000 + (500 * 10));
-    //expect(result.requestedAmount).toBe(15000);
-    //expect(result.response.success).toBe(true);
-  //});
 });
