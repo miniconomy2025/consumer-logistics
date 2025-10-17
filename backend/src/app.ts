@@ -2,6 +2,9 @@ import express from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
 import bodyParser from 'body-parser';
+import swaggerUi from 'swagger-ui-express';
+import YAML from 'yamljs';
+import path from 'path';
 
 import truckRoutes from './routes/truckRoutes';
 import pickupRoutes from './routes/pickupRoutes';
@@ -19,6 +22,10 @@ const app = express();
 app.use(helmet());
 app.use(cors());
 app.use(bodyParser.json());
+
+// Swagger Documentation
+const swaggerDocument = YAML.load(path.join(__dirname, '../swagger.yaml'));
+app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 app.use('/api/companies', certInfoMiddleware, companyRoutes);
 app.use('/api/trucks', truckRoutes);
