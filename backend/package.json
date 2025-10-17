@@ -34,9 +34,11 @@
     "node-fetch": "^3.3.2",
     "pg": "^8.16.3",
     "reflect-metadata": "^0.2.2",
+    "swagger-ui-express": "^5.0.1",
     "typeorm": "^0.3.20",
     "uuid": "^11.1.0",
-    "winston": "^3.13.0"
+    "winston": "^3.13.0",
+    "yamljs": "^0.3.0"
   },
   "devDependencies": {
     "@types/body-parser": "^1.19.5",
@@ -46,7 +48,9 @@
     "@types/node": "^20.14.9",
     "@types/node-fetch": "^2.6.12",
     "@types/supertest": "^6.0.2",
+    "@types/swagger-ui-express": "^4.1.8",
     "@types/winston": "^2.4.4",
+    "@types/yamljs": "^0.2.34",
     "@typescript-eslint/eslint-plugin": "^7.14.1",
     "@typescript-eslint/parser": "^7.14.1",
     "eslint": "^8.57.0",
