@@ -29,6 +29,11 @@ export class BankAccountService {
 
         const data: any = await response.json();
         const accountNumber = data.account_number;
+
+        if (!accountNumber) {
+          throw new Error('Bank API response missing account_number');
+        }
+
         logger.info(`Bank account created: ${accountNumber}`);
 
         const bankAccount = this.bankAccountRepo.create({ account_number: accountNumber });

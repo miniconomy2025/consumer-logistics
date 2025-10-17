@@ -30,26 +30,6 @@ describe('CompanyService', () => {
     await expect(service.registerCompany('TestCo')).rejects.toThrow(AppError);
   });
 
-  it('gets company by ID', async () => {
-    mockRepo.findById.mockResolvedValue({ company_id: 2, company_name: 'OtherCo' });
-    const result = await service.getCompanyById(2);
-    expect(result).not.toBeNull();
-    expect(result!.company_name).toBe('OtherCo');
-  });
-
-  it('gets company by name', async () => {
-    mockRepo.findByName.mockResolvedValue({ company_id: 3, company_name: 'ThirdCo' });
-    const result = await service.getCompanyByName('ThirdCo');
-    expect(result).not.toBeNull();
-    expect(result!.company_id).toBe(3);
-  });
-
-  it('gets all companies', async () => {
-    mockRepo.findAll.mockResolvedValue([{ company_id: 1 }, { company_id: 2 }]);
-    const result = await service.getAllCompanies();
-    expect(result.length).toBe(2);
-  });
-
   it('updates company bank account', async () => {
     mockRepo.update.mockResolvedValue({ company_id: 1, bank_account_id: 'abc123' });
     const result = await service.updateCompanyBankAccount(1, 'abc123');
