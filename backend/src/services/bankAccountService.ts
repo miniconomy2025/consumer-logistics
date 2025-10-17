@@ -17,8 +17,10 @@ export class BankAccountService {
       try {
         const response = await fetch(`${BANK_API_URL}/account`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          agent: agent,
+          headers: { 'Content-Type': 'application/json' 
+            ,'Client-Id': 'consumer-logistics'
+          },
+          //agent: agent,
           body: JSON.stringify({
             notification_url: `https://consumer-logistics-api.projects.bbdgrad.com/api/webhook/payment-updates`
           })
