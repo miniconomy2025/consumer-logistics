@@ -1,7 +1,7 @@
 import { ErrorResponse } from '../types/common';
 import { RequestConfig } from '../types/api-client';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://zck1g2qlc4.execute-api.af-south-1.amazonaws.com/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://afroserve.co.za/api';
 
 export class ApiError extends Error {
   public status: number;
