@@ -17,8 +17,10 @@ export class BankAccountService {
       try {
         const response = await fetch(`${BANK_API_URL}/account`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          agent: agent,
+          headers: { 'Content-Type': 'application/json' 
+            ,'Client-Id': 'consumer-logistics'
+          },
+          //agent: agent,
           body: JSON.stringify({
             notification_url: `https://consumer-logistics-api.projects.bbdgrad.com/api/webhook/payment-updates`
           })
@@ -29,6 +31,11 @@ export class BankAccountService {
 
         const data: any = await response.json();
         const accountNumber = data.account_number;
+
+        if (!accountNumber) {
+          throw new Error('Bank API response missing account_number');
+        }
+
         logger.info(`Bank account created: ${accountNumber}`);
 
         const bankAccount = this.bankAccountRepo.create({ account_number: accountNumber });

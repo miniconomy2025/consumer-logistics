@@ -755,7 +755,9 @@ export class LogisticsPlanningService {
 
         const response = await fetch(webhookUrl, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json' 
+                ,'Client-Id': 'consumer-logistics'
+            },
             agent: agent,
             body: JSON.stringify({
                 delivery_reference,
@@ -800,7 +802,9 @@ export class LogisticsPlanningService {
         const response = await fetch(webhookUrl, {
 
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json' 
+                ,'Client-Id': 'consumer-logistics'
+            },
             agent: agent,
             body: JSON.stringify({
                 id: delivery_reference,

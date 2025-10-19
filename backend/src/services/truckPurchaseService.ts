@@ -80,8 +80,10 @@ export class TruckPurchaseService {
       logger.info(`[TruckPurchaseService] Ordering ${truck.quantityToBuy} x ${truck.truckName}...`);
       const orderResponse = await fetch(`${THOH_API_URL}/trucks`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        agent: agent,
+        headers: { 'Content-Type': 'application/json' 
+          ,'Client-Id': 'consumer-logistics'
+        },
+        //agent: agent,
         body: JSON.stringify({
           truckName: truck.truckName,
           quantity: truck.quantityToBuy
@@ -113,8 +115,10 @@ export class TruckPurchaseService {
       })}`);
       const paymentResponse = await fetch(`${BANK_API_URL}/transaction`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        agent: agent,
+        headers: { 'Content-Type': 'application/json' 
+          ,'Client-Id': 'consumer-logistics'
+        },
+        //agent: agent,
         body: JSON.stringify({
           to_account_number: bankAccount === "TREASURY_ACCOUNT" ? "" : bankAccount,
           to_bank_name: 'thoh',
