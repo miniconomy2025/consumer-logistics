@@ -21,6 +21,7 @@ const app = express();
 app.use(helmet());
 app.use(cors());
 app.use(bodyParser.json());
+app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 app.use(clientInfoMiddleware);
 
 app.use('/api/companies', companyRoutes);
@@ -31,7 +32,7 @@ app.use('/api/simulation', simulationRoutes);
 app.use('/api/analytics', analyticsRoutes);
 
 app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'ok', message: 'Service is healthy', clientId: (req as any).clientId || 'unknown' });
+  res.status(200).json({ status: 'ok', message: 'Service is healthy', clientName: (req as any).clientName || 'unknown' });
 });
 
 app.use(errorMiddleware);
