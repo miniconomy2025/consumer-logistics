@@ -1,28 +1,17 @@
 import { Request, Response, NextFunction } from 'express';
 
-export function certInfoMiddleware(req: Request, res: Response, next: NextFunction): void {
+export function clientInfoMiddleware(req: Request, res: Response, next: NextFunction): void {
+  const clientHeader = req.headers['client-id'];
+  const clientId = Array.isArray(clientHeader) ? clientHeader[0] : clientHeader;
 
-  const subjectHeader = req.headers['x-client-cert-subject'];
-  const subjectString = Array.isArray(subjectHeader) ? subjectHeader[0] : subjectHeader;
-
-  if (!subjectString || typeof subjectString !== 'string') {
+  if (!clientId || typeof clientId !== 'string') {
     res.status(403).json({
-      error: 'Missing client certificate subject. Organizational Unit (OU) is required.',
+      error: 'Missing Client-Id header. Access denied.',
     });
-    return
+    return; 
   }
 
-  const ouMatch = subjectString.match(/OU=([^,]+)/);
-  if (!ouMatch || !ouMatch[1]) {
-    res.status(403).json({
-      error: 'Organizational Unit (OU) not found in client certificate subject.',
-    });
-    return
-  }
-
-  const clientOU = ouMatch[1];
-  console.log(`✔️ Client certificate OU: ${clientOU}`);
-  (req as any).clientName = clientOU;
-
+  console.log(`Client-Id: ${clientId}`);
+  (req as any).clientName = clientId;
   next();
 }
