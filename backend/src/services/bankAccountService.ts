@@ -22,7 +22,7 @@ export class BankAccountService {
           },
           //agent: agent,
           body: JSON.stringify({
-            notification_url: `https://consumer-logistics-api.projects.bbdgrad.com/api/webhook/payment-updates`
+            notification_url: `https://afroserve.co.za/api/webhook/payment-updates`
           })
         });
         if (!response.ok) {
