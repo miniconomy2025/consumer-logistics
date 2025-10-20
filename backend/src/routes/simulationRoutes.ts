@@ -15,12 +15,23 @@ router.post('', async (req, res) => {
         let startTime: Date | undefined;
         
         if (epochStartTime) {
-            // Convert epoch timestamp (seconds) to milliseconds and create Date object
-            startTime = new Date(epochStartTime * 1000);
-            logger.info(`Using epoch start time: ${epochStartTime} -> ${startTime.toISOString()}`);
+            // Validate epochStartTime is a valid number
+            if (typeof epochStartTime === 'number' && !isNaN(epochStartTime)) {
+                startTime = new Date(epochStartTime * 1000);
+                
+                // Check if Date is valid
+                if (!isNaN(startTime.getTime())) {
+                    logger.info(`Using epoch start time: ${epochStartTime} -> ${startTime.toISOString()}`);
+                } else {
+                    logger.warn(`Invalid epoch start time (out of range): ${epochStartTime}, using current time instead`);
+                    startTime = undefined;
+                }
+            } else {
+                logger.warn(`Invalid epoch start time (not a number): ${epochStartTime}, using current time instead`);
+                startTime = undefined;
+            }
         } else {
             logger.info('No epoch start time provided, using current time');
-            startTime = new Date();
         }
 
         // const syncEndpoint = 'https://thoh-api.projects.bbdgrad.com/current-simulation-time';
