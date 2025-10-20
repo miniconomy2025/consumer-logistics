@@ -8,9 +8,11 @@ import { LogisticsPlanningService } from '../services/logisticsPlanningService';
 import { TruckRepository } from '../repositories/implementations/TruckRepository';
 import { LogisticsDetailsRepository } from '../repositories/implementations/LogisticsDetailsRepository';
 import { TruckAllocationRepository } from '../repositories/implementations/TruckAllocationRepository';
+import { ExternalNotificationService } from '../services/notificationService';
 import { sqsClient } from '../config/awsSqs';
 
 // Repositories and shared services
+const externalNotificationService = new ExternalNotificationService();
 const pickupRepository = new PickupRepository();
 const companyRepository = new CompanyRepository();
 const logisticsDetailsRepository = new LogisticsDetailsRepository();
@@ -34,6 +36,7 @@ const logisticsPlanningService = new LogisticsPlanningService(
   pickupRepository,
   truckAllocationRepository,
   pickupService,
+  externalNotificationService,
   sqsClient
 );
 

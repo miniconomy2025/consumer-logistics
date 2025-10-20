@@ -15,8 +15,7 @@ import { ITruckRepository } from '../repositories/interfaces/ITruckRepository';
 import { ITruckAllocationRepository } from '../repositories/interfaces/ITruckAllocationRepository';
 import { TruckAllocationEntity } from '../database/models/TruckAllocationEntity';
 import { PickupService } from './pickupService';
-import { agent } from '../agent';
-import fetch from 'node-fetch';
+import { ExternalNotificationService } from './notificationService';
 
 export interface CreateLogisticsDetailsData {
     pickupId: number;
@@ -34,6 +33,7 @@ export class LogisticsPlanningService {
     private truckAllocationRepository: ITruckAllocationRepository;
     private timeManager: TimeManager;
     private sqsClient: SQSClient;
+    private externalNotificationService: ExternalNotificationService; 
 
     constructor(
         timeManager: TimeManager,
@@ -42,6 +42,7 @@ export class LogisticsPlanningService {
         pickupRepository: IPickupRepository,
         truckAllocationRepository: ITruckAllocationRepository,
         pickupService: PickupService,
+        externalNotificationService: ExternalNotificationService, 
         sqsClientInstance: SQSClient = sqsClient
     ) {
         this.timeManager = timeManager;
@@ -50,6 +51,7 @@ export class LogisticsPlanningService {
         this.pickupRepository = pickupRepository;
         this.truckAllocationRepository = truckAllocationRepository;
         this.pickupService = pickupService;
+        this.externalNotificationService = externalNotificationService;
         this.sqsClient = sqsClientInstance;
     }
 
@@ -93,7 +95,7 @@ export class LogisticsPlanningService {
             throw error;
         }
 
-        
+
         logger.info(`Logistics detail ${scheduledLogistics.logistics_details_id} created/updated for Pickup ${pickupId}.`);
         logger.info(`In-sim Collection Scheduled: ${scheduledLogistics.scheduled_time.toISOString()} (Real-world: ${scheduledLogistics.scheduled_real_pickup_timestamp?.toLocaleTimeString()})`);
         logger.info(`In-sim Delivery Scheduled: ${scheduledLogistics.scheduled_real_delivery_timestamp ? scheduledLogistics.scheduled_real_delivery_timestamp.toISOString() : 'N/A'} (Real-world: ${scheduledLogistics.scheduled_real_delivery_timestamp?.toLocaleTimeString()})`);
@@ -397,7 +399,7 @@ export class LogisticsPlanningService {
             updatedLogisticsDetail.quantity
         ) {
             try {
-                await this.notifyExternalPickup(
+                await this.externalNotificationService.notifyExternalPickup( 
                     updatedLogisticsDetail.pickup.invoice.reference_number,
                     updatedLogisticsDetail.quantity,
                     updatedLogisticsDetail.pickup.company?.company_name,
@@ -501,7 +503,7 @@ export class LogisticsPlanningService {
             updatedLogisticsDetail.quantity
         ) {
             try {
-                await this.notifyExternalDelivery(
+                await this.externalNotificationService.notifyExternalDelivery( 
                     updatedLogisticsDetail.pickup.invoice.reference_number,
                     updatedLogisticsDetail.quantity,
                     updatedLogisticsDetail.pickup.company?.company_name,
@@ -516,7 +518,7 @@ export class LogisticsPlanningService {
                     updatedLogisticsDetail.logistics_details_id,
                     { logistics_status: LogisticsStatus.DELIVERY_NOTIFICATION_FAILED }
                 );
-                
+
                 if (updatedLogisticsDetail.pickup?.pickup_id) {
                     await this.pickupService.updatePickupStatus(
                         updatedLogisticsDetail.pickup.pickup_id,
@@ -524,7 +526,6 @@ export class LogisticsPlanningService {
                     );
                 }
                 logger.warn(`Logistics ID ${updatedLogisticsDetail.logistics_details_id} marked as DELIVERY_NOTIFICATION_FAILED due to webhook error.`);            }
-            
         }
         return updatedLogisticsDetail;
     }
@@ -659,36 +660,35 @@ export class LogisticsPlanningService {
             LogisticsStatus.STUCK_IN_TRANSIT,
             LogisticsStatus.ALTERNATIVE_DELIVERY_PLANNED,
             LogisticsStatus.FAILED,
-            LogisticsStatus.DELIVERY_NOTIFICATION_FAILED // ✅ New
+            LogisticsStatus.DELIVERY_NOTIFICATION_FAILED 
         ];
-    
+
         logger.info(`[LogisticsPlanningService] Starting re-planning for logistics with statuses: ${statusesToReplan.join(', ')}`);
-    
+
         const failedLogistics = await this.logisticsDetailsRepository.find({
             where: { logistics_status: In(statusesToReplan) },
             relations: ['pickup', 'pickup.company', 'pickup.invoice'],
         });
-    
+
         if (failedLogistics.length === 0) {
             logger.info('[LogisticsPlanningService] No logistics details found requiring re-planning.');
             return;
         }
-    
+
         logger.info(`[LogisticsPlanningService] Found ${failedLogistics.length} logistics details to re-plan.`);
-    
+
         for (const detail of failedLogistics) {
             if (!detail.pickup) {
                 logger.warn(`Skipping replanning for logistics detail ${detail.logistics_details_id}: No associated pickup found.`);
                 continue;
             }
-    
+
             try {
                 logger.info(`Retrying logistics for Pickup ID: ${detail.pickup.pickup_id} (Logistics ID: ${detail.logistics_details_id}). Current Status: ${detail.logistics_status}`);
-    
-                // ✅ Retry delivery notification only (don't replan pickup or delivery)
+
                 if (detail.logistics_status === LogisticsStatus.DELIVERY_NOTIFICATION_FAILED) {
                     try {
-                        await this.notifyExternalDelivery(
+                        await this.externalNotificationService.notifyExternalDelivery( // 👈 Updated Call
                             detail.pickup.invoice!.reference_number,
                             detail.quantity,
                             detail.pickup.company?.company_name,
@@ -704,7 +704,7 @@ export class LogisticsPlanningService {
                     }
                     continue; 
                 }
-    
+
                 if (detail.logistics_status !== LogisticsStatus.STUCK_IN_TRANSIT &&
                     detail.logistics_status !== LogisticsStatus.ALTERNATIVE_DELIVERY_PLANNED) {
                     await this.logisticsDetailsRepository.update(detail.logistics_details_id, {
@@ -712,7 +712,7 @@ export class LogisticsPlanningService {
                     });
                     await this.pickupService.updatePickupStatus(detail.pickup.pickup_id, PickupStatusEnum.ORDER_RECEIVED);
                 }
-    
+
                 if (detail.logistics_status === LogisticsStatus.STUCK_IN_TRANSIT ||
                     detail.logistics_status === LogisticsStatus.ALTERNATIVE_DELIVERY_PLANNED) {
                     logger.info(`Attempting alternative delivery for logistics ${detail.logistics_details_id}.`);
@@ -721,106 +721,13 @@ export class LogisticsPlanningService {
                     logger.info(`Attempting to reassign truck for logistics ${detail.logistics_details_id}.`);
                     await this.reassignTruckForLogistics(detail.logistics_details_id);
                 }
-    
+
                 logger.info(`Successfully re-planned logistics detail ${detail.logistics_details_id}.`);
             } catch (err: any) {
                 logger.warn(`Retry for logistics detail ${detail.logistics_details_id} (Pickup ID: ${detail.pickup.pickup_id}) failed again: ${err.message}`);
             }
         }
-    
+
         logger.info(`Retry process completed. Re-attempted ${failedLogistics.length} failed logistics.`);
-    }    
-    public async notifyExternalDelivery(delivery_reference: string, quantity: number, companyName?: string, model_name?: string, recipient_name?: string): Promise<void> {
-        const COMPANY_DELIVERY_URLS: Record<string, string> = {
-            'pear-company': 'https://pear-company-api.projects.bbdgrad.com/public-api/logistics/notification',
-            'recycler': 'https://recycler-api.projects.bbdgrad.com/logistics/consumer-deliveries',
-            'sumsang-company': 'https://sumsang-phones-api.projects.bbdgrad.com/public-api/logistics/notification'
-        };
-
-        logger.debug("Delivery : ", JSON.stringify({
-            delivery_reference,
-            quantity,
-            status: 'delivered',
-            companyName: companyName || 'Unknown',
-            modelName: model_name || 'Unknown'
-        }))
-        // Determine webhook URL based on company name
-        let webhookUrl = 'https://webhook.site/948ae0f0-871f-427d-a745-c13e0345dff7'; // Default fallback
-        if (companyName && COMPANY_DELIVERY_URLS[companyName]) {
-            webhookUrl = COMPANY_DELIVERY_URLS[companyName];
-            logger.debug(`Using company-specific delivery webhook URL for ${companyName}: ${webhookUrl}`);
-        } else {
-            logger.debug(`Using default delivery webhook URL for company: ${companyName || 'Unknown'}`);
-        }
-
-        const response = await fetch(webhookUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' 
-                ,'Client-Id': 'consumer-logistics'
-            },
-            agent: agent,
-            body: JSON.stringify({
-                delivery_reference,
-                status: 'delivered',
-                quantity,
-                companyName: companyName || 'Unknown',
-                modelName: model_name || 'Unknown',
-                recipient: recipient_name || 'Not Specified'
-            })
-        });
-        console.log('response from webhook delivery :', JSON.stringify(response))
-
-
-        if (!response.ok) {
-
-            throw new Error(`Failed to notify external delivery API for ${companyName || 'Unknown'}: ${response.statusText} (URL: ${webhookUrl}) `);
-        }
-
-        logger.info(`Delivery notification sent successfully to ${companyName || 'Unknown'} via ${webhookUrl}`);
-    }
-
-    public async notifyExternalPickup(delivery_reference: string, quantity: number, companyName?: string, model_name?: string, recipient_name?: string): Promise<void> {
-        const COMPANY_COLLECTION_URLS: Record<string, string> = {
-            'pear-company': 'https://pear-company-api.projects.bbdgrad.com/public-api/logistics',
-            'recycler': 'https://thoh-api.projects.bbdgrad.com/recycled-phones-collect',
-            'sumsang-company': 'https://sumsang-phones-api.projects.bbdgrad.com/public-api/logistics'
-        };
-        let webhookUrl = 'https://webhook.site/948ae0f0-871f-427d-a745-c13e0345dff7';
-        if (companyName && COMPANY_COLLECTION_URLS[companyName]) {
-            webhookUrl = COMPANY_COLLECTION_URLS[companyName];
-            logger.debug(`Using company-specific collection webhook URL for ${companyName}: ${webhookUrl}`);
-        } else {
-            logger.debug(`Using default collection webhook URL for company: ${companyName || 'Unknown'}`);
-        }
-        logger.info("notifyExternalPickup : ", JSON.stringify({
-            id: delivery_reference,
-            type: 'PICKUP',
-            quantity,
-            companyName: companyName || 'Unknown',
-            modelName: model_name || 'Unknown'
-        }));
-        const response = await fetch(webhookUrl, {
-
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' 
-                ,'Client-Id': 'consumer-logistics'
-            },
-            agent: agent,
-            body: JSON.stringify({
-                id: delivery_reference,
-                type: 'PICKUP',
-                quantity,
-                companyName: companyName || 'Unknown',
-                modelName: model_name || 'Unknown',
-                recipient: recipient_name || 'Not Specified'
-            })
-        });
-
-        console.log('response from webhook pickup:', JSON.stringify(response))
-        if (!response.ok) {
-            throw new Error(`Failed to notify external pickup API for ${companyName || 'Unknown'} : ${response.statusText} : ${webhookUrl}`);
-        }
-
-        logger.info(`Collection notification sent successfully to ${companyName || 'Unknown'} via ${webhookUrl}`);
     }
 }

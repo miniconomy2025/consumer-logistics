@@ -15,6 +15,7 @@ import { TruckRepository } from './repositories/implementations/TruckRepository'
 import { TruckAllocationRepository } from './repositories/implementations/TruckAllocationRepository';
 import { sqsClient } from './config/awsSqs';
 import { PickupQueueWorker } from './services/sqsFinanceService'
+import { ExternalNotificationService } from './services/notificationService';
 
 
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
@@ -37,7 +38,7 @@ AppDataSource.initialize()
     });
 
     const timeManager = TimeManager.getInstance();
-
+    const externalNotificationService = new ExternalNotificationService();
     const pickupRepository = new PickupRepository();
     const companyRepository = new CompanyRepository();
     const logisticsDetailsRepository = new LogisticsDetailsRepository();
@@ -58,6 +59,7 @@ AppDataSource.initialize()
       pickupRepository,
       truckAllocationRepository,
       pickupService,
+      externalNotificationService,
       sqsClient
     );
 
