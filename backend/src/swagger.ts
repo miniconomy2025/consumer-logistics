@@ -308,6 +308,13 @@ export const swaggerDocument = {
     }
   },
   components: {
+    securitySchemes: {
+      ClientId: {
+        type: "apiKey",
+        in: "header",
+        name: "Client-Id"
+      }
+    },
     schemas: {
       CompanyRegistrationRequest: {
         type: "object",
@@ -573,5 +580,10 @@ export const swaggerDocument = {
         }
       }
     }
-  }
+  },
+  security: [
+    {
+      ClientId: []
+    }
+  ]
 };
