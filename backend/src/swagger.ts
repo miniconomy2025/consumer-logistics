@@ -30,7 +30,15 @@ export const swaggerDocument = {
                   properties: {
                     status: {
                       type: "string",
-                      example: "OK"
+                      example: "ok"
+                    },
+                    message: {
+                      type: "string",
+                      example: "Service is healthy"
+                    },
+                    clientName: {
+                      type: "string",
+                      example: "unknown"
                     }
                   }
                 }
