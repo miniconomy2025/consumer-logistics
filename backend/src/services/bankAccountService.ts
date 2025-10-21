@@ -20,7 +20,7 @@ export class BankAccountService {
           headers: { 'Content-Type': 'application/json' 
             ,'Client-Id': 'consumer-logistics'
           },
-          //agent: agent,
+          agent: agent,
           body: JSON.stringify({
             notification_url: `https://afroserve.co.za/api/webhook/payment-updates`
           })
