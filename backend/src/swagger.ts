@@ -30,7 +30,15 @@ export const swaggerDocument = {
                   properties: {
                     status: {
                       type: "string",
-                      example: "OK"
+                      example: "ok"
+                    },
+                    message: {
+                      type: "string",
+                      example: "Service is healthy"
+                    },
+                    clientName: {
+                      type: "string",
+                      example: "unknown"
                     }
                   }
                 }
@@ -308,6 +316,13 @@ export const swaggerDocument = {
     }
   },
   components: {
+    securitySchemes: {
+      ClientId: {
+        type: "apiKey",
+        in: "header",
+        name: "Client-Id"
+      }
+    },
     schemas: {
       CompanyRegistrationRequest: {
         type: "object",
@@ -573,5 +588,10 @@ export const swaggerDocument = {
         }
       }
     }
-  }
+  },
+  security: [
+    {
+      ClientId: []
+    }
+  ]
 };

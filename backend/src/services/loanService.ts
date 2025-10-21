@@ -14,7 +14,7 @@ export async function applyForLoan(amount: number): Promise<LoanResponse> {
       headers: { 'Content-Type': 'application/json' 
         , 'Client-Id': 'consumer-logistics'
       },
-      //agent: agent,
+      agent: agent,
       body: JSON.stringify({ amount }),
     });
     if (!response.ok) {
