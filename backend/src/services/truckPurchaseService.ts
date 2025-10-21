@@ -20,6 +20,7 @@ export interface TruckForSale {
 export async function getTrucksForSale(): Promise<TruckForSale[]> {
   const response = await fetch(`${THOH_API_URL}/trucks`, {
     method: 'GET',
+    headers: { 'Client-Id': 'consumer-logistics' },
     // @ts-ignore
     agent
   });
@@ -35,6 +36,7 @@ export async function getTrucksForSaleWithRetries(maxRetries: number = 3): Promi
     try {
       const response = await fetch(`${THOH_API_URL}/trucks`, {
         method: 'GET',
+        headers: { 'Client-Id': 'consumer-logistics' },
         // @ts-ignore
         agent
       });
