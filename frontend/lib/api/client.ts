@@ -66,7 +66,7 @@ export async function apiRequest<T>(
   const defaultHeaders: Record<string, string> = {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
-    'Cliend-Id': 'consumer-logistics'
+    'Client-Id': 'consumer-logistics'
   };
   
   const finalHeaders = { ...defaultHeaders, ...headers };
