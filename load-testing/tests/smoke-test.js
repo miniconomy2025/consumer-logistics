@@ -41,7 +41,7 @@ export default function () {
   });
 
   // Get pickups
-  response = api.getPickups('Test Company 1');
+  response = api.getPickups('recycler');
   console.log(`Pickups - Status: ${response.status}, Body: ${response.body}`);
   check(response, {
     'get pickups status is 200': (r) => r.status === 200,
