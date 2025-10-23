@@ -159,8 +159,10 @@ export class SimulationResetService {
   }
 
   private static async getTrucksForSaleWithResilience(): Promise<any[]> {
-    try {
-      logger.info('[SimulationResetService] Attempting to get trucks for sale...');
+    const maxRetries = 3;
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+      logger.info(`[SimulationResetService] Attempting to get trucks for sale (attempt ${attempt}/${maxRetries})...`);
       const trucksForSale = await getTrucksForSaleWithRetries(3);
       
       if (trucksForSale && trucksForSale.length > 0) {
@@ -168,12 +170,25 @@ export class SimulationResetService {
         return trucksForSale;
       } else {
         logger.warn('[SimulationResetService] No trucks available for sale from external service.');
+        if (attempt === maxRetries) {
+        return [];
+        }
+      }
+      } catch (error) {
+      logger.warn(`[SimulationResetService] Failed to get trucks for sale (attempt ${attempt}/${maxRetries}):`, error);
+      if (attempt === maxRetries) {
+        logger.error('[SimulationResetService] Failed to get trucks for sale after all retries.');
         return [];
       }
-    } catch (error) {
-      logger.warn('[SimulationResetService] Failed to get trucks for sale from external service:', error);
-      return [];
+      }
+      
+      // Exponential backoff before next retry
+      const delay = Math.pow(2, attempt) * 1000;
+      logger.info(`[SimulationResetService] Waiting ${delay}ms before retry...`);
+      await new Promise(resolve => setTimeout(resolve, delay));
     }
+    
+    return [];
   }
 
   private static calculateTruckRequirements(trucksForSale: any[]): { trucksToBuy: TruckToBuy[], loanAmount: number } {
