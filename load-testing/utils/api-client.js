@@ -9,7 +9,7 @@ export class ApiClient {
     this.baseUrl = env.baseUrl;
     this.headers = {
       'Content-Type': 'application/json',
-      'Clinet-Id': 'consumer-logistics'
+      'Client-Id': 'consumer-logistics'
     };
   }
 
@@ -51,6 +51,6 @@ export class ApiClient {
 
   // Health check
   healthCheck() {
-    return http.get(`${this.baseUrl}/health`);
+    return http.get(`${this.baseUrl}/health`, { headers: this.headers });
   }
 }
