@@ -34,7 +34,6 @@ export async function getTrucksForSaleWithRetries(maxRetries: number = 3): Promi
   let lastError: Error | null = null;
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      setTimeout(() => {}, 10000);
       const response = await fetch(`${THOH_API_URL}/trucks`, {
         method: 'GET',
         headers: { 'Client-Id': 'consumer-logistics' },
@@ -50,6 +49,8 @@ export async function getTrucksForSaleWithRetries(maxRetries: number = 3): Promi
       logger.error(`[getTrucksForSale] Attempt ${attempt} failed: ${lastError.message}`);
       if (attempt < maxRetries) {
         logger.info(`[getTrucksForSale] Retrying (attempt ${attempt + 1} of ${maxRetries})...`);
+        // Wait before retrying (exponential backoff: 5s, 25s, 125s, etc.)
+        await new Promise(resolve => setTimeout(resolve, Math.pow(5, attempt) * 1000));
       }
     }
   }
