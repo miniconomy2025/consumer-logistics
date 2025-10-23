@@ -1,0 +1,14 @@
+{
+  "name": "consumer-logistics-load-testing",
+  "version": "1.0.0",
+  "scripts": {
+    "test:smoke": "npx k6 run tests/smoke-test.js",
+    "test:load": "npx k6 run tests/load-test.js",
+    "test:stress": "npx k6 run tests/stress-test.js",
+    "test:spike": "npx k6 run tests/spike-test.js",
+    "test:all": "npm run test:smoke && npm run test:load && npm run test:stress"
+  },
+  "devDependencies": {
+    "k6": "^0.0.0"
+  }
+}
