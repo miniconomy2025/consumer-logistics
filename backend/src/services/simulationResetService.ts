@@ -161,7 +161,7 @@ export class SimulationResetService {
   private static async getTrucksForSaleWithResilience(): Promise<any[]> {
     try {
       logger.info('[SimulationResetService] Attempting to get trucks for sale...');
-      const trucksForSale = await getTrucksForSaleWithRetries(3);
+      const trucksForSale = await getTrucksForSaleWithRetries(5);
       
       if (trucksForSale && trucksForSale.length > 0) {
         logger.info(`[SimulationResetService] Retrieved ${trucksForSale.length} trucks for sale.`);

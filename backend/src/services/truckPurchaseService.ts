@@ -30,7 +30,7 @@ export async function getTrucksForSale(): Promise<TruckForSale[]> {
   return await response.json() as TruckForSale[];
 }
 
-export async function getTrucksForSaleWithRetries(maxRetries: number = 3): Promise<TruckForSale[] | null> {
+export async function getTrucksForSaleWithRetries(maxRetries: number = 3, baseDelayMs: number = 500): Promise<TruckForSale[] | null> {
   let lastError: Error | null = null;
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
@@ -44,15 +44,20 @@ export async function getTrucksForSaleWithRetries(maxRetries: number = 3): Promi
         throw new Error(`Failed to fetch trucks: ${response.status} ${response.statusText}`);
       }
       return await response.json() as TruckForSale[];
-    } catch (error) {
-      lastError = error as Error;
-      logger.error(`[getTrucksForSale] Attempt ${attempt} failed: ${lastError.message}`);
+    } catch (err) {
+      lastError = err instanceof Error ? err : new Error(String(err));
+      logger.error(`[getTrucksForSaleWithRetries] Attempt ${attempt} failed: ${lastError.message}`);
       if (attempt < maxRetries) {
-        logger.info(`[getTrucksForSale] Retrying (attempt ${attempt + 1} of ${maxRetries})...`);
+        // exponential backoff with jitter
+        const backoff = baseDelayMs * Math.pow(2, attempt - 1);
+        const jitter = Math.floor(Math.random() * 300); // up to 300ms jitter
+        const delayMs = backoff + jitter;
+        logger.info(`[getTrucksForSaleWithRetries] Retrying in ${delayMs}ms (attempt ${attempt + 1} of ${maxRetries})...`);
+        await new Promise(resolve => setTimeout(resolve, delayMs));
       }
     }
   }
-  logger.warn('[getTrucksForSale] All attempts failed. Proceeding with default trucks.');
+  logger.warn('[getTrucksForSaleWithRetries] All attempts failed. Proceeding with default trucks.');
   return null;
 }
 
