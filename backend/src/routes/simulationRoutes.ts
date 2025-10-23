@@ -13,11 +13,28 @@ router.post('', async (req, res) => {
 
         const { epochStartTime } = req.body;
         let startTime: Date | undefined;
-        
-        if (epochStartTime) {
-            // Convert epoch timestamp (seconds) to milliseconds and create Date object
-            startTime = new Date(epochStartTime * 1000);
-            logger.info(`Using epoch start time: ${epochStartTime} -> ${startTime.toISOString()}`);
+
+        if (epochStartTime !== undefined && epochStartTime !== null) {
+            // Support both seconds and milliseconds epoch values
+            const raw = typeof epochStartTime === 'string' ? Number(epochStartTime) : epochStartTime;
+            if (Number.isFinite(raw)) {
+                // Heuristic: >= 1e12 => milliseconds (13+ digits for current/future dates)
+                // otherwise treat as seconds
+                const isMilliseconds = raw >= 1e12;
+                const epochMs = isMilliseconds ? Number(raw) : Number(raw) * 1000;
+                const candidate = new Date(epochMs);
+
+                if (!isNaN(candidate.getTime())) {
+                    startTime = candidate;
+                    logger.info(`Using epoch start time (${isMilliseconds ? 'ms' : 's'}): ${epochStartTime} -> ${startTime.toISOString()}`);
+                } else {
+                    logger.warn(`Invalid epochStartTime provided: ${epochStartTime}. Falling back to current time.`);
+                    startTime = new Date();
+                }
+            } else {
+                logger.warn(`Non-numeric epochStartTime provided: ${epochStartTime}. Falling back to current time.`);
+                startTime = new Date();
+            }
         } else {
             logger.info('No epoch start time provided, using current time');
             startTime = new Date();
