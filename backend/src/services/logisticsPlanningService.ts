@@ -732,9 +732,9 @@ export class LogisticsPlanningService {
     }    
     public async notifyExternalDelivery(delivery_reference: string, quantity: number, companyName?: string, model_name?: string, recipient_name?: string): Promise<void> {
         const COMPANY_DELIVERY_URLS: Record<string, string> = {
-            'pear-company': 'https://pear-company-api.projects.bbdgrad.com/public-api/logistics/notification',
-            'recycler': 'https://recycler-api.projects.bbdgrad.com/logistics/consumer-deliveries',
-            'sumsang-company': 'https://sumsang-phones-api.projects.bbdgrad.com/public-api/logistics/notification'
+            'pear-company': 'https://pear-api.duckdns.org/public-api/logistics/notification',
+            'recycler': 'https://api.recycler.susnet.co.za/logistics/consumer-deliveries',
+            'sumsang-company': 'https://www.bbd-grad-project.co.za/public-api/logistics/notification'
         };
 
         logger.debug("Delivery : ", JSON.stringify({
@@ -781,9 +781,9 @@ export class LogisticsPlanningService {
 
     public async notifyExternalPickup(delivery_reference: string, quantity: number, companyName?: string, model_name?: string, recipient_name?: string): Promise<void> {
         const COMPANY_COLLECTION_URLS: Record<string, string> = {
-            'pear-company': 'https://pear-company-api.projects.bbdgrad.com/public-api/logistics',
-            'recycler': 'https://thoh-api.projects.bbdgrad.com/recycled-phones-collect',
-            'sumsang-company': 'https://sumsang-phones-api.projects.bbdgrad.com/public-api/logistics'
+            'pear-company': 'https://pear-api.duckdns.org/public-api/logistics',
+            'recycler': 'https://ec2-13-244-65-62.af-south-1.compute.amazonaws.com/api/recycled-phones-collect',
+            'sumsang-company': 'https://www.bbd-grad-project.co.za/public-api/logistics'
         };
         let webhookUrl = 'https://webhook.site/948ae0f0-871f-427d-a745-c13e0345dff7';
         if (companyName && COMPANY_COLLECTION_URLS[companyName]) {
