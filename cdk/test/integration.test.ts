@@ -45,7 +45,7 @@ describe('Integration Tests', () => {
         OptionSettings: Match.arrayWith([
           {
             Namespace: 'aws:elasticbeanstalk:application:environment',
-            OptionName: 'DB_HOST',
+            OptionName: 'DB_DATABASE',
             Value: Match.anyValue()
           },
           {
