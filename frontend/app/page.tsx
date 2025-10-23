@@ -3,11 +3,8 @@
 import { useState } from 'react';
 import { ErrorBoundary } from "@/components/common/ErrorBoundary";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
 import {
   Activity,
-  RefreshCw,
   BarChart3,
   AlertCircle,
 } from "lucide-react";
@@ -15,35 +12,31 @@ import {
 // Import analytics components
 import { AnalyticsDashboard } from "@/components/dashboard/AnalyticsDashboard";
 import { KPIAnalytics } from "@/components/dashboard/KPIAnalytics";
-import { ClientOnly } from "@/components/common/ClientOnly";
 
 // Import hooks
-import { useDashboardDateRange, useAnalyticsHealth, useDashboardAnalyticsWithRefresh, useKPIAnalyticsWithRefresh } from "@/lib/hooks/useAnalytics";
-import { analyticsRangeOptions } from "@/lib/api/analytics";
-import { AnalyticsDateRange } from "@/lib/types/analytics";
+import { useEffect } from 'react';
+import { useAnalyticsHealth, useDashboardAnalyticsWithRefresh, useKPIAnalyticsWithRefresh } from "@/lib/hooks/useAnalytics";
 
 export default function AnalyticsPage() {
   const [activeTab, setActiveTab] = useState("dashboard");
 
-  // Date range management using predefined ranges
-  const { range, setRange, analyticsParams } = useDashboardDateRange();
-
-  // Analytics data with refresh capability
-  const dashboardAnalytics = useDashboardAnalyticsWithRefresh(analyticsParams);
-  const kpiAnalytics = useKPIAnalyticsWithRefresh(analyticsParams);
+  // Analytics data with refresh capability (all-time stats)
+  const dashboardAnalytics = useDashboardAnalyticsWithRefresh();
+  const kpiAnalytics = useKPIAnalyticsWithRefresh();
 
   // Health monitoring
   const { data: health, error: healthError } = useAnalyticsHealth();
 
-  // Combined refresh function
-  const handleRefresh = async () => {
-    await Promise.all([
-      dashboardAnalytics.refresh(),
-      kpiAnalytics.refresh()
-    ]);
-  };
-
-  const isRefreshing = dashboardAnalytics.isRefreshing || kpiAnalytics.isRefreshing;
+  // Polling for smooth UX without manual refresh
+  const POLL_INTERVAL_MS = 15000; // 15s realistic interval
+  useEffect(() => {
+    const id = setInterval(() => {
+      // Background refetch to avoid skeleton flicker
+      dashboardAnalytics.refetch(true);
+      kpiAnalytics.refetch(true);
+    }, POLL_INTERVAL_MS);
+    return () => clearInterval(id);
+  }, [dashboardAnalytics.refetch, kpiAnalytics.refetch]);
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -73,33 +66,9 @@ export default function AnalyticsPage() {
               </div>
             )}
             
-            {/* Date Range Selector */}
-            <ClientOnly fallback={<div className="w-40 h-10 bg-slate-200 rounded animate-pulse"></div>}>
-              <Select onValueChange={(value) => setRange(value as AnalyticsDateRange)} defaultValue={range}>
-                <SelectTrigger className="w-40">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {analyticsRangeOptions.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </ClientOnly>
+            {/* Date range removed: always showing all-time stats */}
                   
-            {/* Refresh Button */}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleRefresh}
-              disabled={isRefreshing}
-              className="flex items-center gap-2"
-            >
-              <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-              Refresh
-            </Button>
+            {/* Auto-refresh enabled (15s). Manual button removed for simplicity. */}
           </div>
         </header>
 
@@ -120,7 +89,6 @@ export default function AnalyticsPage() {
           <TabsContent value="dashboard" className="space-y-6">
             <ErrorBoundary>
               <AnalyticsDashboard
-                dateRange={analyticsParams}
                 data={dashboardAnalytics.data}
                 loading={dashboardAnalytics.loading}
                 error={dashboardAnalytics.error}
@@ -132,7 +100,6 @@ export default function AnalyticsPage() {
           <TabsContent value="kpis" className="space-y-6">
             <ErrorBoundary>
               <KPIAnalytics
-                dateRange={analyticsParams}
                 data={kpiAnalytics.data}
                 loading={kpiAnalytics.loading}
                 error={kpiAnalytics.error}

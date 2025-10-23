@@ -17,9 +17,8 @@ export class AnalyticsController {
 
   public getDashboardAnalytics = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const params: AnalyticsQueryParams = this.parseQueryParams(req.query);
-      
-      const analytics = await this.analyticsService.getDashboardAnalytics(params);
+      // Date filtering removed: always return all-time analytics
+      const analytics = await this.analyticsService.getDashboardAnalytics();
       
       res.status(200).json(analytics);
     } catch (error) {
@@ -33,9 +32,8 @@ export class AnalyticsController {
 
   public getKPIAnalytics = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const params: AnalyticsQueryParams = this.parseQueryParams(req.query);
-      
-      const kpis = await this.analyticsService.getKPIAnalytics(params);
+      // Date filtering removed: always return all-time KPIs
+      const kpis = await this.analyticsService.getKPIAnalytics();
       
       res.status(200).json(kpis);
     } catch (error) {
