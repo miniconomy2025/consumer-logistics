@@ -7,5 +7,6 @@ const analyticsController = new AnalyticsController();
 router.get('/dashboard', analyticsController.getDashboardAnalytics);
 router.get('/kpis', analyticsController.getKPIAnalytics);
 router.get('/health', analyticsController.getAnalyticsHealth);
+router.get('/orders', analyticsController.getRecentOrders);
 
 export default router;

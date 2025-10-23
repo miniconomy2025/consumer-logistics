@@ -11,6 +11,7 @@ import analyticsRoutes from './routes/analyticsRoutes';
 import companyRoutes from './routes/companyRoutes';
 import webhookRoutes from './routes/webhookRoutes';
 import simulationRoutes from './routes/simulationRoutes';
+import financeRoutes from './routes/financeRoutes';
 
 
 import { errorMiddleware } from './middleware/errorMiddleware';
@@ -30,6 +31,7 @@ app.use('/api/pickups',  pickupRoutes);
 app.use('/api/webhook', webhookRoutes);
 app.use('/api/simulation', simulationRoutes); 
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/finance', financeRoutes);
 
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok', message: 'Service is healthy', clientName: (req as any).clientName || 'unknown' });

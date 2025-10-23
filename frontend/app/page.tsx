@@ -12,6 +12,7 @@ import {
 // Import analytics components
 import { AnalyticsDashboard } from "@/components/dashboard/AnalyticsDashboard";
 import { KPIAnalytics } from "@/components/dashboard/KPIAnalytics";
+import { OrdersFeed } from "@/components/orders/OrdersFeed";
 
 // Import hooks
 import { useEffect } from 'react';
@@ -74,7 +75,7 @@ export default function AnalyticsPage() {
 
         {/* Analytics Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3 sm:grid-cols-3">
             <TabsTrigger value="dashboard" className="flex-1 flex items-center justify-center gap-2">
               <BarChart3 className="h-4 w-4" />
               Dashboard
@@ -82,6 +83,10 @@ export default function AnalyticsPage() {
             <TabsTrigger value="kpis" className="flex-1 flex items-center justify-center gap-2">
               <Activity className="h-4 w-4" />
               KPIs
+            </TabsTrigger>
+            <TabsTrigger value="orders" className="flex-1 flex items-center justify-center gap-2">
+              <Activity className="h-4 w-4" />
+              Orders
             </TabsTrigger>
           </TabsList>
 
@@ -104,6 +109,13 @@ export default function AnalyticsPage() {
                 loading={kpiAnalytics.loading}
                 error={kpiAnalytics.error}
               />
+            </ErrorBoundary>
+          </TabsContent>
+
+          {/* Orders Tab */}
+          <TabsContent value="orders" className="space-y-6">
+            <ErrorBoundary>
+              <OrdersFeed />
             </ErrorBoundary>
           </TabsContent>
         </Tabs>

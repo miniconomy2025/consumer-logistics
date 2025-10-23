@@ -26,6 +26,18 @@ export class AnalyticsController {
     }
   };
 
+  public getRecentOrders = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const limitParam = req.query.limit as string | undefined;
+      const limit = Math.min(Math.max(parseInt(limitParam || '100', 10) || 100, 1), 1000);
+      const service = this.analyticsService;
+      const items = await service.getRecentOrders(limit);
+      res.status(200).json({ items });
+    } catch (error) {
+      next(error);
+    }
+  };
+
   // ============================================================================
   // KPI ANALYTICS
   // ============================================================================
