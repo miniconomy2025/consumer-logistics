@@ -392,7 +392,7 @@ export class CdkStack extends cdk.Stack {
         },
         {
           namespace: 'aws:elasticbeanstalk:application:environment',
-          optionName: 'DB_NAME',
+          optionName: 'DB_DATABASE',
           value: databaseName,
         },
         {
