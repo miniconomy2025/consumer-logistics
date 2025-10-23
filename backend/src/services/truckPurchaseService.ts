@@ -49,8 +49,8 @@ export async function getTrucksForSaleWithRetries(maxRetries: number = 3): Promi
       logger.error(`[getTrucksForSale] Attempt ${attempt} failed: ${lastError.message}`);
       if (attempt < maxRetries) {
         logger.info(`[getTrucksForSale] Retrying (attempt ${attempt + 1} of ${maxRetries})...`);
-        // Wait before retrying (exponential backoff: 5s, 25s, 125s, etc.)
-        await new Promise(resolve => setTimeout(resolve, Math.pow(5, attempt) * 1000));
+        // Wait before retrying (exponential backoff: 2s, 4s, 8s, ...)
+        await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
       }
     }
   }
