@@ -30,7 +30,7 @@ export async function getTrucksForSale(): Promise<TruckForSale[]> {
   return await response.json() as TruckForSale[];
 }
 
-export async function getTrucksForSaleWithRetries(maxRetries: number = 3, baseDelayMs: number = 500): Promise<TruckForSale[] | null> {
+export async function getTrucksForSaleWithRetries(maxRetries: number = 3, baseDelayMs: number = 15000): Promise<TruckForSale[] | null> {
   let lastError: Error | null = null;
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
@@ -50,7 +50,7 @@ export async function getTrucksForSaleWithRetries(maxRetries: number = 3, baseDe
       if (attempt < maxRetries) {
         // exponential backoff with jitter
         const backoff = baseDelayMs * Math.pow(2, attempt - 1);
-        const jitter = Math.floor(Math.random() * 300); // up to 300ms jitter
+        const jitter = Math.floor(Math.random() * 3000); // up to 300ms jitter
         const delayMs = backoff + jitter;
         logger.info(`[getTrucksForSaleWithRetries] Retrying in ${delayMs}ms (attempt ${attempt + 1} of ${maxRetries})...`);
         await new Promise(resolve => setTimeout(resolve, delayMs));
