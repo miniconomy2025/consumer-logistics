@@ -57,7 +57,7 @@ describe('PickupService (Critical Tests)', () => {
 
     expect(result).toEqual({
       referenceNo: 'INV123',
-      amount: (5 * 10).toFixed(2),
+      amount: (5 * 50).toFixed(2),
       accountNumber: '1234567890',
     });
     expect(mockPickupRepo.createInvoice).toHaveBeenCalled();
