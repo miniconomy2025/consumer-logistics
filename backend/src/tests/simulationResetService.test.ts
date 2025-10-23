@@ -186,7 +186,7 @@ describe('SimulationResetService', () => {
 
       // Assert
       expect(chosen).toEqual(trucksToBuy);
-      expect(loanAmount).toBe(5000 + 14 * 200);
+      expect(loanAmount).toBe((5000 + 14 * 200) *5);
     });
 
     it('uses fallback configuration when no trucks available', () => {

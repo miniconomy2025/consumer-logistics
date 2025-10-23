@@ -183,7 +183,7 @@ export class SimulationResetService {
     if (trucksForSale && trucksForSale.length > 0) {
       trucksToBuy = selectTrucksToBuy(trucksForSale);
       const { totalPurchase, totalDailyOperating } = calculateTruckCosts(trucksToBuy);
-      loanAmount = totalPurchase + (totalDailyOperating * 14);
+      loanAmount =(( totalPurchase + (totalDailyOperating * 14) ) * 5) ;
       logger.info(`[SimulationResetService] Calculated loan amount: ${loanAmount} for ${trucksToBuy.length} trucks.`);
     } else {
       // Fallback truck configuration

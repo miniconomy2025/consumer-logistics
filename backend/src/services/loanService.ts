@@ -9,15 +9,14 @@ export interface LoanResponse {
 
 export async function applyForLoan(amount: number): Promise<LoanResponse> {
   try {
-    const multiplier = 5;
-    const loanAmount = amount * multiplier;
+
     const response = await fetch(`${BANK_API_URL}/loan`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json'
         , 'Client-Id': 'consumer-logistics'
       },
       agent: agent,
-      body: JSON.stringify({ loanAmount }),
+      body: JSON.stringify({ amount }),
     });
     if (!response.ok) {
       throw new Error(`Bank loan API error: ${response.status} ${response.statusText}`);
