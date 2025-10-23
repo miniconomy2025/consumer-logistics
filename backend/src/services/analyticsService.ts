@@ -305,6 +305,20 @@ export class AnalyticsService {
     }
   }
 
+  // Recent orders feed for UI
+  public async getRecentOrders(limit: number) {
+    const list = await this.analyticsRepository.getRecentActivity(limit);
+    return list.map(item => ({
+      pickupId: item.pickupId,
+      companyId: item.companyId,
+      companyName: item.companyName,
+      customer: item.customer,
+      amount: item.amount,
+      status: item.statusName,
+      date: item.pickupDate ? item.pickupDate.toISOString() : null,
+    }));
+  }
+
 
 
   // ============================================================================

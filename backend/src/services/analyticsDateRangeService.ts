@@ -84,12 +84,9 @@ export class AnalyticsDateRangeService {
    * Get date range for all time (from simulation start to current time)
    */
   private getAllTime(currentTime: Date): DateRangeResult {
-    // Use the default simulation start date as the beginning of "all time"
-    const dateFrom = '2050-01-01';
-    const dateTo = this.formatDate(currentTime);
-    
-    logger.debug(`All time: ${dateFrom} to ${dateTo}`);
-    return { dateFrom, dateTo };
+    // No date filters applied: fetch across entire dataset
+    logger.debug('All time: no date filters applied');
+    return { dateFrom: '', dateTo: '' };
   }
 
   /**
@@ -112,7 +109,7 @@ export class AnalyticsDateRangeService {
    * Get default range when no range is specified
    */
   public getDefaultRange(): AnalyticsDateRange {
-    return 'last30days';
+    return 'alltime';
   }
 
   /**

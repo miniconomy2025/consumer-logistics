@@ -17,11 +17,22 @@ export class AnalyticsController {
 
   public getDashboardAnalytics = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const params: AnalyticsQueryParams = this.parseQueryParams(req.query);
-      
-      const analytics = await this.analyticsService.getDashboardAnalytics(params);
+      // Date filtering removed: always return all-time analytics
+      const analytics = await this.analyticsService.getDashboardAnalytics();
       
       res.status(200).json(analytics);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  public getRecentOrders = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const limitParam = req.query.limit as string | undefined;
+      const limit = Math.min(Math.max(parseInt(limitParam || '100', 10) || 100, 1), 1000);
+      const service = this.analyticsService;
+      const items = await service.getRecentOrders(limit);
+      res.status(200).json({ items });
     } catch (error) {
       next(error);
     }
@@ -33,9 +44,8 @@ export class AnalyticsController {
 
   public getKPIAnalytics = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const params: AnalyticsQueryParams = this.parseQueryParams(req.query);
-      
-      const kpis = await this.analyticsService.getKPIAnalytics(params);
+      // Date filtering removed: always return all-time KPIs
+      const kpis = await this.analyticsService.getKPIAnalytics();
       
       res.status(200).json(kpis);
     } catch (error) {

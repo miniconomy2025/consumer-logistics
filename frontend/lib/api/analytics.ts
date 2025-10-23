@@ -6,6 +6,7 @@ import {
   AnalyticsQueryParams,
   AnalyticsDateRange,
 } from '../types/analytics';
+import { RecentOrdersResponse } from '../types/orders';
 
 // ============================================================================
 // MAIN ANALYTICS ENDPOINTS
@@ -55,3 +56,10 @@ export const analyticsRangeOptions = [
   { value: 'currentyear' as AnalyticsDateRange, label: 'Current Year' },
   { value: 'alltime' as AnalyticsDateRange, label: 'All Time' },
 ] as const;
+
+/**
+ * Get recent orders feed
+ */
+export async function getRecentOrders(limit: number = 100): Promise<RecentOrdersResponse> {
+  return api.get<RecentOrdersResponse>('/analytics/orders', { limit });
+}
