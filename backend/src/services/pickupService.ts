@@ -34,7 +34,7 @@ export class PickupService {
     public async createPickupRequest(data: CreatePickupRequest): Promise<PickupResponse> {
         logger.info(`Creating new pickup request for company: ${data.companyName} with quantity: ${data.quantity} of model: ${data.modelName}`);
 
-        const unit_price = 10.0;
+        const unit_price = 50.0;
         const amount = data.quantity * unit_price;
 
         let company = await this.companyRepository.findByName(data.companyName);
