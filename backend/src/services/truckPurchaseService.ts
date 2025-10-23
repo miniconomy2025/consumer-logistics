@@ -30,10 +30,11 @@ export async function getTrucksForSale(): Promise<TruckForSale[]> {
   return await response.json() as TruckForSale[];
 }
 
-export async function getTrucksForSaleWithRetries(maxRetries: number = 3, baseDelayMs: number = 15000): Promise<TruckForSale[] | null> {
+export async function getTrucksForSaleWithRetries(maxRetries: number = 3): Promise<TruckForSale[] | null> {
   let lastError: Error | null = null;
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
+      setTimeout(() => {}, 10000);
       const response = await fetch(`${THOH_API_URL}/trucks`, {
         method: 'GET',
         headers: { 'Client-Id': 'consumer-logistics' },
@@ -44,20 +45,15 @@ export async function getTrucksForSaleWithRetries(maxRetries: number = 3, baseDe
         throw new Error(`Failed to fetch trucks: ${response.status} ${response.statusText}`);
       }
       return await response.json() as TruckForSale[];
-    } catch (err) {
-      lastError = err instanceof Error ? err : new Error(String(err));
-      logger.error(`[getTrucksForSaleWithRetries] Attempt ${attempt} failed: ${lastError.message}`);
+    } catch (error) {
+      lastError = error as Error;
+      logger.error(`[getTrucksForSale] Attempt ${attempt} failed: ${lastError.message}`);
       if (attempt < maxRetries) {
-        // exponential backoff with jitter
-        const backoff = baseDelayMs * Math.pow(2, attempt - 1);
-        const jitter = Math.floor(Math.random() * 3000); // up to 300ms jitter
-        const delayMs = backoff + jitter;
-        logger.info(`[getTrucksForSaleWithRetries] Retrying in ${delayMs}ms (attempt ${attempt + 1} of ${maxRetries})...`);
-        await new Promise(resolve => setTimeout(resolve, delayMs));
+        logger.info(`[getTrucksForSale] Retrying (attempt ${attempt + 1} of ${maxRetries})...`);
       }
     }
   }
-  logger.warn('[getTrucksForSaleWithRetries] All attempts failed. Proceeding with default trucks.');
+  logger.warn('[getTrucksForSale] All attempts failed. Proceeding with default trucks.');
   return null;
 }
 
