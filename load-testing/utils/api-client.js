@@ -9,7 +9,7 @@ export class ApiClient {
     this.baseUrl = env.baseUrl;
     this.headers = {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${env.apiKey}`
+      'Clinet-Id': 'consumer-logistics'
     };
   }
 

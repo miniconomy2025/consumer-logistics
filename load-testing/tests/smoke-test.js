@@ -32,7 +32,7 @@ export default function () {
   });
 
   // Get pickups
-  response = api.getPickups();
+  response = api.getPickups('consumer-logistics');
   check(response, {
     'get pickups status is 200': (r) => r.status === 200,
   });
