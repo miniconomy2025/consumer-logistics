@@ -2,10 +2,15 @@ name: Deploy Infrastructure
 
 on:
   workflow_dispatch:
+
 jobs:
+  test:
+    uses: ./.github/workflows/cdk-tests.yml
+
   deploy:
     name: Deploy CDK Stack
     runs-on: ubuntu-latest
+    needs: test
 
     steps:
     - name: Checkout code
