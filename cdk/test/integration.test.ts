@@ -46,11 +46,6 @@ describe('Integration Tests', () => {
           {
             Namespace: 'aws:elasticbeanstalk:application:environment',
             OptionName: 'DB_DATABASE',
-            Value: Match.anyValue()
-          },
-          {
-            Namespace: 'aws:elasticbeanstalk:application:environment',
-            OptionName: 'DB_NAME',
             Value: 'customerLogisticsDB'
           }
         ])
