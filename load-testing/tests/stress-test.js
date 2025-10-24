@@ -48,5 +48,5 @@ export default function () {
     'analytics under stress': (r) => r.status === 200,
   });
 
-  sleep(0.5); // Shorter think time for stress
+  sleep(0.5); 
 }
